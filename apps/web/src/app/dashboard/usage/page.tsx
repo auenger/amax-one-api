@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { CalendarDays, TrendingUp, ArrowUpRight, ArrowDownRight } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
+import { Skeleton } from '@/components/ui/skeleton'
 import {
   Table,
   TableBody,
@@ -20,34 +21,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-
-// Mock trend data
-const dailyUsage = [
-  { date: '05/06', tokens: 820000, requests: 5200 },
-  { date: '05/07', tokens: 950000, requests: 6100 },
-  { date: '05/08', tokens: 780000, requests: 4800 },
-  { date: '05/09', tokens: 1100000, requests: 7200 },
-  { date: '05/10', tokens: 1250000, requests: 8400 },
-  { date: '05/11', tokens: 690000, requests: 4100 },
-  { date: '05/12', tokens: 1200000, requests: 8429 },
-]
-
-const modelRanking = [
-  { name: 'gpt-4o', tokens: 4200000, percentage: 35, trend: 'up' as const },
-  { name: 'claude-sonnet-4', tokens: 2800000, percentage: 23, trend: 'up' as const },
-  { name: 'gpt-4o-mini', tokens: 2100000, percentage: 18, trend: 'down' as const },
-  { name: 'deepseek-v3', tokens: 1500000, percentage: 13, trend: 'up' as const },
-  { name: 'text-embedding-3-large', tokens: 840000, percentage: 7, trend: 'down' as const },
-  { name: '其他', tokens: 560000, percentage: 4, trend: 'stable' as const },
-]
-
-const keyRanking = [
-  { name: 'Production API', tokens: 5100000, percentage: 43, trend: 'up' as const },
-  { name: 'Analytics Service', tokens: 3200000, percentage: 27, trend: 'up' as const },
-  { name: 'Development', tokens: 1800000, percentage: 15, trend: 'down' as const },
-  { name: 'Testing Bot', tokens: 1200000, percentage: 10, trend: 'down' as const },
-  { name: 'Legacy Integration', tokens: 600000, percentage: 5, trend: 'stable' as const },
-]
+import useSWR from 'swr'
+import { usageApi } from '@/lib/api/usage'
+import { keysApi } from '@/lib/api/keys'
+import type { UsageGroupSummary } from '@/lib/api/types'
 
 function formatTokens(num: number): string {
   if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`
@@ -55,37 +32,158 @@ function formatTokens(num: number): string {
   return num.toString()
 }
 
-// Simple bar chart component using CSS
-function SimpleBarChart({
-  data,
-  maxVal,
-}: {
-  data: { value: number; label: string }[]
-  maxVal: number
-}) {
+function getDateRange(timeRange: string): { startDate: string; endDate: string } {
+  const now = new Date()
+  const endDate = now.toISOString()
+  const startDate = new Date()
+
+  switch (timeRange) {
+    case '24h':
+      startDate.setHours(startDate.getHours() - 24)
+      break
+    case '7d':
+      startDate.setDate(startDate.getDate() - 7)
+      break
+    case '30d':
+      startDate.setDate(startDate.getDate() - 30)
+      break
+    case '90d':
+      startDate.setDate(startDate.getDate() - 90)
+      break
+    default:
+      startDate.setDate(startDate.getDate() - 7)
+  }
+
+  return { startDate: startDate.toISOString(), endDate }
+}
+
+// Bar chart component using divs
+function UsageBarChart({ data }: { data: UsageGroupSummary[] }) {
+  if (data.length === 0) {
+    return (
+      <div className="flex h-[200px] items-center justify-center text-muted-foreground">
+        暂无数据
+      </div>
+    )
+  }
+
+  const maxTokens = Math.max(...data.map((d) => d.total_tokens))
   return (
     <div className="flex items-end gap-2 h-[200px] w-full">
-      {data.map((item, i) => (
-        <div key={i} className="flex flex-1 flex-col items-center gap-1">
-          <span className="text-xs text-muted-foreground">{formatTokens(item.value)}</span>
-          <div
-            className="w-full rounded-t-md bg-primary/80 hover:bg-primary transition-colors min-h-[4px]"
-            style={{ height: `${(item.value / maxVal) * 160}px` }}
-          />
-          <span className="text-xs text-muted-foreground">{item.label}</span>
-        </div>
-      ))}
+      {data.slice(0, 15).map((item, i) => {
+        const label =
+          item.group_key.length > 12
+            ? '...' + item.group_key.slice(-10)
+            : item.group_key || 'unknown'
+        return (
+          <div key={i} className="flex flex-1 flex-col items-center gap-1 group relative">
+            <span className="text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
+              {formatTokens(item.total_tokens)}
+            </span>
+            <div
+              className="w-full rounded-t-md bg-primary/80 hover:bg-primary transition-colors min-h-[4px] cursor-pointer"
+              style={{ height: `${(item.total_tokens / maxTokens) * 160}px` }}
+              title={`${item.group_key}: ${formatTokens(item.total_tokens)} tokens (${item.request_count} requests)`}
+            />
+            <span
+              className="text-xs text-muted-foreground truncate w-full text-center"
+              title={item.group_key}
+            >
+              {label}
+            </span>
+          </div>
+        )
+      })}
     </div>
   )
 }
 
 export default function UsagePage() {
   const [timeRange, setTimeRange] = useState('7d')
+  const dateRange = useMemo(() => getDateRange(timeRange), [timeRange])
 
-  const maxTokens = Math.max(...dailyUsage.map((d) => d.tokens))
-  const totalTokens = dailyUsage.reduce((sum, d) => sum + d.tokens, 0)
-  const totalRequests = dailyUsage.reduce((sum, d) => sum + d.requests, 0)
-  const avgDaily = Math.round(totalTokens / dailyUsage.length)
+  // Fetch usage summary grouped by model
+  const { data: modelSummary, isLoading: loadingModel } = useSWR(
+    typeof window !== 'undefined' ? `usage-model-${timeRange}` : null,
+    () =>
+      usageApi.summary({
+        group_by: 'model',
+        start_date: dateRange.startDate,
+        end_date: dateRange.endDate,
+      }),
+  )
+
+  // Fetch usage summary grouped by key
+  const { data: keySummary, isLoading: loadingKey } = useSWR(
+    typeof window !== 'undefined' ? `usage-key-${timeRange}` : null,
+    () =>
+      usageApi.summary({
+        group_by: 'virtual_key',
+        start_date: dateRange.startDate,
+        end_date: dateRange.endDate,
+      }),
+  )
+
+  // Fetch virtual keys to resolve names
+  const { data: keysData } = useSWR(typeof window !== 'undefined' ? 'keys-for-usage' : null, () =>
+    keysApi.list({ limit: 100 }),
+  )
+
+  // Build key name lookup
+  const keyNameMap = useMemo(() => {
+    const map: Record<string, string> = {}
+    if (keysData?.data) {
+      for (const key of keysData.data) {
+        map[key.id] = key.name
+      }
+    }
+    return map
+  }, [keysData])
+
+  const modelData = modelSummary?.data ?? []
+  const keyData = keySummary?.data ?? []
+
+  // Aggregate totals
+  const totalTokens = modelData.reduce((sum, d) => sum + d.total_tokens, 0)
+  const totalRequests = modelData.reduce((sum, d) => sum + d.request_count, 0)
+  const avgPerRequest = totalRequests > 0 ? Math.round(totalTokens / totalRequests) : 0
+
+  const isLoading = loadingModel || loadingKey
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <Skeleton className="h-8 w-32" />
+            <Skeleton className="mt-2 h-4 w-64" />
+          </div>
+          <Skeleton className="h-10 w-40" />
+        </div>
+        <div className="grid gap-4 sm:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Card key={i}>
+              <CardHeader className="pb-2">
+                <Skeleton className="h-4 w-24" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-8 w-20" />
+                <Skeleton className="mt-2 h-3 w-32" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-6 w-40" />
+          </CardHeader>
+          <CardContent>
+            <Skeleton className="h-[200px] w-full" />
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -115,9 +213,8 @@ export default function UsagePage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{formatTokens(totalTokens)}</div>
-            <p className="text-xs text-muted-foreground flex items-center gap-1">
-              <ArrowUpRight className="h-3 w-3 text-emerald-500" />
-              <span className="text-emerald-500">+18.2%</span> vs 上一周期
+            <p className="text-xs text-muted-foreground">
+              共 {totalRequests.toLocaleString()} 次请求
             </p>
           </CardContent>
         </Card>
@@ -127,22 +224,16 @@ export default function UsagePage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalRequests.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground flex items-center gap-1">
-              <ArrowUpRight className="h-3 w-3 text-emerald-500" />
-              <span className="text-emerald-500">+12.5%</span> vs 上一周期
-            </p>
+            <p className="text-xs text-muted-foreground">涵盖 {modelData.length} 个模型</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">日均消耗</CardTitle>
+            <CardTitle className="text-sm font-medium">平均 Token/请求</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatTokens(avgDaily)}</div>
-            <p className="text-xs text-muted-foreground flex items-center gap-1">
-              <ArrowDownRight className="h-3 w-3 text-red-500" />
-              <span className="text-red-500">-3.2%</span> vs 上一周期
-            </p>
+            <div className="text-2xl font-bold">{formatTokens(avgPerRequest)}</div>
+            <p className="text-xs text-muted-foreground">活跃 Key: {keyData.length}</p>
           </CardContent>
         </Card>
       </div>
@@ -150,13 +241,10 @@ export default function UsagePage() {
       <Card>
         <CardHeader>
           <CardTitle>Token 消耗趋势</CardTitle>
-          <CardDescription>每日 Token 使用量</CardDescription>
+          <CardDescription>按模型维度的 Token 使用量（Top 15）</CardDescription>
         </CardHeader>
         <CardContent>
-          <SimpleBarChart
-            data={dailyUsage.map((d) => ({ value: d.tokens, label: d.date }))}
-            maxVal={maxTokens}
-          />
+          <UsageBarChart data={modelData} />
         </CardContent>
       </Card>
 
@@ -173,53 +261,51 @@ export default function UsagePage() {
               <CardDescription>按 Token 消耗量排列的模型使用排行</CardDescription>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>排名</TableHead>
-                    <TableHead>模型名称</TableHead>
-                    <TableHead>Token 消耗</TableHead>
-                    <TableHead>占比</TableHead>
-                    <TableHead>趋势</TableHead>
-                    <TableHead className="w-[200px]">分布</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {modelRanking.map((model, i) => (
-                    <TableRow key={model.name}>
-                      <TableCell className="font-medium">
-                        <Badge variant={i < 3 ? 'default' : 'secondary'}>{i + 1}</Badge>
-                      </TableCell>
-                      <TableCell className="font-mono text-sm">{model.name}</TableCell>
-                      <TableCell>{formatTokens(model.tokens)}</TableCell>
-                      <TableCell>{model.percentage}%</TableCell>
-                      <TableCell>
-                        {model.trend === 'up' ? (
-                          <span className="flex items-center gap-1 text-emerald-500 text-sm">
-                            <TrendingUp className="h-3.5 w-3.5" />
-                            上升
-                          </span>
-                        ) : model.trend === 'down' ? (
-                          <span className="flex items-center gap-1 text-red-500 text-sm">
-                            <ArrowDownRight className="h-3.5 w-3.5" />
-                            下降
-                          </span>
-                        ) : (
-                          <span className="text-sm text-muted-foreground">持平</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
-                          <div
-                            className="h-full rounded-full bg-primary"
-                            style={{ width: `${model.percentage}%` }}
-                          />
-                        </div>
-                      </TableCell>
+              {modelData.length === 0 ? (
+                <div className="h-24 flex items-center justify-center text-muted-foreground">
+                  当前时间范围内暂无用量数据
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>排名</TableHead>
+                      <TableHead>模型名称</TableHead>
+                      <TableHead>Token 消耗</TableHead>
+                      <TableHead>请求数</TableHead>
+                      <TableHead>占比</TableHead>
+                      <TableHead className="w-[200px]">分布</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {modelData.map((model, i) => {
+                      const percentage =
+                        totalTokens > 0 ? Math.round((model.total_tokens / totalTokens) * 100) : 0
+                      return (
+                        <TableRow key={model.group_key}>
+                          <TableCell className="font-medium">
+                            <Badge variant={i < 3 ? 'default' : 'secondary'}>{i + 1}</Badge>
+                          </TableCell>
+                          <TableCell className="font-mono text-sm">
+                            {model.group_key || 'unknown'}
+                          </TableCell>
+                          <TableCell>{formatTokens(model.total_tokens)}</TableCell>
+                          <TableCell>{model.request_count.toLocaleString()}</TableCell>
+                          <TableCell>{percentage}%</TableCell>
+                          <TableCell>
+                            <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+                              <div
+                                className="h-full rounded-full bg-primary"
+                                style={{ width: `${percentage}%` }}
+                              />
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -231,53 +317,50 @@ export default function UsagePage() {
               <CardDescription>按 Token 消耗量排列的密钥使用排行</CardDescription>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>排名</TableHead>
-                    <TableHead>Key 名称</TableHead>
-                    <TableHead>Token 消耗</TableHead>
-                    <TableHead>占比</TableHead>
-                    <TableHead>趋势</TableHead>
-                    <TableHead className="w-[200px]">分布</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {keyRanking.map((key, i) => (
-                    <TableRow key={key.name}>
-                      <TableCell className="font-medium">
-                        <Badge variant={i < 3 ? 'default' : 'secondary'}>{i + 1}</Badge>
-                      </TableCell>
-                      <TableCell className="font-medium">{key.name}</TableCell>
-                      <TableCell>{formatTokens(key.tokens)}</TableCell>
-                      <TableCell>{key.percentage}%</TableCell>
-                      <TableCell>
-                        {key.trend === 'up' ? (
-                          <span className="flex items-center gap-1 text-emerald-500 text-sm">
-                            <TrendingUp className="h-3.5 w-3.5" />
-                            上升
-                          </span>
-                        ) : key.trend === 'down' ? (
-                          <span className="flex items-center gap-1 text-red-500 text-sm">
-                            <ArrowDownRight className="h-3.5 w-3.5" />
-                            下降
-                          </span>
-                        ) : (
-                          <span className="text-sm text-muted-foreground">持平</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
-                          <div
-                            className="h-full rounded-full bg-primary"
-                            style={{ width: `${key.percentage}%` }}
-                          />
-                        </div>
-                      </TableCell>
+              {keyData.length === 0 ? (
+                <div className="h-24 flex items-center justify-center text-muted-foreground">
+                  当前时间范围内暂无用量数据
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>排名</TableHead>
+                      <TableHead>Key 名称</TableHead>
+                      <TableHead>Token 消耗</TableHead>
+                      <TableHead>请求数</TableHead>
+                      <TableHead>占比</TableHead>
+                      <TableHead className="w-[200px]">分布</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {keyData.map((key, i) => {
+                      const percentage =
+                        totalTokens > 0 ? Math.round((key.total_tokens / totalTokens) * 100) : 0
+                      const displayName = keyNameMap[key.group_key] || key.group_key.slice(-8)
+                      return (
+                        <TableRow key={key.group_key}>
+                          <TableCell className="font-medium">
+                            <Badge variant={i < 3 ? 'default' : 'secondary'}>{i + 1}</Badge>
+                          </TableCell>
+                          <TableCell className="font-medium">{displayName}</TableCell>
+                          <TableCell>{formatTokens(key.total_tokens)}</TableCell>
+                          <TableCell>{key.request_count.toLocaleString()}</TableCell>
+                          <TableCell>{percentage}%</TableCell>
+                          <TableCell>
+                            <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+                              <div
+                                className="h-full rounded-full bg-primary"
+                                style={{ width: `${percentage}%` }}
+                              />
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

@@ -144,7 +144,78 @@ export interface PaginatedResponse<T> {
 
 export interface DashboardStats {
   model_count: number
+  active_model_count: number
+  provider_count: number
   key_count: number
   today_requests: number
   today_tokens: number
 }
+
+// ============================================================
+// Virtual Key types
+// ============================================================
+
+export type VirtualKeyStatus = 'active' | 'revoked'
+
+export interface VirtualKey {
+  id: string
+  name: string
+  key_prefix: string
+  scopes: string[]
+  rate_limits: { rpm?: number; tpm?: number } | null
+  budget: { token_limit: number; reset_at: string } | null
+  status: VirtualKeyStatus
+  expires_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface VirtualKeyCreated extends VirtualKey {
+  key: string // plaintext key, only returned on create
+}
+
+export interface CreateVirtualKeyInput {
+  name: string
+  scopes: string[]
+  rate_limits?: { rpm?: number; tpm?: number }
+  budget?: { token_limit: number; reset_at: string }
+  expires_at?: string
+}
+
+export interface UpdateVirtualKeyInput {
+  scopes?: string[]
+  rate_limits?: { rpm?: number; tpm?: number } | null
+  budget?: { token_limit: number; reset_at: string } | null
+  expires_at?: string | null
+}
+
+// ============================================================
+// Usage types
+// ============================================================
+
+export interface UsageLog {
+  id: string
+  virtual_key_id: string
+  provider_id: string | null
+  model_id: string | null
+  model_name: string
+  prompt_tokens: number
+  completion_tokens: number
+  total_tokens: number
+  request_id: string
+  request_type: string
+  status: string
+  error_code: string | null
+  latency_ms: number
+  created_at: string
+}
+
+export interface UsageGroupSummary {
+  group_key: string
+  prompt_tokens: number
+  completion_tokens: number
+  total_tokens: number
+  request_count: number
+}
+
+export type UsageGroupBy = 'virtual_key' | 'provider' | 'model'
