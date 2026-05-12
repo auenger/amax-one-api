@@ -1,0 +1,71 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: aihub-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: aihub
+      POSTGRES_PASSWORD: aihub
+      POSTGRES_DB: aihub
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U aihub']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - aihub-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: aihub-redis
+    restart: unless-stopped
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - aihub-net
+
+  new-api:
+    image: calciumion/new-api:latest
+    container_name: aihub-new-api
+    restart: unless-stopped
+    environment:
+      SQL_DSN: postgresql://aihub:aihub@postgres:5432/aihub?sslmode=disable
+      REDIS_CONN_STRING: redis://redis:6379
+      INITIAL_ROOT_TOKEN: sk-newapi-internal-token-change-me
+    ports:
+      - '3001:3001'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -f http://localhost:3001/api/status']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - aihub-net
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  aihub-net:
+    driver: bridge
