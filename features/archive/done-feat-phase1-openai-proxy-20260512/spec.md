@@ -273,3 +273,12 @@ And 返回 OpenAI 兼容格式的模型列表
 - [ ] 超时配置
 - [ ] 请求审计日志
 - [ ] 性能达标 (P99 < 500ms 不含推理)
+
+## Merge Record
+- **Completed**: 2026-05-12
+- **Merged Branch**: feature/phase1-openai-proxy
+- **Merge Commit**: 47f3d0d
+- **Archive Tag**: feat-phase1-openai-proxy-20260512
+- **Conflicts**: None
+- **Verification**: passed (63/63 tests, 12/12 Gherkin scenarios)
+- **Stats**: 1 commit, 8 files changed, 1639 insertions, ~30min duration

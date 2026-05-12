@@ -4,7 +4,7 @@
 meta:
   last_updated: '2026-05-12'
   version: 1
-  total_completed: 3
+  total_completed: 4
 
 # 已完成的特性
 records:
@@ -166,3 +166,57 @@ records:
       duration: ~30min
       commits: 1
       files_changed: 14
+
+  - id: feat-phase1-openai-proxy
+    name: OpenAI 兼容代理
+    completed: '2026-05-12'
+    tag: feat-phase1-openai-proxy-20260512
+    merge_commit: 47f3d0d
+    merged_to: main
+    branch_deleted: true
+    branch_name: feature/phase1-openai-proxy
+    worktree_deleted: true
+    worktree_path: ../aihub-phase1-openai-proxy
+    # --- Index metadata ---
+    keywords:
+      - proxy
+      - openai
+      - anthropic
+      - sse
+      - streaming
+      - chat-completions
+      - embeddings
+      - messages
+      - vk-auth
+      - virtual-key
+      - model-resolve
+      - alias
+      - usage
+      - sanitize
+      - rfc7807
+      - fastify
+      - bearer
+      - x-api-key
+      - dual-protocol
+    category: backend
+    value_points: 3
+    related_features:
+      - feat-project-init
+      - feat-phase1-model-registry
+      - feat-phase1-auth-pool
+      - feat-phase1-gateway
+      - feat-phase1-usage-metering
+    # --- Git & merge info ---
+    conflicts:
+      had_conflict: false
+      conflict_files: []
+    verification:
+      status: passed
+      scenarios_total: 12
+      scenarios_passed: 12
+    # --- Stats ---
+    stats:
+      started: '2026-05-12'
+      duration: ~30min
+      commits: 1
+      files_changed: 8

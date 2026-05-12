@@ -5,7 +5,7 @@ meta:
   last_updated: '2026-05-12'
   started: '2026-05-12'
   total_features: 6
-  last_completed: feat-phase1-auth-pool
+  last_completed: feat-phase1-openai-proxy
 
 pending:
   # === 前置 Feature: 项目初始化 (最高优先级, 阻塞所有业务 Feature) ===
@@ -22,18 +22,6 @@ pending:
       - feat-phase1-usage-metering
     dependencies:
       - feat-project-init
-    created: '2026-05-08'
-
-  # 子 Feature 3: OpenAI 兼容代理 (依赖项目初始化 + 模型目录 + 鉴权池化)
-  - id: feat-phase1-openai-proxy
-    name: OpenAI 兼容代理
-    priority: 80
-    size: S
-    parent: feat-phase1-gateway
-    dependencies:
-      - feat-project-init
-      - feat-phase1-model-registry
-      - feat-phase1-auth-pool
     created: '2026-05-08'
 
   # 子 Feature 4: Token 用量计量 (依赖项目初始化 + 鉴权池化 + OpenAI 兼容代理)
