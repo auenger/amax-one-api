@@ -4,7 +4,7 @@
 meta:
   last_updated: '2026-05-12'
   version: 1
-  total_completed: 4
+  total_completed: 5
 
 # 已完成的特性
 records:
@@ -218,5 +218,57 @@ records:
     stats:
       started: '2026-05-12'
       duration: ~30min
+      commits: 1
+      files_changed: 8
+
+  - id: feat-phase1-usage-metering
+    name: Token 用量计量 (Token Usage Metering)
+    completed: '2026-05-12'
+    tag: feat-phase1-usage-metering-20260512
+    merge_commit: 5f3708c
+    merged_to: main
+    branch_deleted: true
+    branch_name: feature/phase1-usage-metering
+    worktree_deleted: true
+    worktree_path: ../aihub-phase1-usage-metering
+    # --- Index metadata ---
+    keywords:
+      - usage
+      - metering
+      - token
+      - usage-log
+      - budget
+      - budget-check
+      - record-usage
+      - aggregate
+      - cursor-pagination
+      - prisma
+      - fastify
+      - fire-and-forget
+      - sse
+      - streaming
+      - rfc7807
+      - group-by
+      - admin-api-key
+      - virtual-key
+    category: backend
+    value_points: 3
+    related_features:
+      - feat-project-init
+      - feat-phase1-gateway
+      - feat-phase1-auth-pool
+      - feat-phase1-openai-proxy
+    # --- Git & merge info ---
+    conflicts:
+      had_conflict: false
+      conflict_files: []
+    verification:
+      status: passed
+      scenarios_total: 8
+      scenarios_passed: 8
+    # --- Stats ---
+    stats:
+      started: '2026-05-12'
+      duration: ~20min
       commits: 1
       files_changed: 8

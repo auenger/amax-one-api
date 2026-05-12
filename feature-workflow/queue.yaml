@@ -5,10 +5,9 @@ meta:
   last_updated: '2026-05-12'
   started: '2026-05-12'
   total_features: 6
-  last_completed: feat-phase1-openai-proxy
+  last_completed: feat-phase1-usage-metering
 
 pending:
-  # === 前置 Feature: 项目初始化 (最高优先级, 阻塞所有业务 Feature) ===
   # Phase 1 接入层 — 父 Feature (模块索引)
   - id: feat-phase1-gateway
     name: Phase 1 接入层
@@ -24,19 +23,6 @@ pending:
       - feat-project-init
     created: '2026-05-08'
 
-active:
-  - id: feat-phase1-usage-metering
-    name: Token 用量计量
-    priority: 80
-    size: S
-    parent: feat-phase1-gateway
-    dependencies:
-      - feat-project-init
-      - feat-phase1-auth-pool
-      - feat-phase1-openai-proxy
-    branch: feature/phase1-usage-metering
-    worktree: ../aihub-phase1-usage-metering
-    started: '2026-05-12'
-    created: '2026-05-12'
+active: []
 
 blocked: []
