@@ -146,6 +146,34 @@ model AuditLog {
 }
 
 // ============================================================
+// Usage Metering — UsageLog
+// ============================================================
+
+/// Token 用量日志 — 记录每次 API 请求的 token 消耗
+model UsageLog {
+  id               String       @id @default(cuid())
+  virtualKeyId     String       @map("virtual_key_id")
+  providerId       String?      @map("provider_id")
+  modelId          String?      @map("model_id")
+  modelName        String       @map("model_name")
+  promptTokens     Int          @map("prompt_tokens")
+  completionTokens Int          @map("completion_tokens")
+  totalTokens      Int          @map("total_tokens")
+  requestId        String       @unique @map("request_id")
+  requestType      RequestType  @map("request_type")
+  status           UsageStatus
+  errorCode        String?      @map("error_code")
+  latencyMs        Int          @map("latency_ms")
+  createdAt        DateTime     @default(now()) @map("created_at")
+
+  @@index([virtualKeyId, createdAt])
+  @@index([providerId, createdAt])
+  @@index([modelId, createdAt])
+  @@index([createdAt])
+  @@map("usage_logs")
+}
+
+// ============================================================
 // Enums
 // ============================================================
 
@@ -185,4 +213,14 @@ enum SyncStatus {
 enum VirtualKeyStatus {
   active
   revoked
+}
+
+enum RequestType {
+  chat
+  embedding
+}
+
+enum UsageStatus {
+  success
+  error
 }

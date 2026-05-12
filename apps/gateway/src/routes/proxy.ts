@@ -10,6 +10,7 @@ import {
   sanitizeHeaders,
 } from '../services/proxy.js'
 import type { UsageData } from '../services/proxy.js'
+import { recordUsage } from '../services/usage.js'
 import { vkAuthHook } from '../plugins/vk-auth.js'
 
 const logger = createLogger('proxy-routes')
@@ -28,6 +29,13 @@ interface RequestWithVk extends FastifyRequest {
   vkInfo?: VkInfo
 }
 
+interface ResolvedModelInfo {
+  actualModel: string
+  originalModel: string
+  providerId: string
+  modelId: string
+}
+
 // ============================================================
 // Helpers
 // ============================================================
@@ -40,12 +48,27 @@ function extractModelName(body: Record<string, unknown>): string | null {
 }
 
 /**
- * Resolve model alias to actual model name
- * Returns { actualModel, originalModel } or throws
+ * Estimate prompt tokens from request body (rough: chars / 4)
  */
-async function resolveModelAlias(
-  modelName: string,
-): Promise<{ actualModel: string; originalModel: string }> {
+function estimatePromptTokens(body: Record<string, unknown>): number {
+  const messages = body.messages as Array<Record<string, unknown>> | undefined
+  if (messages) {
+    const text = messages.map((m) => String(m.content ?? '')).join('')
+    return Math.ceil(text.length / 4)
+  }
+  const input = body.input as string | Array<string> | undefined
+  if (input) {
+    const text = Array.isArray(input) ? input.join('') : input
+    return Math.ceil(text.length / 4)
+  }
+  return 0
+}
+
+/**
+ * Resolve model alias to actual model name with IDs
+ * Returns ResolvedModelInfo or throws
+ */
+async function resolveModelAlias(modelName: string): Promise<ResolvedModelInfo> {
   const resolved = await resolveModel(modelName)
   if (!resolved) {
     throw createProblemError(404, 'Model Not Found', `No model or alias found for "${modelName}"`)
@@ -62,37 +85,72 @@ async function resolveModelAlias(
   return {
     actualModel: resolved.model.name,
     originalModel: modelName,
+    providerId: resolved.provider.id,
+    modelId: resolved.model.id,
   }
 }
 
 /**
  * Record usage asynchronously (fire-and-forget)
+ * Uses the usage-metering recordUsage() service.
  */
 function recordUsageAsync(
   vkInfo: VkInfo,
   usage: UsageData | null,
-  model: string,
+  resolved: ResolvedModelInfo,
   requestId: string,
+  requestType: 'chat' | 'embedding',
+  latencyMs: number,
+  status: 'success' | 'error' = 'success',
+  errorCode?: string,
 ): void {
   if (!usage || !vkInfo.virtualKeyId) return
 
   // Fire-and-forget usage recording
-  // Phase 1: Write to audit log. feat-phase1-usage-metering will replace with proper recording.
-  writeAuditLog('proxy.usage', 'virtual_key', vkInfo.virtualKeyId, {
-    model,
-    prompt_tokens: usage.prompt_tokens,
-    completion_tokens: usage.completion_tokens,
-    total_tokens: usage.total_tokens,
-    request_id: requestId,
+  recordUsage({
+    virtualKeyId: vkInfo.virtualKeyId,
+    providerId: resolved.providerId,
+    modelId: resolved.modelId,
+    modelName: resolved.actualModel,
+    promptTokens: usage.prompt_tokens,
+    completionTokens: usage.completion_tokens,
+    totalTokens: usage.total_tokens,
+    requestId,
+    requestType,
+    status,
+    errorCode,
+    latencyMs,
   }).catch((err) => {
     logger.warn({ err, requestId }, 'Failed to record usage')
   })
 }
 
 /**
- * Handle upstream error — convert to RFC 7807 without leaking provider info
+ * Handle upstream error — record error usage and convert to RFC 7807 without leaking provider info
  */
-function handleUpstreamError(status: number, _body: unknown): never {
+function handleUpstreamErrorWithUsage(
+  status: number,
+  _body: unknown,
+  vkInfo: VkInfo,
+  resolved: ResolvedModelInfo,
+  requestId: string,
+  requestType: 'chat' | 'embedding',
+  latencyMs: number,
+  requestBody: Record<string, unknown>,
+): never {
+  // Record error usage
+  const estimatedPrompt = estimatePromptTokens(requestBody)
+  recordUsageAsync(
+    vkInfo,
+    { prompt_tokens: estimatedPrompt, completion_tokens: 0, total_tokens: estimatedPrompt },
+    resolved,
+    requestId,
+    requestType,
+    latencyMs,
+    'error',
+    String(status),
+  )
+
   // Provider 429 -> 503
   if (status === 429) {
     throw createProblemError(
@@ -142,17 +200,18 @@ export async function registerProxyRoutes(app: FastifyInstance): Promise<void> {
     async (request: RequestWithVk, reply: FastifyReply) => {
       const body = request.body as Record<string, unknown>
       const vkInfo = request.vkInfo!
+      const startTime = Date.now()
 
       const modelName = extractModelName(body)
       if (!modelName) {
         throw createProblemError(400, 'Bad Request', 'Missing "model" field in request body')
       }
 
-      const { actualModel, originalModel } = await resolveModelAlias(modelName)
+      const resolved = await resolveModelAlias(modelName)
       const isStream = body.stream === true
 
       // Replace model with actual model name for upstream
-      const upstreamBody = { ...body, model: actualModel }
+      const upstreamBody = { ...body, model: resolved.actualModel }
 
       if (isStream) {
         // Streaming response — pipe SSE directly
@@ -192,7 +251,8 @@ export async function registerProxyRoutes(app: FastifyInstance): Promise<void> {
 
         // Record usage asynchronously
         const usage = await usagePromise
-        recordUsageAsync(vkInfo, usage, actualModel, request.id)
+        const latencyMs = Date.now() - startTime
+        recordUsageAsync(vkInfo, usage, resolved, request.id, 'chat', latencyMs)
 
         return reply
       }
@@ -207,13 +267,24 @@ export async function registerProxyRoutes(app: FastifyInstance): Promise<void> {
         body: upstreamBody,
       })
 
+      const latencyMs = Date.now() - startTime
+
       if (response.status !== 200) {
-        handleUpstreamError(response.status, response.body)
+        handleUpstreamErrorWithUsage(
+          response.status,
+          response.body,
+          vkInfo,
+          resolved,
+          request.id,
+          'chat',
+          latencyMs,
+          body,
+        )
       }
 
       const sanitizedBody = sanitizeResponse(
         response.body as Record<string, unknown>,
-        originalModel,
+        resolved.originalModel,
       )
       const sanitizedHeaders = sanitizeHeaders(response.headers)
 
@@ -224,7 +295,7 @@ export async function registerProxyRoutes(app: FastifyInstance): Promise<void> {
 
       // Extract and record usage
       const usage = extractUsageFromBody(response.body as Record<string, unknown>, 'openai')
-      recordUsageAsync(vkInfo, usage, actualModel, request.id)
+      recordUsageAsync(vkInfo, usage, resolved, request.id, 'chat', latencyMs)
 
       return reply.status(200).send(sanitizedBody)
     },
@@ -239,16 +310,17 @@ export async function registerProxyRoutes(app: FastifyInstance): Promise<void> {
     async (request: RequestWithVk, reply: FastifyReply) => {
       const body = request.body as Record<string, unknown>
       const vkInfo = request.vkInfo!
+      const startTime = Date.now()
 
       const modelName = extractModelName(body)
       if (!modelName) {
         throw createProblemError(400, 'Bad Request', 'Missing "model" field in request body')
       }
 
-      const { actualModel, originalModel } = await resolveModelAlias(modelName)
+      const resolved = await resolveModelAlias(modelName)
 
       // Replace model with actual model name for upstream
-      const upstreamBody = { ...body, model: actualModel }
+      const upstreamBody = { ...body, model: resolved.actualModel }
 
       const response = await proxyRequest({
         method: 'POST',
@@ -259,13 +331,24 @@ export async function registerProxyRoutes(app: FastifyInstance): Promise<void> {
         body: upstreamBody,
       })
 
+      const latencyMs = Date.now() - startTime
+
       if (response.status !== 200) {
-        handleUpstreamError(response.status, response.body)
+        handleUpstreamErrorWithUsage(
+          response.status,
+          response.body,
+          vkInfo,
+          resolved,
+          request.id,
+          'embedding',
+          latencyMs,
+          body,
+        )
       }
 
       const sanitizedBody = sanitizeResponse(
         response.body as Record<string, unknown>,
-        originalModel,
+        resolved.originalModel,
       )
       const sanitizedHeaders = sanitizeHeaders(response.headers)
 
@@ -274,7 +357,7 @@ export async function registerProxyRoutes(app: FastifyInstance): Promise<void> {
       }
 
       const usage = extractUsageFromBody(response.body as Record<string, unknown>, 'openai')
-      recordUsageAsync(vkInfo, usage, actualModel, request.id)
+      recordUsageAsync(vkInfo, usage, resolved, request.id, 'embedding', latencyMs)
 
       return reply.status(200).send(sanitizedBody)
     },
@@ -353,20 +436,18 @@ export async function registerProxyRoutes(app: FastifyInstance): Promise<void> {
     async (request: RequestWithVk, reply: FastifyReply) => {
       const body = request.body as Record<string, unknown>
       const vkInfo = request.vkInfo!
+      const startTime = Date.now()
 
       const modelName = extractModelName(body)
       if (!modelName) {
         throw createProblemError(400, 'Bad Request', 'Missing "model" field in request body')
       }
 
-      const { actualModel, originalModel } = await resolveModelAlias(modelName)
+      const resolved = await resolveModelAlias(modelName)
       const isStream = body.stream === true
 
       // Replace model with actual model name for upstream
-      const upstreamBody = { ...body, model: actualModel }
-
-      // Remove Anthropic-specific auth header (we already validated VK)
-      // The proxy will replace with internal token
+      const upstreamBody = { ...body, model: resolved.actualModel }
 
       if (isStream) {
         // Streaming — Anthropic SSE
@@ -406,7 +487,8 @@ export async function registerProxyRoutes(app: FastifyInstance): Promise<void> {
         }
 
         const usage = await usagePromise
-        recordUsageAsync(vkInfo, usage, actualModel, request.id)
+        const latencyMs = Date.now() - startTime
+        recordUsageAsync(vkInfo, usage, resolved, request.id, 'chat', latencyMs)
 
         return reply
       }
@@ -422,13 +504,24 @@ export async function registerProxyRoutes(app: FastifyInstance): Promise<void> {
         body: upstreamBody,
       })
 
+      const latencyMs = Date.now() - startTime
+
       if (response.status !== 200) {
-        handleUpstreamError(response.status, response.body)
+        handleUpstreamErrorWithUsage(
+          response.status,
+          response.body,
+          vkInfo,
+          resolved,
+          request.id,
+          'chat',
+          latencyMs,
+          body,
+        )
       }
 
       const sanitizedBody = sanitizeResponse(
         response.body as Record<string, unknown>,
-        originalModel,
+        resolved.originalModel,
       )
       const sanitizedHeaders = sanitizeHeaders(response.headers)
 
@@ -437,7 +530,7 @@ export async function registerProxyRoutes(app: FastifyInstance): Promise<void> {
       }
 
       const usage = extractUsageFromBody(response.body as Record<string, unknown>, 'anthropic')
-      recordUsageAsync(vkInfo, usage, actualModel, request.id)
+      recordUsageAsync(vkInfo, usage, resolved, request.id, 'chat', latencyMs)
 
       return reply.status(200).send(sanitizedBody)
     },

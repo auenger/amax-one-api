@@ -30,3 +30,11 @@ export {
   sanitizeHeaders,
 } from './proxy.js'
 export type { UsageData, ProxyResponse } from './proxy.js'
+export { recordUsage, getUsageSummary, getUsageLogs, getUsageGroupSummary } from './usage.js'
+export type {
+  RecordUsageParams,
+  UsageSummary,
+  UsageGroupSummary,
+  UsageLogQueryOptions,
+  UsageGroupQueryOptions,
+} from './usage.js'
