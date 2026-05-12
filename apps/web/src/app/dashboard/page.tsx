@@ -1,48 +1,69 @@
-import { Cpu, KeyRound, Activity, Coins, TrendingUp, TrendingDown, BarChart3 } from 'lucide-react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import Link from 'next/link'
+'use client'
 
-// Mock data - will be replaced with real API calls
-const stats = [
-  {
-    title: '模型数量',
-    value: '24',
-    change: '+3',
-    trend: 'up' as const,
-    icon: Cpu,
-    href: '/dashboard/models',
-    description: '已注册模型',
-  },
-  {
-    title: 'Virtual Key',
-    value: '12',
-    change: '+2',
-    trend: 'up' as const,
-    icon: KeyRound,
-    href: '/dashboard/keys',
-    description: '活跃密钥',
-  },
-  {
-    title: '今日调用',
-    value: '8,429',
-    change: '+12.5%',
-    trend: 'up' as const,
-    icon: Activity,
-    href: '/dashboard/usage',
-    description: 'API 请求次数',
-  },
-  {
-    title: '今日 Token',
-    value: '1.2M',
-    change: '-3.2%',
-    trend: 'down' as const,
-    icon: Coins,
-    href: '/dashboard/usage',
-    description: 'Token 消耗总量',
-  },
-]
+import {
+  Cpu,
+  KeyRound,
+  Activity,
+  Coins,
+  TrendingUp,
+  TrendingDown,
+  BarChart3,
+  Server,
+} from 'lucide-react'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
+import Link from 'next/link'
+import useSWR from 'swr'
+import { dashboardApi } from '@/lib/api/dashboard'
+import type { DashboardStats } from '@/lib/api/dashboard'
+
+function formatNumber(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`
+  return n.toLocaleString()
+}
+
+function StatCard({
+  title,
+  value,
+  description,
+  icon: Icon,
+  href,
+  loading,
+}: {
+  title: string
+  value: string | number
+  description: string
+  icon: React.ElementType
+  href: string
+  loading: boolean
+}) {
+  return (
+    <Link href={href}>
+      <Card className="transition-colors hover:bg-accent/50">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">{title}</CardTitle>
+          <Icon className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <Skeleton className="h-8 w-24" />
+          ) : (
+            <div className="text-2xl font-bold">{value}</div>
+          )}
+          <p className="text-xs text-muted-foreground">{description}</p>
+        </CardContent>
+      </Card>
+    </Link>
+  )
+}
 
 export default function DashboardPage() {
+  const { data: stats, isLoading } = useSWR<DashboardStats>(
+    typeof window !== 'undefined' ? 'dashboard-stats' : null,
+    () => dashboardApi.getStats(),
+  )
+
   return (
     <div className="space-y-6">
       <div>
@@ -51,30 +72,38 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat) => (
-          <Link key={stat.title} href={stat.href}>
-            <Card className="transition-colors hover:bg-accent/50">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-                <stat.icon className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stat.value}</div>
-                <p className="text-xs text-muted-foreground flex items-center gap-1">
-                  {stat.trend === 'up' ? (
-                    <TrendingUp className="h-3 w-3 text-emerald-500" />
-                  ) : (
-                    <TrendingDown className="h-3 w-3 text-red-500" />
-                  )}
-                  <span className={stat.trend === 'up' ? 'text-emerald-500' : 'text-red-500'}>
-                    {stat.change}
-                  </span>{' '}
-                  {stat.description}
-                </p>
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
+        <StatCard
+          title="模型数量"
+          value={stats ? `${stats.model_count} (${stats.active_model_count} 可用)` : '-'}
+          description="已注册模型"
+          icon={Cpu}
+          href="/dashboard/models"
+          loading={isLoading}
+        />
+        <StatCard
+          title="供应商"
+          value={stats?.provider_count ?? '-'}
+          description="已接入供应商"
+          icon={Server}
+          href="/dashboard/providers"
+          loading={isLoading}
+        />
+        <StatCard
+          title="今日调用"
+          value={stats ? formatNumber(stats.today_requests) : '-'}
+          description="API 请求次数"
+          icon={Activity}
+          href="/dashboard/usage"
+          loading={isLoading}
+        />
+        <StatCard
+          title="今日 Token"
+          value={stats ? formatNumber(stats.today_tokens) : '-'}
+          description="Token 消耗总量"
+          icon={Coins}
+          href="/dashboard/usage"
+          loading={isLoading}
+        />
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -84,7 +113,15 @@ export default function DashboardPage() {
             <CardDescription>常用操作入口</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-3 sm:grid-cols-3">
+            <div className="grid gap-3 sm:grid-cols-4">
+              <Link
+                href="/dashboard/providers"
+                className="flex flex-col items-center gap-2 rounded-lg border p-4 transition-colors hover:bg-accent"
+              >
+                <Server className="h-8 w-8 text-muted-foreground" />
+                <span className="text-sm font-medium">供应商管理</span>
+                <span className="text-xs text-muted-foreground">接入新供应商</span>
+              </Link>
               <Link
                 href="/dashboard/models"
                 className="flex flex-col items-center gap-2 rounded-lg border p-4 transition-colors hover:bg-accent"
