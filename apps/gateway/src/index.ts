@@ -6,6 +6,10 @@ import { loadConfig } from './config/index.js'
 import { registerErrorHandler } from './plugins/error-handler.js'
 import { registerRequestId } from './plugins/request-id.js'
 import { registerHealthRoute } from './routes/health.js'
+import { registerProviderRoutes } from './routes/providers.js'
+import { registerModelRoutes } from './routes/models.js'
+import { registerAliasRoutes } from './routes/aliases.js'
+import { registerInternalRoutes } from './routes/internal.js'
 
 async function main(): Promise<void> {
   const config = loadConfig()
@@ -23,6 +27,10 @@ async function main(): Promise<void> {
 
   // Register routes
   await registerHealthRoute(app)
+  await registerProviderRoutes(app)
+  await registerModelRoutes(app)
+  await registerAliasRoutes(app)
+  await registerInternalRoutes(app)
 
   // Start server
   const address = await app.listen({

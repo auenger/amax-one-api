@@ -10,5 +10,130 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Base models will be added in subsequent features
-// e.g. User, Model, ApiKey, Usage, etc.
+// ============================================================
+// Model Registry — Provider, Key, Model, Alias, SyncLog
+// ============================================================
+
+/// LLM 供应商配置
+model Provider {
+  id         String   @id @default(cuid())
+  name       String   @unique
+  type       ProviderType
+  endpoint   String
+  status     ProviderStatus @default(active)
+  rateLimits Json?    @map("rate_limits")
+  newApiChannelId String? @map("new_api_channel_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  keys        ProviderKey[]
+  models      Model[]
+  syncLogs    ChannelSyncLog[]
+
+  @@map("providers")
+}
+
+/// 供应商真实密钥 (加密存储)
+model ProviderKey {
+  id           String   @id @default(cuid())
+  providerId   String   @map("provider_id")
+  encryptedKey String   @map("encrypted_key")
+  keyPrefix    String   @map("key_prefix")
+  weight       Int      @default(100)
+  status       KeyStatus @default(active)
+  lastUsedAt   DateTime? @map("last_used_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  provider Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@index([providerId])
+  @@map("provider_keys")
+}
+
+/// 模型定义
+model Model {
+  id            String   @id @default(cuid())
+  providerId    String   @map("provider_id")
+  name          String   @unique
+  displayName   String?  @map("display_name")
+  capabilities  String[] @default([])
+  contextWindow Int?     @map("context_window")
+  pricing       Json?    // { input_per_1k, output_per_1k }
+  status        ModelStatus @default(active)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  provider Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  aliases  ModelAlias[]
+
+  @@index([providerId])
+  @@index([status])
+  @@map("models")
+}
+
+/// 模型别名 (1:1 映射)
+model ModelAlias {
+  id        String   @id @default(cuid())
+  alias     String   @unique
+  modelId   String   @map("model_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  model Model @relation(fields: [modelId], references: [id], onDelete: Cascade)
+
+  @@map("model_aliases")
+}
+
+/// Channel 同步日志
+model ChannelSyncLog {
+  id              String   @id @default(cuid())
+  providerId      String   @map("provider_id")
+  action          SyncAction
+  newApiChannelId String?  @map("new_api_channel_id")
+  status          SyncStatus
+  error           String?
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  provider Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@index([providerId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("channel_sync_logs")
+}
+
+// ============================================================
+// Enums
+// ============================================================
+
+enum ProviderType {
+  openai
+  anthropic
+}
+
+enum ProviderStatus {
+  active
+  degraded
+  disabled
+}
+
+enum KeyStatus {
+  active
+  disabled
+}
+
+enum ModelStatus {
+  active
+  deprecated
+  hidden
+}
+
+enum SyncAction {
+  create_channel
+  update_channel
+  delete_channel
+}
+
+enum SyncStatus {
+  success
+  failed
+}
