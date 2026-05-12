@@ -40,7 +40,7 @@ export async function registerModelRoutes(app: FastifyInstance): Promise<void> {
   // ----------------------------------------------------------
   // POST /v1/models — Create model
   // ----------------------------------------------------------
-  app.post('/v1/models', async (request, reply) => {
+  app.post('/admin/models', async (request, reply) => {
     const body = createModelSchema.parse(request.body)
 
     // Verify provider exists
@@ -99,9 +99,9 @@ export async function registerModelRoutes(app: FastifyInstance): Promise<void> {
   })
 
   // ----------------------------------------------------------
-  // GET /v1/models — List models
+  // GET /admin/models — List models
   // ----------------------------------------------------------
-  app.get('/v1/models', async (request) => {
+  app.get('/admin/models', async (request) => {
     const query = listModelsQuerySchema.parse(request.query)
 
     // Build where clause
@@ -145,7 +145,7 @@ export async function registerModelRoutes(app: FastifyInstance): Promise<void> {
   // ----------------------------------------------------------
   // GET /v1/models/:id — Get model detail
   // ----------------------------------------------------------
-  app.get<{ Params: { id: string } }>('/v1/models/:id', async (request) => {
+  app.get<{ Params: { id: string } }>('/admin/models/:id', async (request) => {
     const { id } = request.params
 
     const model = await prisma.model.findUnique({
@@ -164,7 +164,7 @@ export async function registerModelRoutes(app: FastifyInstance): Promise<void> {
   // ----------------------------------------------------------
   // DELETE /v1/models/:id — Delete model
   // ----------------------------------------------------------
-  app.delete<{ Params: { id: string } }>('/v1/models/:id', async (request, reply) => {
+  app.delete<{ Params: { id: string } }>('/admin/models/:id', async (request, reply) => {
     const { id } = request.params
 
     const model = await prisma.model.findUnique({

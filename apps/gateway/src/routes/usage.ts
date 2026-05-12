@@ -75,7 +75,7 @@ export async function registerUsageRoutes(app: FastifyInstance): Promise<void> {
   // Admin: full access with all filters
   // VK: own usage only, no provider_id filter
   // ----------------------------------------------------------
-  app.get('/v1/usage', async (request: FastifyRequest, reply: FastifyReply) => {
+  app.get('/admin/usage', async (request: FastifyRequest, reply: FastifyReply) => {
     // Try admin auth first
     const authHeader = request.headers['authorization']
     const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null

@@ -2,11 +2,10 @@
   "selected_file": null,
   "expanded_dirs": [
     "/Users/ryan/mycode/AIHub",
-    "/Users/ryan/mycode/AIHub/feature-workflow",
-    "/Users/ryan/mycode/AIHub/.claude",
     "/Users/ryan/mycode/AIHub/.claude/skills",
     "/Users/ryan/mycode/AIHub/.claude/skills/new-feature",
-    "/Users/ryan/mycode/AIHub/.claude/commands"
+    "/Users/ryan/mycode/AIHub/.claude/commands",
+    "/Users/ryan/mycode/AIHub/features/archive"
   ],
   "agent_skip_permissions": false
 }

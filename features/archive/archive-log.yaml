@@ -1,12 +1,7 @@
-# Feature 归档日志
-# 记录所有已完成的特性
-
 meta:
   last_updated: '2026-05-12'
   version: 1
-  total_completed: 6
-
-# 已完成的特性
+  total_completed: 7
 records:
   - id: feat-project-init
     name: 项目基础设施初始化
@@ -18,7 +13,6 @@ records:
     branch_name: feature/project-init
     worktree_deleted: true
     worktree_path: ../aihub-project-init
-    # --- Index metadata ---
     keywords:
       - monorepo
       - pnpm
@@ -51,7 +45,6 @@ records:
       - feat-phase1-auth-pool
       - feat-phase1-openai-proxy
       - feat-phase1-usage-metering
-    # --- Git & merge info ---
     conflicts:
       had_conflict: false
       conflict_files: []
@@ -59,13 +52,11 @@ records:
       status: passed
       scenarios_total: 7
       scenarios_passed: 7
-    # --- Stats ---
     stats:
       started: '2026-05-12'
       duration: ~30min
       commits: 1
       files_changed: 51
-
   - id: feat-phase1-model-registry
     name: 统一模型目录
     completed: '2026-05-12'
@@ -76,7 +67,6 @@ records:
     branch_name: feature/phase1-model-registry
     worktree_deleted: true
     worktree_path: ../aihub-phase1-model-registry
-    # --- Index metadata ---
     keywords:
       - model
       - registry
@@ -100,7 +90,6 @@ records:
       - feat-phase1-gateway
       - feat-phase1-auth-pool
       - feat-phase1-openai-proxy
-    # --- Git & merge info ---
     conflicts:
       had_conflict: false
       conflict_files: []
@@ -108,13 +97,11 @@ records:
       status: passed
       scenarios_total: 9
       scenarios_passed: 8
-    # --- Stats ---
     stats:
       started: '2026-05-12'
       duration: ~20min
       commits: 1
       files_changed: 18
-
   - id: feat-phase1-auth-pool
     name: 鉴权池化 (Virtual Key Management)
     completed: '2026-05-12'
@@ -125,7 +112,6 @@ records:
     branch_name: feature/phase1-auth-pool
     worktree_deleted: true
     worktree_path: ../aihub-phase1-auth-pool
-    # --- Index metadata ---
     keywords:
       - virtual-key
       - auth
@@ -152,7 +138,6 @@ records:
       - feat-phase1-gateway
       - feat-phase1-openai-proxy
       - feat-phase1-usage-metering
-    # --- Git & merge info ---
     conflicts:
       had_conflict: false
       conflict_files: []
@@ -160,13 +145,11 @@ records:
       status: passed
       scenarios_total: 6
       scenarios_passed: 5
-    # --- Stats ---
     stats:
       started: '2026-05-12'
       duration: ~30min
       commits: 1
       files_changed: 14
-
   - id: feat-phase1-openai-proxy
     name: OpenAI 兼容代理
     completed: '2026-05-12'
@@ -177,7 +160,6 @@ records:
     branch_name: feature/phase1-openai-proxy
     worktree_deleted: true
     worktree_path: ../aihub-phase1-openai-proxy
-    # --- Index metadata ---
     keywords:
       - proxy
       - openai
@@ -206,7 +188,6 @@ records:
       - feat-phase1-auth-pool
       - feat-phase1-gateway
       - feat-phase1-usage-metering
-    # --- Git & merge info ---
     conflicts:
       had_conflict: false
       conflict_files: []
@@ -214,13 +195,11 @@ records:
       status: passed
       scenarios_total: 12
       scenarios_passed: 12
-    # --- Stats ---
     stats:
       started: '2026-05-12'
       duration: ~30min
       commits: 1
       files_changed: 8
-
   - id: feat-phase1-usage-metering
     name: Token 用量计量 (Token Usage Metering)
     completed: '2026-05-12'
@@ -231,7 +210,6 @@ records:
     branch_name: feature/phase1-usage-metering
     worktree_deleted: true
     worktree_path: ../aihub-phase1-usage-metering
-    # --- Index metadata ---
     keywords:
       - usage
       - metering
@@ -258,7 +236,6 @@ records:
       - feat-phase1-gateway
       - feat-phase1-auth-pool
       - feat-phase1-openai-proxy
-    # --- Git & merge info ---
     conflicts:
       had_conflict: false
       conflict_files: []
@@ -266,13 +243,11 @@ records:
       status: passed
       scenarios_total: 8
       scenarios_passed: 8
-    # --- Stats ---
     stats:
       started: '2026-05-12'
       duration: ~20min
       commits: 1
       files_changed: 8
-
   - id: feat-phase1-gateway
     name: Phase 1 接入层
     completed: '2026-05-12'
@@ -283,7 +258,6 @@ records:
     branch_name: feature/phase1-gateway
     worktree_deleted: true
     worktree_path: ../aihub-phase1-gateway
-    # --- Index metadata ---
     keywords:
       - gateway
       - phase1
@@ -312,7 +286,6 @@ records:
       - feat-phase1-auth-pool
       - feat-phase1-openai-proxy
       - feat-phase1-usage-metering
-    # --- Git & merge info ---
     conflicts:
       had_conflict: false
       conflict_files: []
@@ -320,9 +293,73 @@ records:
       status: passed
       scenarios_total: 6
       scenarios_passed: 6
-    # --- Stats ---
     stats:
       started: '2026-05-12'
       duration: ~10min
       commits: 1
       files_changed: 1
+  - id: feat-frontend-redesign
+    name: 前端 UI 重构 (ui-ux-pro-max)
+    completed: '2026-05-12'
+    tag: feat-frontend-redesign-20260512
+    merge_commit: e9e31a4
+    merged_to: main
+    branch_deleted: true
+    branch_name: feature/frontend-redesign
+    worktree_deleted: true
+    worktree_path: ../aihub-frontend-redesign
+    keywords:
+      - frontend
+      - ui
+      - redesign
+      - landing-page
+      - dashboard
+      - sidebar
+      - navigation
+      - theme
+      - dark-mode
+      - light-mode
+      - nextjs
+      - shadcn-ui
+      - tailwindcss
+      - models
+      - virtual-key
+      - usage
+      - charts
+      - recharts
+      - responsive
+      - '404'
+      - card
+      - table
+      - dialog
+      - dropdown
+      - select
+      - badge
+      - skeleton
+      - tabs
+      - tooltip
+      - breadcrumb
+      - sidebar-component
+      - theme-toggle
+      - next-themes
+      - lucide-react
+    category: frontend
+    value_points: 2
+    related_features:
+      - feat-project-init
+      - feat-phase1-model-registry
+      - feat-phase1-auth-pool
+      - feat-phase1-usage-metering
+      - feat-phase1-gateway
+    conflicts:
+      had_conflict: false
+      conflict_files: []
+    verification:
+      status: passed
+      scenarios_total: 6
+      scenarios_passed: 6
+    stats:
+      started: '2026-05-12'
+      duration: ~25min
+      commits: 2
+      files_changed: 38

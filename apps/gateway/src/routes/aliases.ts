@@ -25,7 +25,7 @@ export async function registerAliasRoutes(app: FastifyInstance): Promise<void> {
   // ----------------------------------------------------------
   // POST /v1/aliases — Create alias
   // ----------------------------------------------------------
-  app.post('/v1/aliases', async (request, reply) => {
+  app.post('/admin/aliases', async (request, reply) => {
     const body = createAliasSchema.parse(request.body)
 
     // Verify model exists
@@ -58,7 +58,7 @@ export async function registerAliasRoutes(app: FastifyInstance): Promise<void> {
   // ----------------------------------------------------------
   // GET /v1/aliases — List aliases
   // ----------------------------------------------------------
-  app.get('/v1/aliases', async (request) => {
+  app.get('/admin/aliases', async (request) => {
     const query = listAliasesQuerySchema.parse(request.query)
 
     const where: Record<string, unknown> = {}

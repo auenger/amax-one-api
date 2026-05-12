@@ -52,7 +52,7 @@ export async function registerProviderRoutes(app: FastifyInstance): Promise<void
   // ----------------------------------------------------------
   // POST /v1/providers — Create provider
   // ----------------------------------------------------------
-  app.post('/v1/providers', async (request, reply) => {
+  app.post('/admin/providers', async (request, reply) => {
     const body = createProviderSchema.parse(request.body)
 
     // Check duplicate name
@@ -143,7 +143,7 @@ export async function registerProviderRoutes(app: FastifyInstance): Promise<void
   // ----------------------------------------------------------
   // GET /v1/providers — List providers
   // ----------------------------------------------------------
-  app.get('/v1/providers', async (request) => {
+  app.get('/admin/providers', async (request) => {
     const query = listProvidersQuerySchema.parse(request.query)
 
     const where = {
