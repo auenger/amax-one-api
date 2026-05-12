@@ -1,20 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import {
-  Search,
-  Filter,
-  CheckCircle2,
-  XCircle,
-  Eye,
-  MessageSquare,
-  Code2,
-  Image,
-  Zap,
-} from 'lucide-react'
+import { Search, CheckCircle2, XCircle, Eye, MessageSquare, Code2, Image, Zap } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Table,
@@ -31,7 +20,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Skeleton } from '@/components/ui/skeleton'
 
 // Mock data
 const mockModels = [
