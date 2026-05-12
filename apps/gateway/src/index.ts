@@ -10,6 +10,7 @@ import { registerProviderRoutes } from './routes/providers.js'
 import { registerModelRoutes } from './routes/models.js'
 import { registerAliasRoutes } from './routes/aliases.js'
 import { registerInternalRoutes } from './routes/internal.js'
+import { registerVirtualKeyRoutes } from './routes/virtual-keys.js'
 
 async function main(): Promise<void> {
   const config = loadConfig()
@@ -31,6 +32,7 @@ async function main(): Promise<void> {
   await registerModelRoutes(app)
   await registerAliasRoutes(app)
   await registerInternalRoutes(app)
+  await registerVirtualKeyRoutes(app)
 
   // Start server
   const address = await app.listen({
