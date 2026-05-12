@@ -1,0 +1,105 @@
+# Feature Workflow 配置
+# 基于 neuro-syntax.config.json 自动生成
+
+# 项目信息
+project:
+  name: enterprise-ai-control-plane
+  display_name: 企业级 AI 控制平台
+  version: 0.1.0
+  main_branch: main
+  repo_path: .
+
+  tech_stack:
+    backend:
+      - typescript
+      - node.js
+      - fastify
+      - python
+      - fastapi
+    frontend:
+      - next.js-14
+      - react
+      - tailwindcss-4
+      - shadcn/ui
+    database:
+      - postgresql-16
+      - redis-7
+      - timescaledb
+    infrastructure:
+      - kubernetes
+      - docker
+      - firecracker
+      - gvisor
+
+  test_framework: jest + pytest
+
+# 并行控制
+parallelism:
+  max_concurrent: 1
+
+# Git 设置
+git:
+  remote: origin
+  auto_push: false
+  merge_strategy: "--no-ff"
+  push_tags: true
+
+# 分支策略
+branch_prefix: feature
+worktree_prefix: aihub
+worktree_base: ..
+
+# 工作流设置
+workflow:
+  auto_start: false
+  auto_start_next: true
+  require_checklist: true
+  subagent_timeout: 20
+
+  # 需求切分
+  splitting:
+    enabled: true
+    threshold: 3
+    auto_enrich: true
+
+  # 需求审查
+  review:
+    enabled: false
+    after_enrich: true
+    min_score: 70
+    auto_block: false
+
+  # 测试配置
+  testing:
+    pytest_enabled: true
+    test_dir: tests
+    coverage_enabled: true
+    coverage_target: 80
+
+# 归档配置
+completion:
+  archive:
+    create_tag: true
+    tag_format: "{id}-{date}"
+    tag_date_format: "%Y%m%d"
+
+  cleanup:
+    delete_worktree: true
+    delete_branch: true
+
+  record:
+    update_spec: true
+    update_archive_log: true
+
+# 命名规则
+naming:
+  feature_prefix: feat
+  branch_prefix: feature
+  worktree_prefix: aihub
+
+# 路径配置
+paths:
+  features_dir: features
+  archive_dir: features/archive
+  worktree_base: ..
+  repo_path: .

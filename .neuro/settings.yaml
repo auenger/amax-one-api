@@ -1,0 +1,24 @@
+providers:
+  zai:
+    api_key: 4d42771c821141a0b52b43a6b92c69d6.lQCUDjd1fr7MjZo7
+    api_base: https://open.bigmodel.cn/api/anthropic
+    protocol: anthropic
+llm:
+  provider: zai
+  model: GLM-5V-Turbo
+  max_tokens: 3000
+  temperature: 0.2
+  context_window_tokens: 256000
+app:
+  auto_refresh_interval: 30
+user:
+  name: ''
+  email: ''
+  avatar_base64: ''
+terminal:
+  default_shell: ''
+agent_runtime: agent-sdk
+sdk_runtime:
+  config_mode: custom-provider
+  custom_provider: ''
+  custom_model: ''
