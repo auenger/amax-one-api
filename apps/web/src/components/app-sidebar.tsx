@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Cpu, KeyRound, BarChart3, Bot } from 'lucide-react'
+import { LayoutDashboard, Cpu, KeyRound, BarChart3, Bot, Server } from 'lucide-react'
 
 import {
   Sidebar,
@@ -23,6 +23,11 @@ const navItems = [
     title: '概览',
     href: '/dashboard',
     icon: LayoutDashboard,
+  },
+  {
+    title: '供应商管理',
+    href: '/dashboard/providers',
+    icon: Server,
   },
   {
     title: '模型目录',
