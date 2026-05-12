@@ -1,7 +1,7 @@
 meta:
   last_updated: '2026-05-12'
   version: 1
-  total_completed: 8
+  total_completed: 9
 records:
   - id: feat-project-init
     name: 项目基础设施初始化
@@ -417,3 +417,63 @@ records:
       duration: ~15min
       commits: 3
       files_changed: 22
+  - id: feat-admin-key-usage
+    name: Key 路由与用量集成
+    completed: '2026-05-12'
+    tag: feat-admin-key-usage-20260512
+    merge_commit: 2f758c3
+    merged_to: main
+    branch_deleted: true
+    branch_name: feature/admin-key-usage
+    worktree_deleted: true
+    worktree_path: ../aihub-admin-key-usage
+    keywords:
+      - virtual-key
+      - key-management
+      - usage
+      - token
+      - dashboard
+      - admin
+      - route
+      - budget
+      - revoke
+      - reactivate
+      - scope
+      - api-client
+      - swr
+      - bar-chart
+      - time-range
+      - filter
+      - ranking
+      - model-ranking
+      - key-ranking
+      - provider-status
+      - settings
+      - nextjs
+      - shadcn-ui
+      - toast
+      - sonner
+      - skeleton
+      - dialog
+      - table
+      - badge
+    category: frontend
+    value_points: 2
+    related_features:
+      - feat-admin-provider-model
+      - feat-admin-data-integration
+      - feat-phase1-auth-pool
+      - feat-phase1-usage-metering
+      - feat-frontend-redesign
+    conflicts:
+      had_conflict: false
+      conflict_files: []
+    verification:
+      status: passed
+      scenarios_total: 4
+      scenarios_passed: 4
+    stats:
+      started: '2026-05-12T15:43:45.509526'
+      duration: ~35min
+      commits: 1
+      files_changed: 7

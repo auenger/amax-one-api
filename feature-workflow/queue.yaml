@@ -2,7 +2,7 @@ meta:
   last_updated: '2026-05-12'
   started: '2026-05-12'
   total_features: 10
-  last_completed: feat-admin-provider-model
+  last_completed: feat-admin-key-usage
 pending:
   - id: feat-admin-data-integration
     name: 管理后台数据集成
@@ -12,14 +12,6 @@ pending:
     children:
       - feat-admin-provider-model
       - feat-admin-key-usage
-    created: '2026-05-12'
-  - id: feat-admin-key-usage
-    name: Key 路由与用量集成
-    priority: 75
-    size: M
-    parent: feat-admin-data-integration
-    dependencies:
-      - feat-admin-provider-model
     created: '2026-05-12'
 active: []
 blocked: []
