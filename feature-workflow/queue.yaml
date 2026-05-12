@@ -23,16 +23,6 @@ pending:
       - feat-project-init
     created: '2026-05-08'
 
-  # 子 Feature 1: 统一模型目录 (依赖项目初始化)
-  - id: feat-phase1-model-registry
-    name: 统一模型目录
-    priority: 80
-    size: S
-    parent: feat-phase1-gateway
-    dependencies:
-      - feat-project-init
-    created: '2026-05-08'
-
   # 子 Feature 2: 鉴权池化 (依赖项目初始化 + 模型目录)
   - id: feat-phase1-auth-pool
     name: 鉴权池化
