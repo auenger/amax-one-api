@@ -24,7 +24,7 @@ pending:
       - feat-project-init
     created: '2026-05-08'
 
-  # 子 Feature 4: Token 用量计量 (依赖项目初始化 + 鉴权池化 + OpenAI 兼容代理)
+active:
   - id: feat-phase1-usage-metering
     name: Token 用量计量
     priority: 80
@@ -34,8 +34,9 @@ pending:
       - feat-project-init
       - feat-phase1-auth-pool
       - feat-phase1-openai-proxy
+    branch: feature/phase1-usage-metering
+    worktree: ../aihub-phase1-usage-metering
+    started: '2026-05-12'
     created: '2026-05-12'
-
-active: []
 
 blocked: []
