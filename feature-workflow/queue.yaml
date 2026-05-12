@@ -5,23 +5,9 @@ meta:
   last_updated: '2026-05-12'
   started: '2026-05-12'
   total_features: 6
-  last_completed: feat-phase1-usage-metering
+  last_completed: feat-phase1-gateway
 
-pending:
-  # Phase 1 接入层 — 父 Feature (模块索引)
-  - id: feat-phase1-gateway
-    name: Phase 1 接入层
-    priority: 80
-    size: L
-    split: true
-    children:
-      - feat-phase1-model-registry
-      - feat-phase1-auth-pool
-      - feat-phase1-openai-proxy
-      - feat-phase1-usage-metering
-    dependencies:
-      - feat-project-init
-    created: '2026-05-08'
+pending: []
 
 active: []
 

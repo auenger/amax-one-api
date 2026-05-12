@@ -214,3 +214,12 @@ And 请求未到达 new-api
 - [ ] new-api Channel 同步链路验证通过
 - [ ] Token 用量计量链路验证通过
 - [ ] API 文档 (OpenAPI spec) 生成
+
+## Merge Record
+- **Completed**: 2026-05-12
+- **Merged Branch**: feature/phase1-gateway
+- **Merge Commit**: 645f90c
+- **Archive Tag**: feat-phase1-gateway-20260512
+- **Conflicts**: none
+- **Verification**: PASSED (12/12 tasks, 0 TS errors, 14/14 tests, 6/6 Gherkin scenarios)
+- **Stats**: 1 commit, 1 file changed (virtual-key.ts Prisma JSON type fix)

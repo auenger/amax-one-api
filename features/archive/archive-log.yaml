@@ -4,7 +4,7 @@
 meta:
   last_updated: '2026-05-12'
   version: 1
-  total_completed: 5
+  total_completed: 6
 
 # 已完成的特性
 records:
@@ -272,3 +272,57 @@ records:
       duration: ~20min
       commits: 1
       files_changed: 8
+
+  - id: feat-phase1-gateway
+    name: Phase 1 接入层
+    completed: '2026-05-12'
+    tag: feat-phase1-gateway-20260512
+    merge_commit: 645f90c
+    merged_to: main
+    branch_deleted: true
+    branch_name: feature/phase1-gateway
+    worktree_deleted: true
+    worktree_path: ../aihub-phase1-gateway
+    # --- Index metadata ---
+    keywords:
+      - gateway
+      - phase1
+      - model-registry
+      - auth-pool
+      - openai-proxy
+      - usage-metering
+      - virtual-key
+      - proxy
+      - model-resolve
+      - new-api
+      - fastify
+      - integration
+      - prisma
+      - postgresql
+      - redis
+      - sse
+      - streaming
+      - budget
+      - rfc7807
+    category: backend
+    value_points: 3
+    related_features:
+      - feat-project-init
+      - feat-phase1-model-registry
+      - feat-phase1-auth-pool
+      - feat-phase1-openai-proxy
+      - feat-phase1-usage-metering
+    # --- Git & merge info ---
+    conflicts:
+      had_conflict: false
+      conflict_files: []
+    verification:
+      status: passed
+      scenarios_total: 6
+      scenarios_passed: 6
+    # --- Stats ---
+    stats:
+      started: '2026-05-12'
+      duration: ~10min
+      commits: 1
+      files_changed: 1
