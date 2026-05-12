@@ -1,7 +1,7 @@
 meta:
   last_updated: '2026-05-12'
   version: 1
-  total_completed: 9
+  total_completed: 10
 records:
   - id: feat-project-init
     name: 项目基础设施初始化
@@ -477,3 +477,41 @@ records:
       duration: ~35min
       commits: 1
       files_changed: 7
+  - id: feat-admin-data-integration
+    name: 管理后台数据集成
+    completed: '2026-05-12'
+    tag: feat-admin-data-integration-20260512
+    merge_commit: n/a
+    merged_to: main
+    branch_deleted: true
+    branch_name: n/a
+    worktree_deleted: true
+    worktree_path: n/a
+    keywords:
+      - admin
+      - data-integration
+      - provider
+      - model
+      - virtual-key
+      - usage
+      - split-parent
+    category: frontend
+    value_points: 0
+    related_features:
+      - feat-admin-provider-model
+      - feat-admin-key-usage
+      - feat-frontend-redesign
+    conflicts:
+      had_conflict: false
+      conflict_files: []
+    verification:
+      status: passed
+      scenarios_total: 9
+      scenarios_passed: 9
+      note: Split parent — all children completed and verified
+    stats:
+      started: '2026-05-12'
+      duration: n/a
+      commits: 0
+      files_changed: 0
+      note: Split into feat-admin-provider-model and feat-admin-key-usage
