@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from 'node:crypto'
 import { prisma } from '@aihub/database'
-import type { VirtualKey, AuditLog } from '@prisma/client'
+import type { VirtualKey, AuditLog, VirtualKeyStatus, Prisma } from '@prisma/client'
 import { getUsageSummary } from './usage.js'
 
 // ============================================================
@@ -134,8 +134,8 @@ async function createVirtualKeyWithPrefix(
       keyHash,
       keyPrefix: prefix,
       scopes: input.scopes,
-      rateLimits: input.rateLimits ?? undefined,
-      budget: input.budget ?? undefined,
+      rateLimits: (input.rateLimits as unknown as Prisma.InputJsonValue) ?? undefined,
+      budget: (input.budget as unknown as Prisma.InputJsonValue) ?? undefined,
       expiresAt: input.expiresAt ?? undefined,
     },
   })
@@ -160,7 +160,7 @@ async function createVirtualKeyWithPrefix(
  * List Virtual Keys with cursor-based pagination
  */
 export async function listVirtualKeys(options: {
-  status?: string
+  status?: VirtualKeyStatus
   limit: number
   cursor?: string
 }): Promise<{ data: VirtualKey[]; nextCursor: string | null; hasMore: boolean }> {
@@ -304,7 +304,7 @@ export async function validateVirtualKey(
 
   // Check budget
   if (vk.budget) {
-    const budgetOk = await checkBudget(vk.id, vk.budget)
+    const budgetOk = await checkBudget(vk.id, vk.budget as unknown as VirtualKeyBudget)
     if (!budgetOk) {
       return {
         valid: false,
@@ -359,7 +359,7 @@ export async function writeAuditLog(
       action,
       resourceType,
       resourceId,
-      detail: detail ?? undefined,
+      detail: (detail as unknown as Prisma.InputJsonValue) ?? undefined,
       operator: operator ?? 'admin',
     },
   })
