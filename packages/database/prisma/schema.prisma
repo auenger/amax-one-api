@@ -102,6 +102,50 @@ model ChannelSyncLog {
 }
 
 // ============================================================
+// Auth Pool — Virtual Key, AuditLog
+// ============================================================
+
+/// Virtual Key — 用户访问平台的虚拟密钥
+model VirtualKey {
+  id          String   @id @default(cuid())
+  name        String
+  keyHash     String   @map("key_hash")
+  keyPrefix   String   @map("key_prefix")
+  scopes      String[] @default([])
+  rateLimits  Json?    @map("rate_limits")   // { rpm: number, tpm: number }
+  budget      Json?    // { token_limit: number, reset_at: ISO string }
+  status      VirtualKeyStatus @default(active)
+  expiresAt   DateTime? @map("expires_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  auditLogs AuditLog[]
+
+  @@unique([keyPrefix])
+  @@index([keyHash])
+  @@index([status])
+  @@map("virtual_keys")
+}
+
+/// 审计日志
+model AuditLog {
+  id           String   @id @default(cuid())
+  action       String   // e.g. "virtual_key.created", "virtual_key.revoked"
+  resourceType String   @map("resource_type")  // e.g. "virtual_key"
+  resourceId   String   @map("resource_id")
+  detail       Json?    // Additional context
+  operator     String?  // Who performed the action (admin, system)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  virtualKey VirtualKey? @relation(fields: [resourceId], references: [id], onDelete: SetNull)
+
+  @@index([resourceType, resourceId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+// ============================================================
 // Enums
 // ============================================================
 
@@ -136,4 +180,9 @@ enum SyncAction {
 enum SyncStatus {
   success
   failed
+}
+
+enum VirtualKeyStatus {
+  active
+  revoked
 }
