@@ -21,3 +21,12 @@ export type {
   CreateVirtualKeyInput,
   UpdateVirtualKeyInput,
 } from './virtual-key.js'
+export {
+  proxyRequest,
+  proxyStreamRequest,
+  extractUsageFromBody,
+  extractUsageFromObject,
+  sanitizeResponse,
+  sanitizeHeaders,
+} from './proxy.js'
+export type { UsageData, ProxyResponse } from './proxy.js'
