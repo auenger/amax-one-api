@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from 'node:crypto'
 import { prisma } from '@aihub/database'
 import type { VirtualKey, AuditLog } from '@prisma/client'
+import { getUsageSummary } from './usage.js'
 
 // ============================================================
 // Types
@@ -327,15 +328,12 @@ export async function validateVirtualKey(
 
 /**
  * Check budget against usage summary
- * Phase 1 stub: always returns true until usage-metering is implemented
- * TODO: integrate with usage-metering getUsageSummary()
+ * Queries actual token usage from UsageLog and compares to budget limit.
  */
-async function checkBudget(_virtualKeyId: string, _budget: VirtualKeyBudget): Promise<boolean> {
-  // Phase 1: Budget check is a no-op until feat-phase1-usage-metering is implemented
-  // When available, this will call:
-  //   const usage = await getUsageSummary(virtualKeyId, budget.reset_at)
-  //   return usage.totalTokens < budget.token_limit
-  return true
+async function checkBudget(virtualKeyId: string, budget: VirtualKeyBudget): Promise<boolean> {
+  const since = new Date(budget.reset_at)
+  const usage = await getUsageSummary(virtualKeyId, since)
+  return usage.totalTokens < budget.token_limit
 }
 
 // ============================================================
