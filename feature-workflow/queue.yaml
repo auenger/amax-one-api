@@ -13,14 +13,6 @@ pending:
       - feat-admin-provider-model
       - feat-admin-key-usage
     created: '2026-05-12'
-  - id: feat-admin-provider-model
-    name: 供应商与模型管理
-    priority: 75
-    size: M
-    parent: feat-admin-data-integration
-    dependencies:
-      - feat-frontend-redesign
-    created: '2026-05-12'
   - id: feat-admin-key-usage
     name: Key 路由与用量集成
     priority: 75
@@ -29,5 +21,16 @@ pending:
     dependencies:
       - feat-admin-provider-model
     created: '2026-05-12'
-active: []
+active:
+  - id: feat-admin-provider-model
+    name: 供应商与模型管理
+    priority: 75
+    size: M
+    parent: feat-admin-data-integration
+    dependencies:
+      - feat-frontend-redesign
+    created: '2026-05-12'
+    started: '2026-05-12'
+    branch: feature/admin-provider-model
+    worktree: ../aihub-admin-provider-model
 blocked: []
