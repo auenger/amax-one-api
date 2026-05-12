@@ -159,7 +159,18 @@ And 模型数量、Key 数量、调用量均为真实值
 
 ### General Checklist
 
-- [ ] 所有 mock 数据替换为真实 API
-- [ ] API 客户端类型安全（TypeScript）
-- [ ] 错误处理使用 RFC 7807 格式
-- [ ] Next.js 构建无报错
+- [x] 所有 mock 数据替换为真实 API
+- [x] API 客户端类型安全（TypeScript）
+- [x] 错误处理使用 RFC 7807 格式
+- [x] Next.js 构建无报错
+
+## Merge Record
+
+- **Completed**: 2026-05-12
+- **Merged Branch**: feature/admin-provider-model
+- **Merge Commit**: f7dd21a
+- **Archive Tag**: feat-admin-provider-model-20260512
+- **Conflicts**: None
+- **Verification**: PASS (5/5 Gherkin scenarios, 16/16 tasks, build clean)
+- **Commits**: 3 (implementation + 2 chore)
+- **Files Changed**: 22

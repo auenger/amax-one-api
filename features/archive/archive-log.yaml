@@ -1,7 +1,7 @@
 meta:
   last_updated: '2026-05-12'
   version: 1
-  total_completed: 7
+  total_completed: 8
 records:
   - id: feat-project-init
     name: 项目基础设施初始化
@@ -363,3 +363,57 @@ records:
       duration: ~25min
       commits: 2
       files_changed: 38
+  - id: feat-admin-provider-model
+    name: 供应商与模型管理
+    completed: '2026-05-12'
+    tag: feat-admin-provider-model-20260512
+    merge_commit: f7dd21a
+    merged_to: main
+    branch_deleted: true
+    branch_name: feature/admin-provider-model
+    worktree_deleted: true
+    worktree_path: ../aihub-admin-provider-model
+    keywords:
+      - provider
+      - model
+      - admin
+      - api-client
+      - crud
+      - dashboard
+      - swr
+      - fetch
+      - rfc7807
+      - error-handling
+      - typescript
+      - nextjs
+      - form
+      - dialog
+      - table
+      - badge
+      - skeleton
+      - toast
+      - sonner
+      - alias
+      - sync-status
+      - api-key
+      - provider-key
+      - model-registry
+    category: frontend
+    value_points: 3
+    related_features:
+      - feat-frontend-redesign
+      - feat-phase1-model-registry
+      - feat-admin-data-integration
+      - feat-admin-key-usage
+    conflicts:
+      had_conflict: false
+      conflict_files: []
+    verification:
+      status: passed
+      scenarios_total: 5
+      scenarios_passed: 5
+    stats:
+      started: '2026-05-12'
+      duration: ~15min
+      commits: 3
+      files_changed: 22

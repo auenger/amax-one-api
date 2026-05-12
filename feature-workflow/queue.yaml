@@ -2,7 +2,7 @@ meta:
   last_updated: '2026-05-12'
   started: '2026-05-12'
   total_features: 10
-  last_completed: feat-frontend-redesign
+  last_completed: feat-admin-provider-model
 pending:
   - id: feat-admin-data-integration
     name: 管理后台数据集成
@@ -21,16 +21,5 @@ pending:
     dependencies:
       - feat-admin-provider-model
     created: '2026-05-12'
-active:
-  - id: feat-admin-provider-model
-    name: 供应商与模型管理
-    priority: 75
-    size: M
-    parent: feat-admin-data-integration
-    dependencies:
-      - feat-frontend-redesign
-    created: '2026-05-12'
-    started: '2026-05-12'
-    branch: feature/admin-provider-model
-    worktree: ../aihub-admin-provider-model
+active: []
 blocked: []
