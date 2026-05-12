@@ -3,17 +3,11 @@
 
 meta:
   last_updated: '2026-05-12'
+  started: '2026-05-12'
   total_features: 6
 
 pending:
   # === 前置 Feature: 项目初始化 (最高优先级, 阻塞所有业务 Feature) ===
-  - id: feat-project-init
-    name: 项目基础设施初始化
-    priority: 90
-    size: M
-    dependencies: []
-    created: '2026-05-08'
-
   # Phase 1 接入层 — 父 Feature (模块索引)
   - id: feat-phase1-gateway
     name: Phase 1 接入层

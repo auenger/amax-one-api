@@ -408,3 +408,12 @@ And 所有步骤通过
 - [ ] `.env.example` 包含所有必需环境变量及注释
 - [ ] `.gitignore` 排除 node_modules、dist、.env、.next
 - [ ] TypeScript strict mode 启用
+
+## Merge Record
+- **Completed**: 2026-05-12
+- **Merged Branch**: feature/project-init
+- **Merge Commit**: 21fdfa789f0df96d93efe1cc17724a70cdeefb6a
+- **Archive Tag**: feat-project-init-20260512
+- **Conflicts**: None
+- **Verification**: 36/36 tasks, 16/16 tests, 7/7 Gherkin scenarios PASS
+- **Files Changed**: 51 files, +6356 lines

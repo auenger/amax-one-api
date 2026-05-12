@@ -1,8 +1,11 @@
 {
-  "selected_file": null,
+  "selected_file": "/Users/ryan/mycode/AIHub/.claude/skills/new-feature/skill.md",
   "expanded_dirs": [
     "/Users/ryan/mycode/AIHub",
-    "/Users/ryan/mycode/AIHub/feature-workflow"
+    "/Users/ryan/mycode/AIHub/feature-workflow",
+    "/Users/ryan/mycode/AIHub/.claude",
+    "/Users/ryan/mycode/AIHub/.claude/skills",
+    "/Users/ryan/mycode/AIHub/.claude/skills/new-feature"
   ],
   "agent_skip_permissions": false
 }
