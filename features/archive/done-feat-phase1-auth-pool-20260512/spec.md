@@ -173,3 +173,15 @@ Then 返回 { valid: false, reason: "scope_denied" }
 - [ ] AuditLog 记录
 - [ ] cursor-based 分页实现
 - [ ] 错误响应 RFC 7807 格式
+
+## Merge Record
+
+- **Completed**: 2026-05-12
+- **Merged Branch**: feature/phase1-auth-pool
+- **Merge Commit**: 5a6d1b6
+- **Archive Tag**: feat-phase1-auth-pool-20260512
+- **Conflicts**: none
+- **Verification**: passed (30 tests, 5/6 Gherkin PASS, 1 PARTIAL — budget stub)
+- **Files Changed**: 14 (5 new source, 1 migration, 1 test, 4 modified, 3 feature docs)
+- **Duration**: ~30min
+- **Deferrals**: Redis rate limiting, integration tests, budget enforcement (Phase 2)
