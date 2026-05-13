@@ -38,30 +38,6 @@ services:
     networks:
       - aihub-net
 
-  new-api:
-    image: calciumion/new-api:latest
-    container_name: aihub-new-api
-    restart: unless-stopped
-    environment:
-      SQL_DSN: postgresql://aihub:aihub@postgres:5432/aihub?sslmode=disable
-      REDIS_CONN_STRING: redis://redis:6379
-      INITIAL_ROOT_TOKEN: sk-newapi-internal-token-change-me
-    ports:
-      - '3001:3001'
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    healthcheck:
-      test: ['CMD-SHELL', 'curl -f http://localhost:3001/api/status']
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 30s
-    networks:
-      - aihub-net
-
 volumes:
   postgres_data:
   redis_data:
