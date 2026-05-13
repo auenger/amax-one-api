@@ -1,42 +1,6 @@
 {
-  "name": "aihub-monorepo",
+  "name": "aihub",
   "version": "0.1.0",
   "private": true,
-  "description": "Enterprise AI Control Plane",
-  "scripts": {
-    "dev": "turbo dev",
-    "build": "turbo build",
-    "lint": "turbo lint",
-    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
-    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
-    "typecheck": "turbo typecheck",
-    "test": "turbo test",
-    "db:migrate": "pnpm --filter @aihub/database db:migrate",
-    "db:generate": "pnpm --filter @aihub/database db:generate",
-    "db:studio": "pnpm --filter @aihub/database db:studio",
-    "prepare": "husky"
-  },
-  "devDependencies": {
-    "turbo": "^2.5.0",
-    "typescript": "^5.8.0",
-    "eslint": "^9.26.0",
-    "@eslint/js": "^9.26.0",
-    "typescript-eslint": "^8.31.0",
-    "prettier": "^3.5.0",
-    "husky": "^9.1.0",
-    "lint-staged": "^15.5.0"
-  },
-  "lint-staged": {
-    "*.{ts,tsx}": [
-      "eslint --fix",
-      "prettier --write"
-    ],
-    "*.{json,md,yml,yaml}": [
-      "prettier --write"
-    ]
-  },
-  "packageManager": "pnpm@9.15.0",
-  "engines": {
-    "node": ">=20"
-  }
+  "description": "Enterprise AI Control Plane — one-api fork + custom frontend"
 }
