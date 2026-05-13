@@ -38,11 +38,17 @@ const Footer = () => {
           ></div>
         ) : (
           <div className='custom-footer'>
-            <a href='https://github.com/songquanpeng/one-api' target='_blank'>
-              {systemName} {process.env.REACT_APP_VERSION}{' '}
+            <span style={{ fontWeight: 600 }}>AIHub</span>
+            {' '} &middot; {' '}
+            {t('footer.powered_by')}{' '}
+            <a href='https://github.com/songquanpeng/one-api' target='_blank' rel='noreferrer'>
+              One API
             </a>
-            {t('footer.built_by')}{' '}
-            <a href='https://github.com/songquanpeng' target='_blank'>
+            {process.env.REACT_APP_VERSION && (
+              <> {process.env.REACT_APP_VERSION}</>
+            )}
+            {' '} &middot; {' '}
+            <a href='https://github.com/songquanpeng' target='_blank' rel='noreferrer'>
               {t('footer.built_by_name')}
             </a>{' '}
             {t('footer.license')}{' '}

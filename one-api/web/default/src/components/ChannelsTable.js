@@ -210,7 +210,20 @@ const ChannelsTable = () => {
     }
   };
 
-  const renderStatus = (status, t) => {
+  const renderStatus = (status, t, budgetExceeded = false) => {
+    if (budgetExceeded) {
+      return (
+        <Popup
+          trigger={
+            <Label basic color='red'>
+              {t('channel.table.status_budget_exceeded')}
+            </Label>
+          }
+          content={t('channel.table.status_budget_exceeded_tip')}
+          basic
+        />
+      );
+    }
     switch (status) {
       case 1:
         return (
@@ -285,6 +298,44 @@ const ChannelsTable = () => {
         </Label>
       );
     }
+  };
+
+  const renderBudget = (channel) => {
+    const budgetUsed = channel.budget_used || 0;
+    const budgetTotal = channel.budget_total || 0;
+
+    if (!budgetTotal || budgetTotal <= 0) {
+      return <span style={{ color: '#94A3B8', fontSize: '12px' }}>{t('channel.table.budget_not_set')}</span>;
+    }
+
+    const percentage = Math.min((budgetUsed / budgetTotal) * 100, 100);
+    let barClass = 'normal';
+    if (percentage >= 90) {
+      barClass = 'danger';
+    } else if (percentage >= 70) {
+      barClass = 'warning';
+    }
+
+    const budgetExceeded = budgetUsed >= budgetTotal;
+
+    return (
+      <div>
+        <div className='budget-progress'>
+          <div
+            className={`budget-progress-bar ${barClass}`}
+            style={{ width: `${percentage}%` }}
+          />
+        </div>
+        <div className='budget-text'>
+          ${(budgetUsed / 500000).toFixed(2)} / ${(budgetTotal / 500000).toFixed(2)}
+          {budgetExceeded && (
+            <span style={{ color: '#DC2626', marginLeft: '4px' }}>
+              ({t('channel.table.budget_exceeded')})
+            </span>
+          )}
+        </div>
+      </div>
+    );
   };
 
   const searchChannels = async () => {
@@ -496,6 +547,9 @@ const ChannelsTable = () => {
             >
               {t('channel.table.balance')}
             </Table.HeaderCell>
+            <Table.HeaderCell>
+              {t('channel.table.budget')}
+            </Table.HeaderCell>
             <Table.HeaderCell
               style={{ cursor: 'pointer' }}
               onClick={() => {
@@ -528,7 +582,7 @@ const ChannelsTable = () => {
                   </Table.Cell>
                   <Table.Cell>{renderGroup(channel.group)}</Table.Cell>
                   <Table.Cell>{renderType(channel.type, t)}</Table.Cell>
-                  <Table.Cell>{renderStatus(channel.status, t)}</Table.Cell>
+                  <Table.Cell>{renderStatus(channel.status, t, (channel.budget_total > 0 && channel.budget_used >= channel.budget_total))}</Table.Cell>
                   <Table.Cell>
                     <Popup
                       content={
@@ -557,6 +611,7 @@ const ChannelsTable = () => {
                       basic
                     />
                   </Table.Cell>
+                  <Table.Cell>{renderBudget(channel)}</Table.Cell>
                   <Table.Cell hidden={!showDetail}>
                     <Popup
                       trigger={
@@ -664,7 +719,7 @@ const ChannelsTable = () => {
 
         <Table.Footer>
           <Table.Row>
-            <Table.HeaderCell colSpan={showDetail ? '10' : '8'}>
+            <Table.HeaderCell colSpan={showDetail ? '11' : '9'}>
               <Button size='tiny' as={Link} to='/channel/add' loading={loading}>
                 {t('channel.buttons.add')}
               </Button>

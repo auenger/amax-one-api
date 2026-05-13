@@ -48,6 +48,7 @@ const EditChannel = () => {
     system_prompt: '',
     models: [],
     groups: ['default'],
+    budget_total: 0,
   };
   const [batch, setBatch] = useState(false);
   const [inputs, setInputs] = useState(originInputs);
@@ -678,6 +679,17 @@ const EditChannel = () => {
                 />
               </Form.Field>
             )}
+            <Form.Field>
+              <Form.Input
+                label={t('channel.edit.budget_total')}
+                name='budget_total'
+                type='number'
+                min='0'
+                placeholder={t('channel.edit.budget_total_placeholder')}
+                onChange={handleInputChange}
+                value={inputs.budget_total}
+              />
+            </Form.Field>
             <Button onClick={handleCancel}>
               {t('channel.edit.buttons.cancel')}
             </Button>
