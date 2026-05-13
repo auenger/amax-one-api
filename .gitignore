@@ -41,3 +41,8 @@ packages/database/prisma/migrations/
 # Docker
 docker-data/
 .env
+
+# one-api build artifacts
+one-api/one-api
+one-api/__debug_bin*
+one-api/data/

@@ -38,6 +38,31 @@ services:
     networks:
       - aihub-net
 
+  one-api:
+    build:
+      context: ./one-api
+      dockerfile: Dockerfile
+    container_name: aihub-one-api
+    restart: unless-stopped
+    ports:
+      - '3000:3000'
+    environment:
+      SQL_DSN: postgres://aihub:aihub@postgres:5432/aihub?sslmode=disable
+      REDIS_CONN_STRING: redis://redis:6379
+      MEMORY_CACHE_ENABLED: "true"
+      SYNC_FREQUENCY: 60
+      BATCH_UPDATE_ENABLED: "true"
+      RETRY_TIMES: 3
+      CHANNEL_DISABLE_THRESHOLD: 5
+      INITIAL_ROOT_TOKEN: sk-aihub-root-token-change-me
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - aihub-net
+
 volumes:
   postgres_data:
   redis_data:
