@@ -3,6 +3,8 @@
     "home": "Home",
     "channel": "Channel",
     "token": "Token",
+    "token_request": "Approvals",
+    "my_request": "My Requests",
     "redemption": "Redemption",
     "topup": "Top Up",
     "user": "User",
@@ -63,7 +65,12 @@
       "priority_tip": "Channel selection priority, higher is preferred",
       "select_test_model": "Please select test model",
       "click_to_update": "Click to update",
-      "balance_not_supported": "-"
+      "balance_not_supported": "-",
+      "budget": "Budget",
+      "budget_not_set": "Not Set",
+      "budget_exceeded": "Over Budget",
+      "status_budget_exceeded": "Disabled (Budget)",
+      "status_budget_exceeded_tip": "This channel is disabled because its budget has been exceeded"
     },
     "buttons": {
       "test": "Test",
@@ -148,6 +155,8 @@
       "vertex_credentials_placeholder": "Google Cloud Application Default Credentials JSON",
       "user_id": "User ID",
       "user_id_placeholder": "User ID who generated this key",
+      "budget_total": "Budget Limit",
+      "budget_total_placeholder": "Enter budget limit (in quota units), 0 means no limit",
       "key_prompts": {
         "default": "Please enter the authentication key for this channel",
         "zhipu": "Enter in format: APIKey|SecretKey",
@@ -236,6 +245,57 @@
       "default": "Default Order",
       "by_remain": "Sort by Remaining Quota",
       "by_used": "Sort by Used Quota"
+    }
+  },
+  "token_request": {
+    "title": "Token Approval Management",
+    "status": {
+      "pending": "Pending",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "unknown": "Unknown"
+    },
+    "table": {
+      "id": "ID",
+      "username": "Username",
+      "name": "Token Name",
+      "reason": "Reason",
+      "models": "Models",
+      "quota": "Quota",
+      "status": "Status",
+      "created_time": "Submitted At",
+      "actions": "Actions",
+      "no_name": "None",
+      "all_models": "All Models",
+      "unlimited": "Unlimited",
+      "remark": "Remark"
+    },
+    "buttons": {
+      "approve": "Approve",
+      "confirm_approve": "Confirm Approve",
+      "reject": "Reject",
+      "confirm_reject": "Confirm Reject",
+      "refresh": "Refresh"
+    },
+    "messages": {
+      "approve_success": "Token request approved successfully!",
+      "reject_success": "Token request rejected successfully!"
+    },
+    "my_request": {
+      "title": "My Token Requests",
+      "new_request": "New Request",
+      "name": "Token Name",
+      "name_placeholder": "Please enter the desired token name",
+      "name_required": "Please enter a token name!",
+      "reason": "Reason",
+      "reason_placeholder": "Please describe why you need this token",
+      "models": "Models (optional)",
+      "models_placeholder": "Leave empty for all models, or enter specific models separated by commas",
+      "quota": "Quota (optional)",
+      "quota_placeholder": "Enter quota amount, 0 for unlimited",
+      "cancel": "Cancel",
+      "submit": "Submit",
+      "submit_success": "Token request submitted successfully!"
     }
   },
   "common": {
@@ -731,7 +791,8 @@
     "built_by": "built by",
     "built_by_name": "JustSong",
     "license": ", source code is licensed under the",
-    "mit": "MIT License"
+    "mit": "MIT License",
+    "powered_by": "Powered by"
   },
   "home": {
     "welcome": {

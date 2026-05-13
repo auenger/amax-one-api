@@ -35,6 +35,17 @@ let headerButtons = [
     icon: 'key',
   },
   {
+    name: 'header.token_request',
+    to: '/token_request',
+    icon: 'check circle',
+    admin: true,
+  },
+  {
+    name: 'header.my_request',
+    to: '/my_request',
+    icon: 'paper plane',
+  },
+  {
     name: 'header.redemption',
     to: '/redemption',
     icon: 'dollar sign',

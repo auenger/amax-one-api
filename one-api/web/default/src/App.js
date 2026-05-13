@@ -19,6 +19,8 @@ import Channel from './pages/Channel';
 import Token from './pages/Token';
 import EditToken from './pages/Token/EditToken';
 import EditChannel from './pages/Channel/EditChannel';
+import TokenRequest from './pages/TokenRequest';
+import MyRequests from './pages/TokenRequest/MyRequests';
 import Redemption from './pages/Redemption';
 import EditRedemption from './pages/Redemption/EditRedemption';
 import TopUp from './pages/TopUp';
@@ -148,6 +150,22 @@ function App() {
           <Suspense fallback={<Loading></Loading>}>
             <EditToken />
           </Suspense>
+        }
+      />
+      <Route
+        path='/token_request'
+        element={
+          <PrivateRoute>
+            <TokenRequest />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path='/my_request'
+        element={
+          <PrivateRoute>
+            <MyRequests />
+          </PrivateRoute>
         }
       />
       <Route
