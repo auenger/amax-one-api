@@ -222,6 +222,125 @@ type LogStatistic struct {
 	CompletionTokens int    `gorm:"column:completion_tokens"`
 }
 
+// ReportData holds the aggregated usage report data.
+type ReportData struct {
+	Summary  ReportSummary   `json:"summary"`
+	ByDate   []ReportRow     `json:"by_date"`
+	ByToken  []ReportRow     `json:"by_token"`
+	ByModel  []ReportRow     `json:"by_model"`
+}
+
+// ReportSummary holds the overall totals.
+type ReportSummary struct {
+	TotalRequests       int `json:"total_requests"`
+	TotalPromptTokens   int `json:"total_prompt_tokens"`
+	TotalCompletionTokens int `json:"total_completion_tokens"`
+	TotalQuota          int `json:"total_quota"`
+}
+
+// ReportRow is a generic aggregation row used in by_date, by_token, by_model.
+type ReportRow struct {
+	Date              string `json:"date,omitempty"`
+	TokenName         string `json:"token_name,omitempty"`
+	ModelName         string `json:"model_name,omitempty"`
+	Requests          int    `json:"requests"`
+	PromptTokens      int    `json:"prompt_tokens"`
+	CompletionTokens  int    `json:"completion_tokens"`
+	Quota             int    `json:"quota"`
+}
+
+func dayExpr() string {
+	if common.UsingPostgreSQL {
+		return "TO_CHAR(date_trunc('day', to_timestamp(created_at)), 'YYYY-MM-DD')"
+	}
+	if common.UsingSQLite {
+		return "strftime('%Y-%m-%d', datetime(created_at, 'unixepoch'))"
+	}
+	return "DATE_FORMAT(FROM_UNIXTIME(created_at), '%Y-%m-%d')"
+}
+
+func buildReportBaseQuery(username string, tokenNames []string, startTimestamp, endTimestamp int64) *gorm.DB {
+	tx := LOG_DB.Table("logs").Where("type = ?", LogTypeConsume)
+	if username != "" {
+		tx = tx.Where("username = ?", username)
+	}
+	if len(tokenNames) > 0 {
+		tx = tx.Where("token_name IN ?", tokenNames)
+	}
+	if startTimestamp != 0 {
+		tx = tx.Where("created_at >= ?", startTimestamp)
+	}
+	if endTimestamp != 0 {
+		tx = tx.Where("created_at <= ?", endTimestamp)
+	}
+	return tx
+}
+
+func GetUsageReport(username string, tokenNames []string, startTimestamp, endTimestamp int64) (*ReportData, error) {
+	base := buildReportBaseQuery(username, tokenNames, startTimestamp, endTimestamp)
+
+	// Summary
+	var summary ReportSummary
+	err := base.Select(
+		"COUNT(1) as total_requests",
+		"COALESCE(SUM(prompt_tokens),0) as total_prompt_tokens",
+		"COALESCE(SUM(completion_tokens),0) as total_completion_tokens",
+		"COALESCE(SUM(quota),0) as total_quota",
+	).Scan(&summary).Error
+	if err != nil {
+		return nil, err
+	}
+
+	report := &ReportData{Summary: summary}
+
+	// By date
+	dateBase := buildReportBaseQuery(username, tokenNames, startTimestamp, endTimestamp)
+	var byDate []ReportRow
+	err = dateBase.Select(
+		dayExpr()+" as date",
+		"COUNT(1) as requests",
+		"COALESCE(SUM(prompt_tokens),0) as prompt_tokens",
+		"COALESCE(SUM(completion_tokens),0) as completion_tokens",
+		"COALESCE(SUM(quota),0) as quota",
+	).Group(dayExpr()).Order("date ASC").Scan(&byDate).Error
+	if err != nil {
+		return nil, err
+	}
+	report.ByDate = byDate
+
+	// By token
+	tokenBase := buildReportBaseQuery(username, tokenNames, startTimestamp, endTimestamp)
+	var byToken []ReportRow
+	err = tokenBase.Select(
+		"token_name",
+		"COUNT(1) as requests",
+		"COALESCE(SUM(prompt_tokens),0) as prompt_tokens",
+		"COALESCE(SUM(completion_tokens),0) as completion_tokens",
+		"COALESCE(SUM(quota),0) as quota",
+	).Group("token_name").Order("quota DESC").Scan(&byToken).Error
+	if err != nil {
+		return nil, err
+	}
+	report.ByToken = byToken
+
+	// By model
+	modelBase := buildReportBaseQuery(username, tokenNames, startTimestamp, endTimestamp)
+	var byModel []ReportRow
+	err = modelBase.Select(
+		"model_name",
+		"COUNT(1) as requests",
+		"COALESCE(SUM(prompt_tokens),0) as prompt_tokens",
+		"COALESCE(SUM(completion_tokens),0) as completion_tokens",
+		"COALESCE(SUM(quota),0) as quota",
+	).Group("model_name").Order("quota DESC").Scan(&byModel).Error
+	if err != nil {
+		return nil, err
+	}
+	report.ByModel = byModel
+
+	return report, nil
+}
+
 func SearchLogsByDayAndModel(userId, start, end int) (LogStatistics []*LogStatistic, err error) {
 	groupSelect := "DATE_FORMAT(FROM_UNIXTIME(created_at), '%Y-%m-%d') as day"
 
