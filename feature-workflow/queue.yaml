@@ -1,12 +1,20 @@
 meta:
-  last_updated: '2026-05-18'
+  last_updated: '2026-05-19'
   started: '2026-05-12'
-  total_features: 21
-  last_completed: feat-usage-report
+  total_features: 24
+  last_completed: feat-portal-pages-enhance
 pending: []
 active: []
 blocked: []
 completed:
+- id: feat-marketplace-card-enhance
+  name: 模型卡片丰富化
+  priority: 55
+  size: S
+  parent: feat-portal-pages-enhance
+  completed_at: '2026-05-19'
+  archive_path: features/archive/done-feat-marketplace-card-enhance-20260519
+  value_points: 2
 - id: feat-usage-report
   name: Admin 用量报表
   priority: 50
@@ -33,3 +41,23 @@ completed:
   completed_at: '2026-05-18'
   archive_path: features/archive/done-feat-model-marketplace-20260518
   value_points: 1
+- id: feat-usage-report-v2
+  name: 用量报表优化
+  priority: 55
+  size: S
+  parent: feat-portal-pages-enhance
+  completed_at: '2026-05-19'
+  archive_path: features/archive/done-feat-usage-report-v2-20260519
+  value_points: 2
+- id: feat-portal-pages-enhance
+  name: 门户页面增强
+  priority: 55
+  size: L
+  split: true
+  children:
+  - feat-marketplace-card-enhance
+  - feat-usage-report-v2
+  completed_at: '2026-05-19'
+  archive_path: features/archive/done-feat-portal-pages-enhance-20260519
+  value_points: 4
+  note: Split parent — all children completed

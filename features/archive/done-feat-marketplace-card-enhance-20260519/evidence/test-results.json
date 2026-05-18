@@ -1,0 +1,30 @@
+{
+  "feature_id": "feat-marketplace-card-enhance",
+  "verification_date": "2026-05-19",
+  "method": "code-analysis",
+  "tasks": {
+    "total": 9,
+    "completed": 9,
+    "incomplete": 0
+  },
+  "scenarios": [
+    {
+      "name": "模型卡片展示渠道信息",
+      "status": "passed"
+    },
+    {
+      "name": "点击卡片弹出详情",
+      "status": "passed"
+    },
+    {
+      "name": "空状态处理",
+      "status": "passed"
+    }
+  ],
+  "code_quality": {
+    "syntax": "balanced",
+    "unused_imports": 0,
+    "export_present": true
+  },
+  "overall_status": "passed"
+}

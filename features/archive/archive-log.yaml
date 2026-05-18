@@ -1,5 +1,5 @@
 meta:
-  last_updated: '2026-05-18'
+  last_updated: '2026-05-19'
   version: 1
   total_completed: 19
 records:
@@ -809,3 +809,132 @@ records:
     duration: ~15min
     commits: 1
     files_changed: 10
+- id: feat-marketplace-card-enhance
+  name: 模型卡片丰富化
+  completed: '2026-05-19'
+  tag: feat-marketplace-card-enhance-20260519
+  merge_commit: 06d09fe
+  merged_to: main
+  branch_deleted: true
+  branch_name: feature/marketplace-card-enhance
+  worktree_deleted: true
+  worktree_path: ../aihub-marketplace-card-enhance
+  keywords:
+  - model
+  - card
+  - marketplace
+  - channel
+  - badge
+  - dialog
+  - detail
+  - tooltip
+  - mui
+  - chip
+  - list
+  - dark-mode
+  - light-mode
+  - theme
+  - promise-allsettled
+  - reverse-mapping
+  - responsive
+  category: frontend
+  value_points: 2
+  related_features:
+  - feat-model-marketplace
+  - feat-portal-pages-enhance
+  conflicts:
+    had_conflict: false
+    conflict_files: []
+  verification:
+    status: passed
+    scenarios_total: 3
+    scenarios_passed: 3
+  stats:
+    started: '2026-05-19'
+    duration: ~10min
+    commits: 1
+    files_changed: 1
+- id: feat-usage-report-v2
+  name: 用量报表优化
+  completed: '2026-05-19'
+  tag: feat-usage-report-v2-20260519
+  merge_commit: efaed917ae8d32bab29d1a125ac261d42421bf13
+  merged_to: main
+  branch_deleted: true
+  branch_name: feature/usage-report-v2
+  worktree_deleted: true
+  worktree_path: ../aihub-usage-report-v2
+  keywords:
+  - usage
+  - report
+  - autocomplete
+  - filter
+  - trend-chart
+  - line-chart
+  - multi-user
+  - tokens
+  - requests
+  - apexcharts
+  - mui
+  - berry
+  - report-filter
+  - by-date-user
+  - usernames
+  - token-names
+  - responsive
+  category: fullstack
+  value_points: 2
+  related_features:
+  - feat-usage-report
+  - feat-portal-pages-enhance
+  - feat-marketplace-card-enhance
+  conflicts:
+    had_conflict: false
+    conflict_files: []
+  verification:
+    status: passed
+    scenarios_total: 5
+    scenarios_passed: 5
+  stats:
+    started: '2026-05-19'
+    duration: ~15min
+    commits: 1
+    files_changed: 4
+- id: feat-portal-pages-enhance
+  name: 门户页面增强
+  completed: '2026-05-19'
+  tag: feat-portal-pages-enhance-20260519
+  merge_commit: n/a
+  merged_to: main
+  branch_deleted: true
+  branch_name: n/a
+  worktree_deleted: true
+  worktree_path: n/a
+  keywords:
+  - portal
+  - pages
+  - enhance
+  - marketplace
+  - card
+  - usage-report
+  - split-parent
+  category: frontend
+  value_points: 4
+  related_features:
+  - feat-marketplace-card-enhance
+  - feat-usage-report-v2
+  - feat-model-marketplace
+  conflicts:
+    had_conflict: false
+    conflict_files: []
+  verification:
+    status: passed
+    scenarios_total: 8
+    scenarios_passed: 8
+    note: Split parent — all children completed and verified
+  stats:
+    started: '2026-05-19'
+    duration: n/a
+    commits: 0
+    files_changed: 0
+    note: Split into feat-marketplace-card-enhance and feat-usage-report-v2
