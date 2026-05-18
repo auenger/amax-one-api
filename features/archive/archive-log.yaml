@@ -1,7 +1,7 @@
 meta:
   last_updated: '2026-05-18'
   version: 1
-  total_completed: 18
+  total_completed: 19
 records:
 - id: feat-project-init
   name: 项目基础设施初始化
@@ -756,3 +756,56 @@ records:
     duration: ~10min
     commits: 1
     files_changed: 3
+- id: feat-usage-report
+  name: Admin 用量报表
+  completed: '2026-05-18'
+  tag: feat-usage-report-20260518
+  merge_commit: c1d5d3c
+  merged_to: main
+  branch_deleted: true
+  branch_name: feature/usage-report
+  worktree_deleted: true
+  worktree_path: ../aihub-usage-report
+  keywords:
+  - usage
+  - report
+  - dashboard
+  - admin
+  - aggregation
+  - token
+  - quota
+  - apexcharts
+  - mui
+  - berry
+  - trend-chart
+  - summary-cards
+  - filter
+  - date-range
+  - multi-select
+  - table
+  - pagination
+  - sorting
+  - go
+  - gin
+  - gorm
+  - react
+  - one-api
+  category: fullstack
+  value_points: 2
+  related_features:
+  - feat-phase1-usage-metering
+  - feat-admin-key-usage
+  - feat-frontend-redesign
+  - feat-model-marketplace
+  conflicts:
+    had_conflict: false
+    conflict_files: []
+  verification:
+    status: passed
+    scenarios_total: 7
+    scenarios_passed: 7
+  stats:
+    started: '2026-05-18'
+    duration: ~15min
+    commits: 1
+    files_changed: 10

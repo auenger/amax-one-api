@@ -2,17 +2,18 @@ meta:
   last_updated: '2026-05-18'
   started: '2026-05-12'
   total_features: 21
-  last_completed: feat-model-marketplace
-pending:
+  last_completed: feat-usage-report
+pending: []
+active: []
+blocked: []
+completed:
 - id: feat-usage-report
   name: Admin 用量报表
   priority: 50
   size: M
-  created_at: '2026-05-18'
-  path: features/pending-feat-usage-report
-active: []
-blocked: []
-completed:
+  completed_at: '2026-05-18'
+  archive_path: features/archive/done-feat-usage-report-20260518
+  value_points: 2
 - id: feat-channel-routing
   name: 多渠道智能路由
   priority: 70
