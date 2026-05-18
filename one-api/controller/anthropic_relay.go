@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/songquanpeng/one-api/common"
@@ -153,7 +154,9 @@ func RelayAnthropic(c *gin.Context) {
 	group := c.GetString(ctxkey.Group)
 	originalModel := c.GetString(ctxkey.OriginalModel)
 
+	startTime := time.Now()
 	bizErr := relayHelper(c, relaymode.ChatCompletions)
+	latencyMs := time.Since(startTime).Milliseconds()
 
 	if bizErr != nil {
 		go processChannelRelayError(ctx, userId, channelId, channelName, *bizErr)
@@ -254,6 +257,8 @@ func RelayAnthropic(c *gin.Context) {
 	}
 
 	monitor.Emit(c.GetInt(ctxkey.ChannelId), true)
+	// Record metrics for smart load balancing
+	monitor.RecordMetrics(c.GetInt(ctxkey.ChannelId), latencyMs, true, 0)
 }
 
 // writeClaudeStreamResponse converts buffered OpenAI SSE events to Claude SSE format.

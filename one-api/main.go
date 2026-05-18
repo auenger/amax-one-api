@@ -96,6 +96,8 @@ func main() {
 	if os.Getenv("HEALTH_CHECK_ENABLED") != "false" {
 		monitor.StartHealthChecker()
 	}
+	// Start smart load balancer metrics collector
+	monitor.StartMetricsCollector()
 	openai.InitTokenEncoders()
 	client.Init()
 

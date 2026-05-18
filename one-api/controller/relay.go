@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/songquanpeng/one-api/common"
@@ -51,9 +52,13 @@ func Relay(c *gin.Context) {
 	}
 	channelId := c.GetInt(ctxkey.ChannelId)
 	userId := c.GetInt(ctxkey.Id)
+	startTime := time.Now()
 	bizErr := relayHelper(c, relayMode)
+	latencyMs := time.Since(startTime).Milliseconds()
 	if bizErr == nil {
 		monitor.Emit(channelId, true)
+		// Record metrics for smart load balancing
+		monitor.RecordMetrics(channelId, latencyMs, true, 0)
 		return
 	}
 	lastFailedChannelId := channelId
@@ -61,6 +66,8 @@ func Relay(c *gin.Context) {
 	group := c.GetString(ctxkey.Group)
 	originalModel := c.GetString(ctxkey.OriginalModel)
 	go processChannelRelayError(ctx, userId, channelId, channelName, *bizErr)
+	// Record metrics for smart load balancing (failure)
+	monitor.RecordMetrics(channelId, latencyMs, false, 0)
 	requestId := c.GetString(helper.RequestIdKey)
 	retryTimes := config.RetryTimes
 	if !shouldRetry(c, bizErr.StatusCode) {
