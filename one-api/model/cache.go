@@ -223,6 +223,37 @@ func SyncChannelCache(frequency int) {
 	}
 }
 
+// CacheGetSatisfiedChannels returns all candidate channels for a group+model.
+// Returns the top-priority batch of channels suitable for smart load balancing.
+func CacheGetSatisfiedChannels(group string, modelName string) []*Channel {
+	if !config.MemoryCacheEnabled {
+		// Fallback: query DB and return first match
+		ch, err := GetRandomSatisfiedChannel(group, modelName, false)
+		if err != nil {
+			return nil
+		}
+		return []*Channel{ch}
+	}
+	channelSyncLock.RLock()
+	defer channelSyncLock.RUnlock()
+	channels := group2model2channels[group][modelName]
+	if len(channels) == 0 {
+		return nil
+	}
+	// Return channels from the top priority tier
+	firstChannel := channels[0]
+	endIdx := len(channels)
+	if firstChannel.GetPriority() > 0 {
+		for i := range channels {
+			if channels[i].GetPriority() != firstChannel.GetPriority() {
+				endIdx = i
+				break
+			}
+		}
+	}
+	return channels[:endIdx]
+}
+
 func CacheGetRandomSatisfiedChannel(group string, model string, ignoreFirstPriority bool) (*Channel, error) {
 	if !config.MemoryCacheEnabled {
 		return GetRandomSatisfiedChannel(group, model, ignoreFirstPriority)

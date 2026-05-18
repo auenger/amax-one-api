@@ -74,6 +74,7 @@ func SetApiRouter(router *gin.Engine) {
 			channelRoute.GET("/", controller.GetAllChannels)
 			channelRoute.GET("/search", controller.SearchChannels)
 			channelRoute.GET("/models", controller.ListAllModels)
+			channelRoute.GET("/metrics", controller.GetChannelMetrics)
 			channelRoute.GET("/:id", controller.GetChannel)
 			channelRoute.GET("/test", controller.TestChannels)
 			channelRoute.GET("/test/:id", controller.TestChannel)
@@ -87,6 +88,12 @@ func SetApiRouter(router *gin.Engine) {
 			channelRoute.GET("/budget/:id", controller.GetChannelBudget)
 			channelRoute.PUT("/budget/:id", controller.UpdateChannelBudget)
 			channelRoute.POST("/budget/:id/reset", controller.ResetChannelBudget)
+		}
+		routingRoute := apiRouter.Group("/routing")
+		routingRoute.Use(middleware.AdminAuth())
+		{
+			routingRoute.GET("/strategy", controller.GetRoutingStrategy)
+			routingRoute.PUT("/strategy", controller.SetRoutingStrategy)
 		}
 		tokenRoute := apiRouter.Group("/token")
 		tokenRoute.Use(middleware.UserAuth())

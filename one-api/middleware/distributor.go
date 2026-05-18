@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -45,27 +46,12 @@ func Distribute() func(c *gin.Context) {
 			}
 		} else {
 			requestModel = c.GetString(ctxkey.RequestModel)
-			var err error
-			channel, err = model.CacheGetRandomSatisfiedChannel(userGroup, requestModel, false)
-			if err != nil {
+			// Smart load-balancing: use intelligent channel selection for new conversations
+			channel = smartSelectChannel(ctx, userGroup, requestModel)
+			if channel == nil {
 				message := fmt.Sprintf("当前分组 %s 下对于模型 %s 无可用渠道", userGroup, requestModel)
-				if channel != nil {
-					logger.SysError(fmt.Sprintf("渠道不存在：%d", channel.Id))
-					message = "数据库一致性已被破坏，请联系管理员"
-				}
 				abortWithMessage(c, http.StatusServiceUnavailable, message)
 				return
-			}
-			// Health-aware: skip unhealthy channels, try to find a healthy alternative
-			if common.RedisEnabled && monitor.ShouldFailover(channel.Id) {
-				logger.Infof(ctx, "health: channel #%d is unhealthy, attempting failover", channel.Id)
-				healthyChannel := findHealthyAlternative(userGroup, requestModel, channel.Id)
-				if healthyChannel != nil {
-					channel = healthyChannel
-					logger.Infof(ctx, "health: failover to channel #%d", channel.Id)
-				} else {
-					logger.Infof(ctx, "health: no healthy alternative for model %s, using degraded channel #%d", requestModel, channel.Id)
-				}
 			}
 		}
 		logger.Debugf(ctx, "user id %d, user group: %s, request model: %s, using channel #%d", userId, userGroup, requestModel, channel.Id)
@@ -76,6 +62,72 @@ func Distribute() func(c *gin.Context) {
 		}
 		c.Next()
 	}
+}
+
+// smartSelectChannel uses intelligent load-balancing to select a channel.
+// It falls back to the standard random selection if smart LB is unavailable.
+func smartSelectChannel(ctx context.Context, userGroup, requestModel string) *model.Channel {
+	// Get candidate channels from cache
+	candidates := model.CacheGetSatisfiedChannels(userGroup, requestModel)
+	if len(candidates) == 0 {
+		// No candidates at all
+		return nil
+	}
+
+	// Filter out unhealthy channels first
+	healthyCandidates := filterHealthyChannels(candidates)
+	if len(healthyCandidates) == 0 {
+		// All unhealthy, fall back to degraded
+		healthyCandidates = candidates
+	}
+
+	// If only one candidate, use it directly
+	if len(healthyCandidates) == 1 {
+		return healthyCandidates[0]
+	}
+
+	// Try smart selection via load balancer
+	if common.RedisEnabled {
+		channelIds := make([]int, len(healthyCandidates))
+		for i, ch := range healthyCandidates {
+			channelIds[i] = ch.Id
+		}
+		selectedId, score := monitor.SmartChannelSelect(channelIds)
+		logger.Debugf(ctx, "lb: smart selected channel #%d (score=%.3f) from %d candidates", selectedId, score, len(channelIds))
+		for _, ch := range healthyCandidates {
+			if ch.Id == selectedId {
+				return ch
+			}
+		}
+	}
+
+	// Fallback: standard random selection (original behavior)
+	ch, err := model.CacheGetRandomSatisfiedChannel(userGroup, requestModel, false)
+	if err != nil {
+		return nil
+	}
+	// Health check on the randomly selected channel
+	if common.RedisEnabled && monitor.ShouldFailover(ch.Id) {
+		healthyCh := findHealthyAlternative(userGroup, requestModel, ch.Id)
+		if healthyCh != nil {
+			return healthyCh
+		}
+	}
+	return ch
+}
+
+// filterHealthyChannels returns only healthy (or degraded) channels from the list.
+func filterHealthyChannels(channels []*model.Channel) []*model.Channel {
+	if !common.RedisEnabled {
+		return channels
+	}
+	var healthy []*model.Channel
+	for _, ch := range channels {
+		if !monitor.ShouldFailover(ch.Id) {
+			healthy = append(healthy, ch)
+		}
+	}
+	return healthy
 }
 
 // findHealthyAlternative tries to find a healthy channel for the given model,
