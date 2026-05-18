@@ -176,6 +176,11 @@ func RelayAnthropic(c *gin.Context) {
 			if channel.Id == lastFailedChannelId {
 				continue
 			}
+			// Skip unhealthy channels during retry
+			if common.RedisEnabled && monitor.ShouldFailover(channel.Id) {
+				logger.Infof(ctx, "health: skipping unhealthy channel #%d during retry (remain %d)", channel.Id, i)
+				continue
+			}
 			logger.Infof(ctx, "using channel #%d to retry (remain %d)", channel.Id, i)
 			middleware.SetupContextForSelectedChannel(c, channel, originalModel)
 

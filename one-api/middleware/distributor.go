@@ -7,9 +7,11 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/songquanpeng/one-api/common"
 	"github.com/songquanpeng/one-api/common/ctxkey"
 	"github.com/songquanpeng/one-api/common/logger"
 	"github.com/songquanpeng/one-api/model"
+	"github.com/songquanpeng/one-api/monitor"
 	"github.com/songquanpeng/one-api/relay/channeltype"
 )
 
@@ -54,6 +56,17 @@ func Distribute() func(c *gin.Context) {
 				abortWithMessage(c, http.StatusServiceUnavailable, message)
 				return
 			}
+			// Health-aware: skip unhealthy channels, try to find a healthy alternative
+			if common.RedisEnabled && monitor.ShouldFailover(channel.Id) {
+				logger.Infof(ctx, "health: channel #%d is unhealthy, attempting failover", channel.Id)
+				healthyChannel := findHealthyAlternative(userGroup, requestModel, channel.Id)
+				if healthyChannel != nil {
+					channel = healthyChannel
+					logger.Infof(ctx, "health: failover to channel #%d", channel.Id)
+				} else {
+					logger.Infof(ctx, "health: no healthy alternative for model %s, using degraded channel #%d", requestModel, channel.Id)
+				}
+			}
 		}
 		logger.Debugf(ctx, "user id %d, user group: %s, request model: %s, using channel #%d", userId, userGroup, requestModel, channel.Id)
 		SetupContextForSelectedChannel(c, channel, requestModel)
@@ -63,6 +76,26 @@ func Distribute() func(c *gin.Context) {
 		}
 		c.Next()
 	}
+}
+
+// findHealthyAlternative tries to find a healthy channel for the given model,
+// excluding the specified channelId. Returns nil if no healthy alternative is found.
+func findHealthyAlternative(group string, requestModel string, excludeChannelId int) *model.Channel {
+	// Try to get a different channel by using ignoreFirstPriority=true first
+	for ignorePriority := false; ; ignorePriority = true {
+		candidate, err := model.CacheGetRandomSatisfiedChannel(group, requestModel, ignorePriority)
+		if err != nil {
+			return nil
+		}
+		if candidate.Id != excludeChannelId && !monitor.ShouldFailover(candidate.Id) {
+			return candidate
+		}
+		// If we already tried with ignore priority, stop
+		if ignorePriority {
+			break
+		}
+	}
+	return nil
 }
 
 func SetupContextForSelectedChannel(c *gin.Context, channel *model.Channel, modelName string) {

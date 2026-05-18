@@ -11,6 +11,7 @@ import (
 	"github.com/songquanpeng/one-api/common/ctxkey"
 	"github.com/songquanpeng/one-api/common/logger"
 	"github.com/songquanpeng/one-api/model"
+	"github.com/songquanpeng/one-api/monitor"
 )
 
 const (
@@ -118,6 +119,23 @@ func Affinity() func(c *gin.Context) {
 				channelId, requestModel, conversationId)
 			c.Next()
 			return
+		}
+
+		// Health-aware validation: check if channel is healthy
+		if common.RedisEnabled {
+			healthStatus := monitor.GetChannelHealthStatus(channelId)
+			if healthStatus == monitor.HealthStatusUnhealthy {
+				// Channel is unhealthy, clear affinity mapping and proceed normally
+				_ = common.RedisDel(AffinityRedisKeyPrefix + conversationId)
+				logger.Infof(ctx, "affinity: channel %d is unhealthy for conversation %s, clearing mapping and will re-route",
+					channelId, conversationId)
+				c.Next()
+				return
+			}
+			if healthStatus == monitor.HealthStatusDegraded {
+				logger.Infof(ctx, "affinity: channel %d is degraded for conversation %s, using with caution",
+					channelId, conversationId)
+			}
 		}
 
 		// Set the specific channel ID for distribution
