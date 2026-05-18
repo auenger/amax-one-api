@@ -177,7 +177,11 @@ func (user *User) Update(updatePassword bool) error {
 	} else if user.Status == UserStatusEnabled {
 		blacklist.UnbanUser(user.Id)
 	}
-	err = DB.Model(user).Updates(user).Error
+	fields := []string{"username", "display_name", "status", "role", "email", "quota", "group"}
+	if updatePassword {
+		fields = append(fields, "password")
+	}
+	err = DB.Model(user).Select(fields).Updates(user).Error
 	return err
 }
 

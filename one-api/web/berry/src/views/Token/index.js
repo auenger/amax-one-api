@@ -154,9 +154,12 @@ export default function Token() {
           新建令牌
         </Button>
       </Stack>
-      <Stack mb={2}>
+      <Stack mb={2} spacing={1}>
         <Alert severity="info">
-          将 OpenAI API 基础地址 https://api.openai.com 替换为 <b>{siteInfo.server_address}</b>，复制下面的密钥即可使用
+          OpenAI 协议：将 API 基础地址 https://api.openai.com 替换为 <b>{siteInfo.server_address}</b>，使用 <b>/v1/chat/completions</b> 路径，复制下面的密钥即可使用
+        </Alert>
+        <Alert severity="info">
+          Anthropic 协议：将 API 基础地址 https://api.anthropic.com 替换为 <b>{siteInfo.server_address}</b>，使用 <b>/v1/messages</b> 路径，复制下面的密钥即可使用
         </Alert>
       </Stack>
       <Card>

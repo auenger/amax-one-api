@@ -137,6 +137,7 @@ var ModelRatio = map[string]float64{
 	"gemini-2.0-pro-exp-02-05":            1.25 * MILLI_USD,
 	"aqa":                                 1,
 	// https://open.bigmodel.cn/pricing
+	"glm-5.1":          0.06 * RMB,
 	"glm-zero-preview": 0.01 * RMB,
 	"glm-4-plus":       0.05 * RMB,
 	"glm-4-0520":       0.1 * RMB,
@@ -622,6 +623,8 @@ var ModelRatio = map[string]float64{
 }
 
 var CompletionRatio = map[string]float64{
+	// glm-5.1 output/input = 24/6 = 4
+	"glm-5.1": 4,
 	// aws llama3
 	"llama3-8b-8192(33)":  0.0006 / 0.0003,
 	"llama3-70b-8192(33)": 0.0035 / 0.00265,

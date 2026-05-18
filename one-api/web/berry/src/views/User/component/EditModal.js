@@ -23,7 +23,7 @@ import {
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
 
-import { renderQuotaWithPrompt, showSuccess, showError } from 'utils/common';
+import { renderQuotaWithPrompt, showSuccess, showError, calculateQuota } from 'utils/common';
 import { API } from 'utils/api';
 
 const validationSchema = Yup.object().shape({
@@ -62,14 +62,24 @@ const EditModal = ({ open, userId, onCancel, onOk }) => {
   const [groupOptions, setGroupOptions] = useState([]);
   const [showPassword, setShowPassword] = useState(false);
 
+  const getQuotaPerUnit = () => {
+    let quotaPerUnit = localStorage.getItem('quota_per_unit');
+    return parseFloat(quotaPerUnit) || 500000;
+  };
+
   const submit = async (values, { setErrors, setStatus, setSubmitting }) => {
     setSubmitting(true);
+    const quotaPerUnit = getQuotaPerUnit();
+    const submitValues = {
+      ...values,
+      quota: Math.round(parseFloat(values.quota) * quotaPerUnit)
+    };
 
     let res;
     if (values.is_edit) {
-      res = await API.put(`/api/user/`, { ...values, id: parseInt(userId) });
+      res = await API.put(`/api/user/`, { ...submitValues, id: parseInt(userId) });
     } else {
-      res = await API.post(`/api/user/`, values);
+      res = await API.post(`/api/user/`, submitValues);
     }
     const { success, message } = res.data;
     if (success) {
@@ -100,6 +110,7 @@ const EditModal = ({ open, userId, onCancel, onOk }) => {
     const { success, message, data } = res.data;
     if (success) {
       data.is_edit = true;
+      data.quota = parseFloat(calculateQuota(data.quota));
       setInputs(data);
     } else {
       showError(message);
@@ -210,14 +221,14 @@ const EditModal = ({ open, userId, onCancel, onOk }) => {
               {values.is_edit && (
                 <>
                   <FormControl fullWidth error={Boolean(touched.quota && errors.quota)} sx={{ ...theme.typography.otherInput }}>
-                    <InputLabel htmlFor="channel-quota-label">额度</InputLabel>
+                    <InputLabel htmlFor="channel-quota-label">额度（$）</InputLabel>
                     <OutlinedInput
                       id="channel-quota-label"
-                      label="额度"
+                      label="额度（$）"
                       type="number"
                       value={values.quota}
                       name="quota"
-                      endAdornment={<InputAdornment position="end">{renderQuotaWithPrompt(values.quota)}</InputAdornment>}
+                      endAdornment={<InputAdornment position="end">美元</InputAdornment>}
                       onBlur={handleBlur}
                       onChange={handleChange}
                       aria-describedby="helper-text-channel-quota-label"

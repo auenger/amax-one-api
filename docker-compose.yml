@@ -55,6 +55,7 @@ services:
       RETRY_TIMES: 3
       CHANNEL_DISABLE_THRESHOLD: 5
       INITIAL_ROOT_TOKEN: sk-aihub-root-token-change-me
+      THEME: berry
     depends_on:
       postgres:
         condition: service_healthy

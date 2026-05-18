@@ -6,8 +6,9 @@
 
 使用了以下开源项目作为我们项目的一部分：
 
-- [Berry Free React Admin Template](https://github.com/codedthemes/berry-free-react-admin-template)
-- [minimal-ui-kit](minimal-ui-kit)
+* [Berry Free React Admin Template](https://github.com/codedthemes/berry-free-react-admin-template)
+
+* [minimal-ui-kit](minimal-ui-kit)
 
 ## 开发说明
 
@@ -59,3 +60,5 @@ const typeConfig = {
 ## 许可证
 
 本项目中使用的代码遵循 MIT 许可证。
+
+⠀

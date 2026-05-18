@@ -1,7 +1,7 @@
 meta:
-  last_updated: '2026-05-12'
+  last_updated: '2026-05-18'
   version: 1
-  total_completed: 10
+  total_completed: 14
 records:
   - id: feat-project-init
     name: 项目基础设施初始化
@@ -515,3 +515,46 @@ records:
       commits: 0
       files_changed: 0
       note: Split into feat-admin-provider-model and feat-admin-key-usage
+  - id: feat-claude-parity
+    name: Anthropic 协议与 OpenAI 协议逻辑对齐
+    completed: '2026-05-18'
+    tag: feat-claude-parity-20260518
+    merge_commit: 4643ac0
+    merged_to: main
+    branch_deleted: true
+    branch_name: feature/claude-parity
+    worktree_deleted: true
+    worktree_path: ../aihub-claude-parity
+    keywords:
+      - anthropic
+      - openai
+      - protocol
+      - parity
+      - relay
+      - claude
+      - messages-api
+      - format-conversion
+      - sse
+      - streaming
+      - billing
+      - quota
+      - retry
+      - route-prefix
+      - relaymode
+    category: backend
+    value_points: 2
+    related_features:
+      - feat-rebuild-oneapi
+      - feat-phase1-openai-proxy
+    conflicts:
+      had_conflict: false
+      conflict_files: []
+    verification:
+      status: passed
+      scenarios_total: 10
+      scenarios_passed: 10
+    stats:
+      started: '2026-05-18'
+      duration: ~15min
+      commits: 1
+      files_changed: 6

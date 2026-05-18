@@ -1,8 +1,8 @@
 meta:
-  last_updated: '2026-05-12'
+  last_updated: '2026-05-18'
   started: '2026-05-12'
-  total_features: 10
-  last_completed: feat-admin-data-integration
+  total_features: 14
+  last_completed: feat-claude-parity
 
 pending: []
 
