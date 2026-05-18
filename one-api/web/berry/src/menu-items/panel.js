@@ -8,11 +8,12 @@ import {
   IconKey,
   IconGardenCart,
   IconUser,
-  IconUserScan
+  IconUserScan,
+  IconBrain
 } from '@tabler/icons-react';
 
 // constant
-const icons = { IconDashboard, IconSitemap, IconArticle, IconCoin, IconAdjustments, IconKey, IconGardenCart, IconUser, IconUserScan };
+const icons = { IconDashboard, IconSitemap, IconArticle, IconCoin, IconAdjustments, IconKey, IconGardenCart, IconUser, IconUserScan, IconBrain };
 
 // ==============================|| DASHBOARD MENU ITEMS ||============================== //
 
@@ -28,6 +29,14 @@ const panel = {
       icon: icons.IconDashboard,
       breadcrumbs: false,
       isAdmin: false
+    },
+    {
+      id: 'models',
+      title: '模型广场',
+      type: 'item',
+      url: '/panel/models',
+      icon: icons.IconBrain,
+      breadcrumbs: false
     },
     {
       id: 'channel',
