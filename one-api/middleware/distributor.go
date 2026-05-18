@@ -57,6 +57,10 @@ func Distribute() func(c *gin.Context) {
 		}
 		logger.Debugf(ctx, "user id %d, user group: %s, request model: %s, using channel #%d", userId, userGroup, requestModel, channel.Id)
 		SetupContextForSelectedChannel(c, channel, requestModel)
+		// Record affinity mapping for conversation_id if present
+		if err := RecordAffinityMapping(c, channel.Id); err != nil {
+			logger.Errorf(ctx, "affinity: failed to record mapping: %s", err.Error())
+		}
 		c.Next()
 	}
 }

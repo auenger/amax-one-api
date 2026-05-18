@@ -3,6 +3,7 @@ package model
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/songquanpeng/one-api/common/config"
 	"github.com/songquanpeng/one-api/common/helper"
@@ -272,4 +273,19 @@ func GetChannelsBudgetExceeded() ([]*Channel, error) {
 	var channels []*Channel
 	err := DB.Where("budget_limit > 0 AND budget_used >= budget_limit AND status = ?", ChannelStatusEnabled).Find(&channels).Error
 	return channels, err
+}
+
+// ChannelSupportsModel checks whether a channel supports a given model name.
+// It matches against the comma-separated Models field of the channel.
+func ChannelSupportsModel(channel *Channel, modelName string) bool {
+	if modelName == "" {
+		return true
+	}
+	models := strings.Split(channel.Models, ",")
+	for _, m := range models {
+		if strings.TrimSpace(m) == modelName {
+			return true
+		}
+	}
+	return false
 }

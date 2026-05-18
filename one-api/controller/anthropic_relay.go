@@ -191,6 +191,10 @@ func RelayAnthropic(c *gin.Context) {
 
 			bizErr = relayHelper(c, relaymode.ChatCompletions)
 			if bizErr == nil {
+				// Record new affinity mapping for the successful retry channel
+				if affinityErr := middleware.RecordAffinityMapping(c, channel.Id); affinityErr != nil {
+					logger.Errorf(ctx, "affinity: failed to record mapping after retry: %s", affinityErr.Error())
+				}
 				break
 			}
 			lastFailedChannelId = c.GetInt(ctxkey.ChannelId)
