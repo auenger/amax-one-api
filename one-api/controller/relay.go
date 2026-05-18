@@ -82,6 +82,10 @@ func Relay(c *gin.Context) {
 		c.Request.Body = io.NopCloser(bytes.NewBuffer(requestBody))
 		bizErr = relayHelper(c, relayMode)
 		if bizErr == nil {
+			// Record new affinity mapping for the successful retry channel
+			if affinityErr := middleware.RecordAffinityMapping(c, channel.Id); affinityErr != nil {
+				logger.Errorf(ctx, "affinity: failed to record mapping after retry: %s", affinityErr.Error())
+			}
 			return
 		}
 		channelId := c.GetInt(ctxkey.ChannelId)
@@ -104,7 +108,18 @@ func Relay(c *gin.Context) {
 
 func shouldRetry(c *gin.Context, statusCode int) bool {
 	if _, ok := c.Get(ctxkey.SpecificChannelId); ok {
-		return false
+		// If this was an affinity-bound channel, allow retry by clearing the binding.
+		// The affinity middleware already validated the channel, so a failure here
+		// means the channel went down between validation and actual use.
+		if _, hasAffinity := c.Get(ctxkey.ConversationId); hasAffinity {
+			// Clear affinity so retry can pick a different channel
+			middleware.ClearAffinityMapping(c)
+			c.Set(ctxkey.SpecificChannelId, "") // Clear to allow random selection in retry
+			c.Set(ctxkey.OriginalModel, c.GetString(ctxkey.RequestModel))
+			logger.Infof(c.Request.Context(), "affinity: bound channel failed, clearing mapping and allowing retry")
+		} else {
+			return false // Explicit channel selection (e.g., sk-xxx-channelId), no retry
+		}
 	}
 	if statusCode == http.StatusTooManyRequests {
 		return true
