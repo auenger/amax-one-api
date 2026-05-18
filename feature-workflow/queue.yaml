@@ -1,10 +1,20 @@
 meta:
   last_updated: '2026-05-18'
   started: '2026-05-12'
-  total_features: 14
-  last_completed: feat-claude-parity
+  total_features: 18
+  last_completed: feat-channel-smart-lb
 
-pending: []
+pending:
+  - id: feat-channel-routing
+    name: 多渠道智能路由
+    priority: 70
+    size: L
+    split: true
+    children:
+      - feat-channel-affinity
+      - feat-channel-failover
+      - feat-channel-smart-lb
+    created: '2026-05-18'
 
 active: []
 

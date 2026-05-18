@@ -1,7 +1,7 @@
 meta:
   last_updated: '2026-05-18'
   version: 1
-  total_completed: 14
+  total_completed: 17
 records:
   - id: feat-project-init
     name: 项目基础设施初始化
@@ -558,3 +558,146 @@ records:
       duration: ~15min
       commits: 1
       files_changed: 6
+  - id: feat-channel-affinity
+    name: 会话亲和路由
+    completed: '2026-05-18'
+    tag: feat-channel-affinity-20260518
+    merge_commit: 849b757
+    merged_to: main
+    branch_deleted: true
+    branch_name: feature/channel-affinity
+    worktree_deleted: true
+    worktree_path: ../aihub-channel-affinity
+    keywords:
+      - affinity
+      - session
+      - conversation
+      - channel
+      - routing
+      - redis
+      - ttl
+      - conversation-id
+      - x-conversation-id
+      - specific-channel
+      - failover
+      - retry
+      - middleware
+      - one-api
+      - go
+      - gin
+    category: backend
+    value_points: 2
+    related_features:
+      - feat-channel-routing
+      - feat-channel-failover
+      - feat-channel-smart-lb
+      - feat-phase1-openai-proxy
+    conflicts:
+      had_conflict: false
+      conflict_files: []
+    verification:
+      status: passed
+      scenarios_total: 5
+      scenarios_passed: 5
+    stats:
+      started: '2026-05-18'
+      duration: ~20min
+      commits: 1
+      files_changed: 9
+  - id: feat-channel-failover
+    name: 渠道故障转移
+    completed: '2026-05-18'
+    tag: feat-channel-failover-20260518
+    merge_commit: 1e2bb61
+    merged_to: main
+    branch_deleted: true
+    branch_name: feature/channel-failover
+    worktree_deleted: true
+    worktree_path: ../aihub-channel-failover
+    keywords:
+      - channel
+      - failover
+      - health-check
+      - circuit-breaker
+      - degraded
+      - unhealthy
+      - recovery
+      - redis
+      - affinity
+      - retry
+      - rate-limit
+      - 429
+      - 503
+      - probe
+      - monitor
+      - go
+      - gin
+      - middleware
+      - one-api
+    category: backend
+    value_points: 3
+    related_features:
+      - feat-channel-affinity
+      - feat-channel-routing
+      - feat-channel-smart-lb
+    conflicts:
+      had_conflict: false
+      conflict_files: []
+    verification:
+      status: passed
+      scenarios_total: 5
+      scenarios_passed: 5
+    stats:
+      started: '2026-05-18'
+      duration: ~15min
+      commits: 1
+      files_changed: 7
+  - id: feat-channel-smart-lb
+    name: 智能负载均衡
+    completed: '2026-05-18'
+    tag: feat-channel-smart-lb-20260518
+    merge_commit: 2964872
+    merged_to: main
+    branch_deleted: true
+    branch_name: feature/channel-smart-lb
+    worktree_deleted: true
+    worktree_path: ../aihub-channel-smart-lb
+    keywords:
+      - load-balancer
+      - smart-routing
+      - metrics
+      - scoring
+      - latency
+      - reliability
+      - quota
+      - weighted-random
+      - round-robin
+      - redis
+      - sliding-window
+      - channel
+      - strategy
+      - admin-api
+      - p95
+      - p99
+      - percentile
+      - go
+      - gin
+      - one-api
+    category: backend
+    value_points: 3
+    related_features:
+      - feat-channel-affinity
+      - feat-channel-failover
+      - feat-channel-routing
+    conflicts:
+      had_conflict: false
+      conflict_files: []
+    verification:
+      status: passed
+      scenarios_total: 5
+      scenarios_passed: 5
+    stats:
+      started: '2026-05-18'
+      duration: ~20min
+      commits: 1
+      files_changed: 9
