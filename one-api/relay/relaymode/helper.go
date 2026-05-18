@@ -3,6 +3,10 @@ package relaymode
 import "strings"
 
 func GetByPath(path string) int {
+	// Strip protocol prefixes for new routes
+	path = strings.TrimPrefix(path, "/openai")
+	path = strings.TrimPrefix(path, "/anthropic")
+
 	relayMode := Unknown
 	if strings.HasPrefix(path, "/v1/chat/completions") {
 		relayMode = ChatCompletions

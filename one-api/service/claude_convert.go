@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/songquanpeng/one-api/common/helper"
+	"github.com/songquanpeng/one-api/common/random"
 	relaymodel "github.com/songquanpeng/one-api/relay/model"
 )
 
@@ -386,7 +386,7 @@ func OpenAIResponseToClaude(openaiResp map[string]any, modelName string) *Claude
 
 	id, _ := openaiResp["id"].(string)
 	if id == "" {
-		id = fmt.Sprintf("msg_%s", helper.GetUUID())
+		id = fmt.Sprintf("msg_%s", random.GetUUID())
 	}
 
 	return &ClaudeMessagesResponse{
