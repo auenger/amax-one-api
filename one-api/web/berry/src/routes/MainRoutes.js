@@ -13,6 +13,7 @@ const Topup = Loadable(lazy(() => import('views/Topup')));
 const User = Loadable(lazy(() => import('views/User')));
 const Profile = Loadable(lazy(() => import('views/Profile')));
 const ModelMarket = Loadable(lazy(() => import('views/ModelMarket')));
+const Report = Loadable(lazy(() => import('views/Report')));
 const NotFoundView = Loadable(lazy(() => import('views/Error')));
 
 // dashboard routing
@@ -63,6 +64,10 @@ const MainRoutes = {
     {
       path: 'models',
       element: <ModelMarket />
+    },
+    {
+      path: 'report',
+      element: <Report />
     },
     {
       path: 'profile',

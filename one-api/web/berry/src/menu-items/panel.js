@@ -9,11 +9,12 @@ import {
   IconGardenCart,
   IconUser,
   IconUserScan,
-  IconBrain
+  IconBrain,
+  IconChartBar
 } from '@tabler/icons-react';
 
 // constant
-const icons = { IconDashboard, IconSitemap, IconArticle, IconCoin, IconAdjustments, IconKey, IconGardenCart, IconUser, IconUserScan, IconBrain };
+const icons = { IconDashboard, IconSitemap, IconArticle, IconCoin, IconAdjustments, IconKey, IconGardenCart, IconUser, IconUserScan, IconBrain, IconChartBar };
 
 // ==============================|| DASHBOARD MENU ITEMS ||============================== //
 
@@ -62,6 +63,15 @@ const panel = {
       url: '/panel/log',
       icon: icons.IconArticle,
       breadcrumbs: false
+    },
+    {
+      id: 'report',
+      title: '用量报表',
+      type: 'item',
+      url: '/panel/report',
+      icon: icons.IconChartBar,
+      breadcrumbs: false,
+      isAdmin: true
     },
     {
       id: 'redemption',
