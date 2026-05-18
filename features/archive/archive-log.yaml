@@ -1,703 +1,758 @@
 meta:
   last_updated: '2026-05-18'
   version: 1
-  total_completed: 17
+  total_completed: 18
 records:
-  - id: feat-project-init
-    name: 项目基础设施初始化
-    completed: '2026-05-12'
-    tag: feat-project-init-20260512
-    merge_commit: 21fdfa789f0df96d93efe1cc17724a70cdeefb6a
-    merged_to: main
-    branch_deleted: true
-    branch_name: feature/project-init
-    worktree_deleted: true
-    worktree_path: ../aihub-project-init
-    keywords:
-      - monorepo
-      - pnpm
-      - turborepo
-      - typescript
-      - fastify
-      - nextjs
-      - prisma
-      - postgresql
-      - redis
-      - docker
-      - eslint
-      - prettier
-      - husky
-      - ci
-      - shadcn
-      - tailwindcss
-      - shared
-      - database
-      - gateway
-      - web
-      - ulid
-      - rfc7807
-      - pino
-      - pagination
-    category: infra
-    value_points: 4
-    related_features:
-      - feat-phase1-model-registry
-      - feat-phase1-auth-pool
-      - feat-phase1-openai-proxy
-      - feat-phase1-usage-metering
-    conflicts:
-      had_conflict: false
-      conflict_files: []
-    verification:
-      status: passed
-      scenarios_total: 7
-      scenarios_passed: 7
-    stats:
-      started: '2026-05-12'
-      duration: ~30min
-      commits: 1
-      files_changed: 51
-  - id: feat-phase1-model-registry
-    name: 统一模型目录
-    completed: '2026-05-12'
-    tag: feat-phase1-model-registry-20260512
-    merge_commit: d3b2d60
-    merged_to: main
-    branch_deleted: true
-    branch_name: feature/phase1-model-registry
-    worktree_deleted: true
-    worktree_path: ../aihub-phase1-model-registry
-    keywords:
-      - model
-      - registry
-      - provider
-      - openai
-      - anthropic
-      - alias
-      - channel
-      - sync
-      - new-api
-      - aes-256-gcm
-      - encryption
-      - prisma
-      - fastify
-      - cursor-pagination
-      - resolve-model
-    category: backend
-    value_points: 2
-    related_features:
-      - feat-project-init
-      - feat-phase1-gateway
-      - feat-phase1-auth-pool
-      - feat-phase1-openai-proxy
-    conflicts:
-      had_conflict: false
-      conflict_files: []
-    verification:
-      status: passed
-      scenarios_total: 9
-      scenarios_passed: 8
-    stats:
-      started: '2026-05-12'
-      duration: ~20min
-      commits: 1
-      files_changed: 18
-  - id: feat-phase1-auth-pool
-    name: 鉴权池化 (Virtual Key Management)
-    completed: '2026-05-12'
-    tag: feat-phase1-auth-pool-20260512
-    merge_commit: 5a6d1b6
-    merged_to: main
-    branch_deleted: true
-    branch_name: feature/phase1-auth-pool
-    worktree_deleted: true
-    worktree_path: ../aihub-phase1-auth-pool
-    keywords:
-      - virtual-key
-      - auth
-      - authentication
-      - sha-256
-      - hash
-      - scope
-      - budget
-      - audit
-      - audit-log
-      - admin-api-key
-      - middleware
-      - prisma
-      - fastify
-      - cursor-pagination
-      - rfc7807
-      - validate
-      - revoke
-    category: backend
-    value_points: 3
-    related_features:
-      - feat-project-init
-      - feat-phase1-model-registry
-      - feat-phase1-gateway
-      - feat-phase1-openai-proxy
-      - feat-phase1-usage-metering
-    conflicts:
-      had_conflict: false
-      conflict_files: []
-    verification:
-      status: passed
-      scenarios_total: 6
-      scenarios_passed: 5
-    stats:
-      started: '2026-05-12'
-      duration: ~30min
-      commits: 1
-      files_changed: 14
-  - id: feat-phase1-openai-proxy
-    name: OpenAI 兼容代理
-    completed: '2026-05-12'
-    tag: feat-phase1-openai-proxy-20260512
-    merge_commit: 47f3d0d
-    merged_to: main
-    branch_deleted: true
-    branch_name: feature/phase1-openai-proxy
-    worktree_deleted: true
-    worktree_path: ../aihub-phase1-openai-proxy
-    keywords:
-      - proxy
-      - openai
-      - anthropic
-      - sse
-      - streaming
-      - chat-completions
-      - embeddings
-      - messages
-      - vk-auth
-      - virtual-key
-      - model-resolve
-      - alias
-      - usage
-      - sanitize
-      - rfc7807
-      - fastify
-      - bearer
-      - x-api-key
-      - dual-protocol
-    category: backend
-    value_points: 3
-    related_features:
-      - feat-project-init
-      - feat-phase1-model-registry
-      - feat-phase1-auth-pool
-      - feat-phase1-gateway
-      - feat-phase1-usage-metering
-    conflicts:
-      had_conflict: false
-      conflict_files: []
-    verification:
-      status: passed
-      scenarios_total: 12
-      scenarios_passed: 12
-    stats:
-      started: '2026-05-12'
-      duration: ~30min
-      commits: 1
-      files_changed: 8
-  - id: feat-phase1-usage-metering
-    name: Token 用量计量 (Token Usage Metering)
-    completed: '2026-05-12'
-    tag: feat-phase1-usage-metering-20260512
-    merge_commit: 5f3708c
-    merged_to: main
-    branch_deleted: true
-    branch_name: feature/phase1-usage-metering
-    worktree_deleted: true
-    worktree_path: ../aihub-phase1-usage-metering
-    keywords:
-      - usage
-      - metering
-      - token
-      - usage-log
-      - budget
-      - budget-check
-      - record-usage
-      - aggregate
-      - cursor-pagination
-      - prisma
-      - fastify
-      - fire-and-forget
-      - sse
-      - streaming
-      - rfc7807
-      - group-by
-      - admin-api-key
-      - virtual-key
-    category: backend
-    value_points: 3
-    related_features:
-      - feat-project-init
-      - feat-phase1-gateway
-      - feat-phase1-auth-pool
-      - feat-phase1-openai-proxy
-    conflicts:
-      had_conflict: false
-      conflict_files: []
-    verification:
-      status: passed
-      scenarios_total: 8
-      scenarios_passed: 8
-    stats:
-      started: '2026-05-12'
-      duration: ~20min
-      commits: 1
-      files_changed: 8
-  - id: feat-phase1-gateway
-    name: Phase 1 接入层
-    completed: '2026-05-12'
-    tag: feat-phase1-gateway-20260512
-    merge_commit: 645f90c
-    merged_to: main
-    branch_deleted: true
-    branch_name: feature/phase1-gateway
-    worktree_deleted: true
-    worktree_path: ../aihub-phase1-gateway
-    keywords:
-      - gateway
-      - phase1
-      - model-registry
-      - auth-pool
-      - openai-proxy
-      - usage-metering
-      - virtual-key
-      - proxy
-      - model-resolve
-      - new-api
-      - fastify
-      - integration
-      - prisma
-      - postgresql
-      - redis
-      - sse
-      - streaming
-      - budget
-      - rfc7807
-    category: backend
-    value_points: 3
-    related_features:
-      - feat-project-init
-      - feat-phase1-model-registry
-      - feat-phase1-auth-pool
-      - feat-phase1-openai-proxy
-      - feat-phase1-usage-metering
-    conflicts:
-      had_conflict: false
-      conflict_files: []
-    verification:
-      status: passed
-      scenarios_total: 6
-      scenarios_passed: 6
-    stats:
-      started: '2026-05-12'
-      duration: ~10min
-      commits: 1
-      files_changed: 1
-  - id: feat-frontend-redesign
-    name: 前端 UI 重构 (ui-ux-pro-max)
-    completed: '2026-05-12'
-    tag: feat-frontend-redesign-20260512
-    merge_commit: e9e31a4
-    merged_to: main
-    branch_deleted: true
-    branch_name: feature/frontend-redesign
-    worktree_deleted: true
-    worktree_path: ../aihub-frontend-redesign
-    keywords:
-      - frontend
-      - ui
-      - redesign
-      - landing-page
-      - dashboard
-      - sidebar
-      - navigation
-      - theme
-      - dark-mode
-      - light-mode
-      - nextjs
-      - shadcn-ui
-      - tailwindcss
-      - models
-      - virtual-key
-      - usage
-      - charts
-      - recharts
-      - responsive
-      - '404'
-      - card
-      - table
-      - dialog
-      - dropdown
-      - select
-      - badge
-      - skeleton
-      - tabs
-      - tooltip
-      - breadcrumb
-      - sidebar-component
-      - theme-toggle
-      - next-themes
-      - lucide-react
-    category: frontend
-    value_points: 2
-    related_features:
-      - feat-project-init
-      - feat-phase1-model-registry
-      - feat-phase1-auth-pool
-      - feat-phase1-usage-metering
-      - feat-phase1-gateway
-    conflicts:
-      had_conflict: false
-      conflict_files: []
-    verification:
-      status: passed
-      scenarios_total: 6
-      scenarios_passed: 6
-    stats:
-      started: '2026-05-12'
-      duration: ~25min
-      commits: 2
-      files_changed: 38
-  - id: feat-admin-provider-model
-    name: 供应商与模型管理
-    completed: '2026-05-12'
-    tag: feat-admin-provider-model-20260512
-    merge_commit: f7dd21a
-    merged_to: main
-    branch_deleted: true
-    branch_name: feature/admin-provider-model
-    worktree_deleted: true
-    worktree_path: ../aihub-admin-provider-model
-    keywords:
-      - provider
-      - model
-      - admin
-      - api-client
-      - crud
-      - dashboard
-      - swr
-      - fetch
-      - rfc7807
-      - error-handling
-      - typescript
-      - nextjs
-      - form
-      - dialog
-      - table
-      - badge
-      - skeleton
-      - toast
-      - sonner
-      - alias
-      - sync-status
-      - api-key
-      - provider-key
-      - model-registry
-    category: frontend
-    value_points: 3
-    related_features:
-      - feat-frontend-redesign
-      - feat-phase1-model-registry
-      - feat-admin-data-integration
-      - feat-admin-key-usage
-    conflicts:
-      had_conflict: false
-      conflict_files: []
-    verification:
-      status: passed
-      scenarios_total: 5
-      scenarios_passed: 5
-    stats:
-      started: '2026-05-12'
-      duration: ~15min
-      commits: 3
-      files_changed: 22
-  - id: feat-admin-key-usage
-    name: Key 路由与用量集成
-    completed: '2026-05-12'
-    tag: feat-admin-key-usage-20260512
-    merge_commit: 2f758c3
-    merged_to: main
-    branch_deleted: true
-    branch_name: feature/admin-key-usage
-    worktree_deleted: true
-    worktree_path: ../aihub-admin-key-usage
-    keywords:
-      - virtual-key
-      - key-management
-      - usage
-      - token
-      - dashboard
-      - admin
-      - route
-      - budget
-      - revoke
-      - reactivate
-      - scope
-      - api-client
-      - swr
-      - bar-chart
-      - time-range
-      - filter
-      - ranking
-      - model-ranking
-      - key-ranking
-      - provider-status
-      - settings
-      - nextjs
-      - shadcn-ui
-      - toast
-      - sonner
-      - skeleton
-      - dialog
-      - table
-      - badge
-    category: frontend
-    value_points: 2
-    related_features:
-      - feat-admin-provider-model
-      - feat-admin-data-integration
-      - feat-phase1-auth-pool
-      - feat-phase1-usage-metering
-      - feat-frontend-redesign
-    conflicts:
-      had_conflict: false
-      conflict_files: []
-    verification:
-      status: passed
-      scenarios_total: 4
-      scenarios_passed: 4
-    stats:
-      started: '2026-05-12T15:43:45.509526'
-      duration: ~35min
-      commits: 1
-      files_changed: 7
-  - id: feat-admin-data-integration
-    name: 管理后台数据集成
-    completed: '2026-05-12'
-    tag: feat-admin-data-integration-20260512
-    merge_commit: n/a
-    merged_to: main
-    branch_deleted: true
-    branch_name: n/a
-    worktree_deleted: true
-    worktree_path: n/a
-    keywords:
-      - admin
-      - data-integration
-      - provider
-      - model
-      - virtual-key
-      - usage
-      - split-parent
-    category: frontend
-    value_points: 0
-    related_features:
-      - feat-admin-provider-model
-      - feat-admin-key-usage
-      - feat-frontend-redesign
-    conflicts:
-      had_conflict: false
-      conflict_files: []
-    verification:
-      status: passed
-      scenarios_total: 9
-      scenarios_passed: 9
-      note: Split parent — all children completed and verified
-    stats:
-      started: '2026-05-12'
-      duration: n/a
-      commits: 0
-      files_changed: 0
-      note: Split into feat-admin-provider-model and feat-admin-key-usage
-  - id: feat-claude-parity
-    name: Anthropic 协议与 OpenAI 协议逻辑对齐
-    completed: '2026-05-18'
-    tag: feat-claude-parity-20260518
-    merge_commit: 4643ac0
-    merged_to: main
-    branch_deleted: true
-    branch_name: feature/claude-parity
-    worktree_deleted: true
-    worktree_path: ../aihub-claude-parity
-    keywords:
-      - anthropic
-      - openai
-      - protocol
-      - parity
-      - relay
-      - claude
-      - messages-api
-      - format-conversion
-      - sse
-      - streaming
-      - billing
-      - quota
-      - retry
-      - route-prefix
-      - relaymode
-    category: backend
-    value_points: 2
-    related_features:
-      - feat-rebuild-oneapi
-      - feat-phase1-openai-proxy
-    conflicts:
-      had_conflict: false
-      conflict_files: []
-    verification:
-      status: passed
-      scenarios_total: 10
-      scenarios_passed: 10
-    stats:
-      started: '2026-05-18'
-      duration: ~15min
-      commits: 1
-      files_changed: 6
-  - id: feat-channel-affinity
-    name: 会话亲和路由
-    completed: '2026-05-18'
-    tag: feat-channel-affinity-20260518
-    merge_commit: 849b757
-    merged_to: main
-    branch_deleted: true
-    branch_name: feature/channel-affinity
-    worktree_deleted: true
-    worktree_path: ../aihub-channel-affinity
-    keywords:
-      - affinity
-      - session
-      - conversation
-      - channel
-      - routing
-      - redis
-      - ttl
-      - conversation-id
-      - x-conversation-id
-      - specific-channel
-      - failover
-      - retry
-      - middleware
-      - one-api
-      - go
-      - gin
-    category: backend
-    value_points: 2
-    related_features:
-      - feat-channel-routing
-      - feat-channel-failover
-      - feat-channel-smart-lb
-      - feat-phase1-openai-proxy
-    conflicts:
-      had_conflict: false
-      conflict_files: []
-    verification:
-      status: passed
-      scenarios_total: 5
-      scenarios_passed: 5
-    stats:
-      started: '2026-05-18'
-      duration: ~20min
-      commits: 1
-      files_changed: 9
-  - id: feat-channel-failover
-    name: 渠道故障转移
-    completed: '2026-05-18'
-    tag: feat-channel-failover-20260518
-    merge_commit: 1e2bb61
-    merged_to: main
-    branch_deleted: true
-    branch_name: feature/channel-failover
-    worktree_deleted: true
-    worktree_path: ../aihub-channel-failover
-    keywords:
-      - channel
-      - failover
-      - health-check
-      - circuit-breaker
-      - degraded
-      - unhealthy
-      - recovery
-      - redis
-      - affinity
-      - retry
-      - rate-limit
-      - 429
-      - 503
-      - probe
-      - monitor
-      - go
-      - gin
-      - middleware
-      - one-api
-    category: backend
-    value_points: 3
-    related_features:
-      - feat-channel-affinity
-      - feat-channel-routing
-      - feat-channel-smart-lb
-    conflicts:
-      had_conflict: false
-      conflict_files: []
-    verification:
-      status: passed
-      scenarios_total: 5
-      scenarios_passed: 5
-    stats:
-      started: '2026-05-18'
-      duration: ~15min
-      commits: 1
-      files_changed: 7
-  - id: feat-channel-smart-lb
-    name: 智能负载均衡
-    completed: '2026-05-18'
-    tag: feat-channel-smart-lb-20260518
-    merge_commit: 2964872
-    merged_to: main
-    branch_deleted: true
-    branch_name: feature/channel-smart-lb
-    worktree_deleted: true
-    worktree_path: ../aihub-channel-smart-lb
-    keywords:
-      - load-balancer
-      - smart-routing
-      - metrics
-      - scoring
-      - latency
-      - reliability
-      - quota
-      - weighted-random
-      - round-robin
-      - redis
-      - sliding-window
-      - channel
-      - strategy
-      - admin-api
-      - p95
-      - p99
-      - percentile
-      - go
-      - gin
-      - one-api
-    category: backend
-    value_points: 3
-    related_features:
-      - feat-channel-affinity
-      - feat-channel-failover
-      - feat-channel-routing
-    conflicts:
-      had_conflict: false
-      conflict_files: []
-    verification:
-      status: passed
-      scenarios_total: 5
-      scenarios_passed: 5
-    stats:
-      started: '2026-05-18'
-      duration: ~20min
-      commits: 1
-      files_changed: 9
+- id: feat-project-init
+  name: 项目基础设施初始化
+  completed: '2026-05-12'
+  tag: feat-project-init-20260512
+  merge_commit: 21fdfa789f0df96d93efe1cc17724a70cdeefb6a
+  merged_to: main
+  branch_deleted: true
+  branch_name: feature/project-init
+  worktree_deleted: true
+  worktree_path: ../aihub-project-init
+  keywords:
+  - monorepo
+  - pnpm
+  - turborepo
+  - typescript
+  - fastify
+  - nextjs
+  - prisma
+  - postgresql
+  - redis
+  - docker
+  - eslint
+  - prettier
+  - husky
+  - ci
+  - shadcn
+  - tailwindcss
+  - shared
+  - database
+  - gateway
+  - web
+  - ulid
+  - rfc7807
+  - pino
+  - pagination
+  category: infra
+  value_points: 4
+  related_features:
+  - feat-phase1-model-registry
+  - feat-phase1-auth-pool
+  - feat-phase1-openai-proxy
+  - feat-phase1-usage-metering
+  conflicts:
+    had_conflict: false
+    conflict_files: []
+  verification:
+    status: passed
+    scenarios_total: 7
+    scenarios_passed: 7
+  stats:
+    started: '2026-05-12'
+    duration: ~30min
+    commits: 1
+    files_changed: 51
+- id: feat-phase1-model-registry
+  name: 统一模型目录
+  completed: '2026-05-12'
+  tag: feat-phase1-model-registry-20260512
+  merge_commit: d3b2d60
+  merged_to: main
+  branch_deleted: true
+  branch_name: feature/phase1-model-registry
+  worktree_deleted: true
+  worktree_path: ../aihub-phase1-model-registry
+  keywords:
+  - model
+  - registry
+  - provider
+  - openai
+  - anthropic
+  - alias
+  - channel
+  - sync
+  - new-api
+  - aes-256-gcm
+  - encryption
+  - prisma
+  - fastify
+  - cursor-pagination
+  - resolve-model
+  category: backend
+  value_points: 2
+  related_features:
+  - feat-project-init
+  - feat-phase1-gateway
+  - feat-phase1-auth-pool
+  - feat-phase1-openai-proxy
+  conflicts:
+    had_conflict: false
+    conflict_files: []
+  verification:
+    status: passed
+    scenarios_total: 9
+    scenarios_passed: 8
+  stats:
+    started: '2026-05-12'
+    duration: ~20min
+    commits: 1
+    files_changed: 18
+- id: feat-phase1-auth-pool
+  name: 鉴权池化 (Virtual Key Management)
+  completed: '2026-05-12'
+  tag: feat-phase1-auth-pool-20260512
+  merge_commit: 5a6d1b6
+  merged_to: main
+  branch_deleted: true
+  branch_name: feature/phase1-auth-pool
+  worktree_deleted: true
+  worktree_path: ../aihub-phase1-auth-pool
+  keywords:
+  - virtual-key
+  - auth
+  - authentication
+  - sha-256
+  - hash
+  - scope
+  - budget
+  - audit
+  - audit-log
+  - admin-api-key
+  - middleware
+  - prisma
+  - fastify
+  - cursor-pagination
+  - rfc7807
+  - validate
+  - revoke
+  category: backend
+  value_points: 3
+  related_features:
+  - feat-project-init
+  - feat-phase1-model-registry
+  - feat-phase1-gateway
+  - feat-phase1-openai-proxy
+  - feat-phase1-usage-metering
+  conflicts:
+    had_conflict: false
+    conflict_files: []
+  verification:
+    status: passed
+    scenarios_total: 6
+    scenarios_passed: 5
+  stats:
+    started: '2026-05-12'
+    duration: ~30min
+    commits: 1
+    files_changed: 14
+- id: feat-phase1-openai-proxy
+  name: OpenAI 兼容代理
+  completed: '2026-05-12'
+  tag: feat-phase1-openai-proxy-20260512
+  merge_commit: 47f3d0d
+  merged_to: main
+  branch_deleted: true
+  branch_name: feature/phase1-openai-proxy
+  worktree_deleted: true
+  worktree_path: ../aihub-phase1-openai-proxy
+  keywords:
+  - proxy
+  - openai
+  - anthropic
+  - sse
+  - streaming
+  - chat-completions
+  - embeddings
+  - messages
+  - vk-auth
+  - virtual-key
+  - model-resolve
+  - alias
+  - usage
+  - sanitize
+  - rfc7807
+  - fastify
+  - bearer
+  - x-api-key
+  - dual-protocol
+  category: backend
+  value_points: 3
+  related_features:
+  - feat-project-init
+  - feat-phase1-model-registry
+  - feat-phase1-auth-pool
+  - feat-phase1-gateway
+  - feat-phase1-usage-metering
+  conflicts:
+    had_conflict: false
+    conflict_files: []
+  verification:
+    status: passed
+    scenarios_total: 12
+    scenarios_passed: 12
+  stats:
+    started: '2026-05-12'
+    duration: ~30min
+    commits: 1
+    files_changed: 8
+- id: feat-phase1-usage-metering
+  name: Token 用量计量 (Token Usage Metering)
+  completed: '2026-05-12'
+  tag: feat-phase1-usage-metering-20260512
+  merge_commit: 5f3708c
+  merged_to: main
+  branch_deleted: true
+  branch_name: feature/phase1-usage-metering
+  worktree_deleted: true
+  worktree_path: ../aihub-phase1-usage-metering
+  keywords:
+  - usage
+  - metering
+  - token
+  - usage-log
+  - budget
+  - budget-check
+  - record-usage
+  - aggregate
+  - cursor-pagination
+  - prisma
+  - fastify
+  - fire-and-forget
+  - sse
+  - streaming
+  - rfc7807
+  - group-by
+  - admin-api-key
+  - virtual-key
+  category: backend
+  value_points: 3
+  related_features:
+  - feat-project-init
+  - feat-phase1-gateway
+  - feat-phase1-auth-pool
+  - feat-phase1-openai-proxy
+  conflicts:
+    had_conflict: false
+    conflict_files: []
+  verification:
+    status: passed
+    scenarios_total: 8
+    scenarios_passed: 8
+  stats:
+    started: '2026-05-12'
+    duration: ~20min
+    commits: 1
+    files_changed: 8
+- id: feat-phase1-gateway
+  name: Phase 1 接入层
+  completed: '2026-05-12'
+  tag: feat-phase1-gateway-20260512
+  merge_commit: 645f90c
+  merged_to: main
+  branch_deleted: true
+  branch_name: feature/phase1-gateway
+  worktree_deleted: true
+  worktree_path: ../aihub-phase1-gateway
+  keywords:
+  - gateway
+  - phase1
+  - model-registry
+  - auth-pool
+  - openai-proxy
+  - usage-metering
+  - virtual-key
+  - proxy
+  - model-resolve
+  - new-api
+  - fastify
+  - integration
+  - prisma
+  - postgresql
+  - redis
+  - sse
+  - streaming
+  - budget
+  - rfc7807
+  category: backend
+  value_points: 3
+  related_features:
+  - feat-project-init
+  - feat-phase1-model-registry
+  - feat-phase1-auth-pool
+  - feat-phase1-openai-proxy
+  - feat-phase1-usage-metering
+  conflicts:
+    had_conflict: false
+    conflict_files: []
+  verification:
+    status: passed
+    scenarios_total: 6
+    scenarios_passed: 6
+  stats:
+    started: '2026-05-12'
+    duration: ~10min
+    commits: 1
+    files_changed: 1
+- id: feat-frontend-redesign
+  name: 前端 UI 重构 (ui-ux-pro-max)
+  completed: '2026-05-12'
+  tag: feat-frontend-redesign-20260512
+  merge_commit: e9e31a4
+  merged_to: main
+  branch_deleted: true
+  branch_name: feature/frontend-redesign
+  worktree_deleted: true
+  worktree_path: ../aihub-frontend-redesign
+  keywords:
+  - frontend
+  - ui
+  - redesign
+  - landing-page
+  - dashboard
+  - sidebar
+  - navigation
+  - theme
+  - dark-mode
+  - light-mode
+  - nextjs
+  - shadcn-ui
+  - tailwindcss
+  - models
+  - virtual-key
+  - usage
+  - charts
+  - recharts
+  - responsive
+  - '404'
+  - card
+  - table
+  - dialog
+  - dropdown
+  - select
+  - badge
+  - skeleton
+  - tabs
+  - tooltip
+  - breadcrumb
+  - sidebar-component
+  - theme-toggle
+  - next-themes
+  - lucide-react
+  category: frontend
+  value_points: 2
+  related_features:
+  - feat-project-init
+  - feat-phase1-model-registry
+  - feat-phase1-auth-pool
+  - feat-phase1-usage-metering
+  - feat-phase1-gateway
+  conflicts:
+    had_conflict: false
+    conflict_files: []
+  verification:
+    status: passed
+    scenarios_total: 6
+    scenarios_passed: 6
+  stats:
+    started: '2026-05-12'
+    duration: ~25min
+    commits: 2
+    files_changed: 38
+- id: feat-admin-provider-model
+  name: 供应商与模型管理
+  completed: '2026-05-12'
+  tag: feat-admin-provider-model-20260512
+  merge_commit: f7dd21a
+  merged_to: main
+  branch_deleted: true
+  branch_name: feature/admin-provider-model
+  worktree_deleted: true
+  worktree_path: ../aihub-admin-provider-model
+  keywords:
+  - provider
+  - model
+  - admin
+  - api-client
+  - crud
+  - dashboard
+  - swr
+  - fetch
+  - rfc7807
+  - error-handling
+  - typescript
+  - nextjs
+  - form
+  - dialog
+  - table
+  - badge
+  - skeleton
+  - toast
+  - sonner
+  - alias
+  - sync-status
+  - api-key
+  - provider-key
+  - model-registry
+  category: frontend
+  value_points: 3
+  related_features:
+  - feat-frontend-redesign
+  - feat-phase1-model-registry
+  - feat-admin-data-integration
+  - feat-admin-key-usage
+  conflicts:
+    had_conflict: false
+    conflict_files: []
+  verification:
+    status: passed
+    scenarios_total: 5
+    scenarios_passed: 5
+  stats:
+    started: '2026-05-12'
+    duration: ~15min
+    commits: 3
+    files_changed: 22
+- id: feat-admin-key-usage
+  name: Key 路由与用量集成
+  completed: '2026-05-12'
+  tag: feat-admin-key-usage-20260512
+  merge_commit: 2f758c3
+  merged_to: main
+  branch_deleted: true
+  branch_name: feature/admin-key-usage
+  worktree_deleted: true
+  worktree_path: ../aihub-admin-key-usage
+  keywords:
+  - virtual-key
+  - key-management
+  - usage
+  - token
+  - dashboard
+  - admin
+  - route
+  - budget
+  - revoke
+  - reactivate
+  - scope
+  - api-client
+  - swr
+  - bar-chart
+  - time-range
+  - filter
+  - ranking
+  - model-ranking
+  - key-ranking
+  - provider-status
+  - settings
+  - nextjs
+  - shadcn-ui
+  - toast
+  - sonner
+  - skeleton
+  - dialog
+  - table
+  - badge
+  category: frontend
+  value_points: 2
+  related_features:
+  - feat-admin-provider-model
+  - feat-admin-data-integration
+  - feat-phase1-auth-pool
+  - feat-phase1-usage-metering
+  - feat-frontend-redesign
+  conflicts:
+    had_conflict: false
+    conflict_files: []
+  verification:
+    status: passed
+    scenarios_total: 4
+    scenarios_passed: 4
+  stats:
+    started: '2026-05-12T15:43:45.509526'
+    duration: ~35min
+    commits: 1
+    files_changed: 7
+- id: feat-admin-data-integration
+  name: 管理后台数据集成
+  completed: '2026-05-12'
+  tag: feat-admin-data-integration-20260512
+  merge_commit: n/a
+  merged_to: main
+  branch_deleted: true
+  branch_name: n/a
+  worktree_deleted: true
+  worktree_path: n/a
+  keywords:
+  - admin
+  - data-integration
+  - provider
+  - model
+  - virtual-key
+  - usage
+  - split-parent
+  category: frontend
+  value_points: 0
+  related_features:
+  - feat-admin-provider-model
+  - feat-admin-key-usage
+  - feat-frontend-redesign
+  conflicts:
+    had_conflict: false
+    conflict_files: []
+  verification:
+    status: passed
+    scenarios_total: 9
+    scenarios_passed: 9
+    note: Split parent — all children completed and verified
+  stats:
+    started: '2026-05-12'
+    duration: n/a
+    commits: 0
+    files_changed: 0
+    note: Split into feat-admin-provider-model and feat-admin-key-usage
+- id: feat-claude-parity
+  name: Anthropic 协议与 OpenAI 协议逻辑对齐
+  completed: '2026-05-18'
+  tag: feat-claude-parity-20260518
+  merge_commit: 4643ac0
+  merged_to: main
+  branch_deleted: true
+  branch_name: feature/claude-parity
+  worktree_deleted: true
+  worktree_path: ../aihub-claude-parity
+  keywords:
+  - anthropic
+  - openai
+  - protocol
+  - parity
+  - relay
+  - claude
+  - messages-api
+  - format-conversion
+  - sse
+  - streaming
+  - billing
+  - quota
+  - retry
+  - route-prefix
+  - relaymode
+  category: backend
+  value_points: 2
+  related_features:
+  - feat-rebuild-oneapi
+  - feat-phase1-openai-proxy
+  conflicts:
+    had_conflict: false
+    conflict_files: []
+  verification:
+    status: passed
+    scenarios_total: 10
+    scenarios_passed: 10
+  stats:
+    started: '2026-05-18'
+    duration: ~15min
+    commits: 1
+    files_changed: 6
+- id: feat-channel-affinity
+  name: 会话亲和路由
+  completed: '2026-05-18'
+  tag: feat-channel-affinity-20260518
+  merge_commit: 849b757
+  merged_to: main
+  branch_deleted: true
+  branch_name: feature/channel-affinity
+  worktree_deleted: true
+  worktree_path: ../aihub-channel-affinity
+  keywords:
+  - affinity
+  - session
+  - conversation
+  - channel
+  - routing
+  - redis
+  - ttl
+  - conversation-id
+  - x-conversation-id
+  - specific-channel
+  - failover
+  - retry
+  - middleware
+  - one-api
+  - go
+  - gin
+  category: backend
+  value_points: 2
+  related_features:
+  - feat-channel-routing
+  - feat-channel-failover
+  - feat-channel-smart-lb
+  - feat-phase1-openai-proxy
+  conflicts:
+    had_conflict: false
+    conflict_files: []
+  verification:
+    status: passed
+    scenarios_total: 5
+    scenarios_passed: 5
+  stats:
+    started: '2026-05-18'
+    duration: ~20min
+    commits: 1
+    files_changed: 9
+- id: feat-channel-failover
+  name: 渠道故障转移
+  completed: '2026-05-18'
+  tag: feat-channel-failover-20260518
+  merge_commit: 1e2bb61
+  merged_to: main
+  branch_deleted: true
+  branch_name: feature/channel-failover
+  worktree_deleted: true
+  worktree_path: ../aihub-channel-failover
+  keywords:
+  - channel
+  - failover
+  - health-check
+  - circuit-breaker
+  - degraded
+  - unhealthy
+  - recovery
+  - redis
+  - affinity
+  - retry
+  - rate-limit
+  - 429
+  - 503
+  - probe
+  - monitor
+  - go
+  - gin
+  - middleware
+  - one-api
+  category: backend
+  value_points: 3
+  related_features:
+  - feat-channel-affinity
+  - feat-channel-routing
+  - feat-channel-smart-lb
+  conflicts:
+    had_conflict: false
+    conflict_files: []
+  verification:
+    status: passed
+    scenarios_total: 5
+    scenarios_passed: 5
+  stats:
+    started: '2026-05-18'
+    duration: ~15min
+    commits: 1
+    files_changed: 7
+- id: feat-channel-smart-lb
+  name: 智能负载均衡
+  completed: '2026-05-18'
+  tag: feat-channel-smart-lb-20260518
+  merge_commit: 2964872
+  merged_to: main
+  branch_deleted: true
+  branch_name: feature/channel-smart-lb
+  worktree_deleted: true
+  worktree_path: ../aihub-channel-smart-lb
+  keywords:
+  - load-balancer
+  - smart-routing
+  - metrics
+  - scoring
+  - latency
+  - reliability
+  - quota
+  - weighted-random
+  - round-robin
+  - redis
+  - sliding-window
+  - channel
+  - strategy
+  - admin-api
+  - p95
+  - p99
+  - percentile
+  - go
+  - gin
+  - one-api
+  category: backend
+  value_points: 3
+  related_features:
+  - feat-channel-affinity
+  - feat-channel-failover
+  - feat-channel-routing
+  conflicts:
+    had_conflict: false
+    conflict_files: []
+  verification:
+    status: passed
+    scenarios_total: 5
+    scenarios_passed: 5
+  stats:
+    started: '2026-05-18'
+    duration: ~20min
+    commits: 1
+    files_changed: 9
+- id: feat-model-marketplace
+  name: 模型广场
+  completed: '2026-05-18'
+  tag: feat-model-marketplace-20260518
+  merge_commit: fd25153
+  merged_to: main
+  branch_deleted: true
+  branch_name: feature/model-marketplace
+  worktree_deleted: true
+  worktree_path: ../aihub-model-marketplace
+  keywords:
+  - model
+  - marketplace
+  - market
+  - browse
+  - card-grid
+  - search
+  - filter
+  - channel-type
+  - available-models
+  - mui
+  - grid
+  - chip
+  - skeleton
+  - fade
+  - react
+  - berry
+  - tabler-icons
+  - responsive
+  - dark-mode
+  - light-mode
+  - usememo
+  - usetheme
+  - lazy-load
+  - route
+  - menu
+  - sidebar
+  category: frontend
+  value_points: 1
+  related_features:
+  - feat-phase1-model-registry
+  - feat-admin-provider-model
+  - feat-frontend-redesign
+  conflicts:
+    had_conflict: false
+    conflict_files: []
+  verification:
+    status: passed
+    scenarios_total: 5
+    scenarios_passed: 5
+  stats:
+    started: '2026-05-18T22:59:24'
+    duration: ~10min
+    commits: 1
+    files_changed: 3
