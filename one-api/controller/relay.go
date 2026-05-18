@@ -73,6 +73,11 @@ func Relay(c *gin.Context) {
 			logger.Errorf(ctx, "CacheGetRandomSatisfiedChannel failed: %+v", err)
 			break
 		}
+		// Skip unhealthy channels during retry
+		if common.RedisEnabled && monitor.ShouldFailover(channel.Id) {
+			logger.Infof(ctx, "health: skipping unhealthy channel #%d during retry (remain times %d)", channel.Id, i)
+			continue
+		}
 		logger.Infof(ctx, "using channel #%d to retry (remain times %d)", channel.Id, i)
 		if channel.Id == lastFailedChannelId {
 			continue
@@ -143,6 +148,10 @@ func processChannelRelayError(ctx context.Context, userId int, channelId int, ch
 		monitor.DisableChannel(channelId, channelName, err.Message)
 	} else {
 		monitor.Emit(channelId, false)
+	}
+	// Health-aware: mark channel as degraded on rate limit (429)
+	if err.StatusCode == http.StatusTooManyRequests {
+		monitor.MarkChannelDegraded(channelId, "rate limited (429)")
 	}
 }
 

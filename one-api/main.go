@@ -19,6 +19,7 @@ import (
 	"github.com/songquanpeng/one-api/controller"
 	"github.com/songquanpeng/one-api/middleware"
 	"github.com/songquanpeng/one-api/model"
+	"github.com/songquanpeng/one-api/monitor"
 	"github.com/songquanpeng/one-api/relay/adaptor/openai"
 	"github.com/songquanpeng/one-api/router"
 )
@@ -90,6 +91,10 @@ func main() {
 	}
 	if config.EnableMetric {
 		logger.SysLog("metric enabled, will disable channel if too much request failed")
+	}
+	// Start health checker for proactive channel monitoring
+	if os.Getenv("HEALTH_CHECK_ENABLED") != "false" {
+		monitor.StartHealthChecker()
 	}
 	openai.InitTokenEncoders()
 	client.Init()
