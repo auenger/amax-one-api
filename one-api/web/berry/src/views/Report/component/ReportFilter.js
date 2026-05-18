@@ -1,67 +1,99 @@
 import PropTypes from 'prop-types';
 import { useTheme } from '@mui/material/styles';
+import { IconUser, IconKey } from '@tabler/icons-react';
 import {
-  IconUser,
-  IconKey
-} from '@tabler/icons-react';
-import {
-  InputAdornment,
-  OutlinedInput,
+  Autocomplete,
+  TextField,
   Stack,
   FormControl,
-  InputLabel,
+  ButtonGroup,
+  Button,
   Card,
-  Box
+  Box,
+  InputAdornment
 } from '@mui/material';
 import { LocalizationProvider, DateTimePicker } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
+import { IconRefresh, IconSearch } from '@tabler/icons-react';
 require('dayjs/locale/zh-cn');
 
-export default function ReportFilter({ filter, handleFilterChange, handleFilterDateChange }) {
+export default function ReportFilter({
+  filter,
+  handleFilterChange,
+  handleFilterDateChange,
+  handleSearch,
+  handleReset,
+  usernameOptions,
+  tokenNameOptions
+}) {
   const theme = useTheme();
-  const grey500 = theme.palette.grey[500];
 
   return (
     <Card>
       <Box sx={{ padding: '24px 24px 0 24px' }}>
-        <Stack
-          direction={{ xs: 'column', sm: 'row' }}
-          spacing={{ xs: 3, sm: 2, md: 4 }}
-        >
-          <FormControl>
-            <InputLabel htmlFor="report-username-label">用户名称</InputLabel>
-            <OutlinedInput
-              id="username"
-              name="username"
-              sx={{ minWidth: '100%' }}
-              label="用户名称"
-              value={filter.username}
-              onChange={handleFilterChange}
-              placeholder="用户名称"
-              startAdornment={
-                <InputAdornment position="start">
-                  <IconUser stroke={1.5} size="20px" color={grey500} />
-                </InputAdornment>
-              }
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={{ xs: 3, sm: 2, md: 4 }} alignItems="center">
+          <FormControl sx={{ minWidth: 180 }}>
+            <Autocomplete
+              id="report-username"
+              options={usernameOptions || []}
+              value={filter.username || null}
+              onChange={(event, newValue) => {
+                handleFilterChange({ target: { name: 'username', value: newValue || '' } });
+              }}
+              inputValue={filter.username || ''}
+              onInputChange={(event, newInputValue) => {
+                handleFilterChange({ target: { name: 'username', value: newInputValue } });
+              }}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="用户名称"
+                  placeholder="搜索用户名"
+                  InputProps={{
+                    ...params.InputProps,
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <IconUser stroke={1.5} size="20px" color={theme.palette.grey[500]} />
+                      </InputAdornment>
+                    )
+                  }}
+                />
+              )}
+              size="small"
+              freeSolo
+              selectOnFocus
+              blurOnSelect
             />
           </FormControl>
 
-          <FormControl>
-            <InputLabel htmlFor="report-token-name-label">令牌名称（逗号分隔多选）</InputLabel>
-            <OutlinedInput
-              id="token_name"
-              name="token_name"
-              sx={{ minWidth: '100%' }}
-              label="令牌名称（逗号分隔多选）"
-              value={filter.token_name}
-              onChange={handleFilterChange}
-              placeholder="如 key-1,key-2"
-              startAdornment={
-                <InputAdornment position="start">
-                  <IconKey stroke={1.5} size="20px" color={grey500} />
-                </InputAdornment>
-              }
+          <FormControl sx={{ minWidth: 240 }}>
+            <Autocomplete
+              multiple
+              freeSolo
+              id="report-token-name"
+              options={tokenNameOptions || []}
+              value={filter.token_name ? filter.token_name.split(',').filter(Boolean) : []}
+              onChange={(event, newValue) => {
+                handleFilterChange({ target: { name: 'token_name', value: newValue.join(',') } });
+              }}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="令牌名称"
+                  placeholder="搜索令牌"
+                  InputProps={{
+                    ...params.InputProps,
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <IconKey stroke={1.5} size="20px" color={theme.palette.grey[500]} />
+                      </InputAdornment>
+                    )
+                  }}
+                />
+              )}
+              size="small"
+              limitTags={3}
             />
           </FormControl>
 
@@ -80,7 +112,8 @@ export default function ReportFilter({ filter, handleFilterChange, handleFilterD
                   handleFilterDateChange('start_timestamp', value.unix());
                 }}
                 slotProps={{
-                  actionBar: { actions: ['clear', 'today', 'accept'] }
+                  actionBar: { actions: ['clear', 'today', 'accept'] },
+                  textField: { size: 'small' }
                 }}
               />
             </LocalizationProvider>
@@ -101,11 +134,21 @@ export default function ReportFilter({ filter, handleFilterChange, handleFilterD
                   handleFilterDateChange('end_timestamp', value.unix());
                 }}
                 slotProps={{
-                  actionBar: { actions: ['clear', 'today', 'accept'] }
+                  actionBar: { actions: ['clear', 'today', 'accept'] },
+                  textField: { size: 'small' }
                 }}
               />
             </LocalizationProvider>
           </FormControl>
+
+          <ButtonGroup variant="outlined" aria-label="report actions">
+            <Button onClick={handleReset} startIcon={<IconRefresh width={'18px'} />}>
+              重置
+            </Button>
+            <Button onClick={handleSearch} startIcon={<IconSearch width={'18px'} />}>
+              查询
+            </Button>
+          </ButtonGroup>
         </Stack>
       </Box>
     </Card>
@@ -115,5 +158,9 @@ export default function ReportFilter({ filter, handleFilterChange, handleFilterD
 ReportFilter.propTypes = {
   filter: PropTypes.object,
   handleFilterChange: PropTypes.func,
-  handleFilterDateChange: PropTypes.func
+  handleFilterDateChange: PropTypes.func,
+  handleSearch: PropTypes.func,
+  handleReset: PropTypes.func,
+  usernameOptions: PropTypes.array,
+  tokenNameOptions: PropTypes.array
 };

@@ -1,13 +1,12 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Grid, Typography, Stack, ButtonGroup, Button } from '@mui/material';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { Grid, Typography, Stack } from '@mui/material';
 import { gridSpacing } from 'store/constant';
 import { API } from 'utils/api';
-import { showError, isAdmin, renderNumber, calculateQuota } from 'utils/common';
+import { showError, isAdmin } from 'utils/common';
 import ReportFilter from './component/ReportFilter';
 import SummaryCards from './component/SummaryCards';
 import TrendChart from './component/TrendChart';
 import TokenUsageTable from './component/TokenUsageTable';
-import { IconRefresh, IconSearch } from '@tabler/icons-react';
 
 const Report = () => {
   const [isLoading, setLoading] = useState(false);
@@ -77,6 +76,29 @@ const Report = () => {
     setReportData(null);
   };
 
+  // Extract username and token name options from report data
+  const usernameOptions = useMemo(() => {
+    if (!reportData) return [];
+    // Use the dedicated usernames list from API, or fall back to extracting from by_date_user
+    if (reportData.usernames && reportData.usernames.length > 0) {
+      return reportData.usernames;
+    }
+    const set = new Set();
+    (reportData.by_date_user || []).forEach((row) => {
+      if (row.username) set.add(row.username);
+    });
+    return Array.from(set).sort();
+  }, [reportData]);
+
+  const tokenNameOptions = useMemo(() => {
+    if (!reportData) return [];
+    // Use the dedicated token_names list from API, or fall back to extracting from by_token
+    if (reportData.token_names && reportData.token_names.length > 0) {
+      return reportData.token_names;
+    }
+    return (reportData.by_token || []).map((row) => row.token_name).filter(Boolean).sort();
+  }, [reportData]);
+
   useEffect(() => {
     if (userIsAdmin) {
       loadReport();
@@ -102,23 +124,21 @@ const Report = () => {
         filter={filter}
         handleFilterChange={handleFilterChange}
         handleFilterDateChange={handleFilterDateChange}
+        handleSearch={handleSearch}
+        handleReset={handleReset}
+        usernameOptions={usernameOptions}
+        tokenNameOptions={tokenNameOptions}
       />
-      <Stack direction="row" spacing={1} mb={2.5}>
-        <ButtonGroup variant="outlined" aria-label="report actions">
-          <Button onClick={handleReset} startIcon={<IconRefresh width={'18px'} />}>
-            重置
-          </Button>
-          <Button onClick={handleSearch} startIcon={<IconSearch width={'18px'} />}>
-            查询
-          </Button>
-        </ButtonGroup>
-      </Stack>
-      <Grid container spacing={gridSpacing}>
+      <Grid container spacing={gridSpacing} mt={0}>
         <Grid item xs={12}>
           <SummaryCards isLoading={isLoading} summary={reportData?.summary} />
         </Grid>
         <Grid item xs={12}>
-          <TrendChart isLoading={isLoading} data={reportData?.by_date || []} />
+          <TrendChart
+            isLoading={isLoading}
+            data={reportData?.by_date || []}
+            dataByUser={reportData?.by_date_user || []}
+          />
         </Grid>
         <Grid item xs={12}>
           <TokenUsageTable isLoading={isLoading} data={reportData?.by_token || []} />

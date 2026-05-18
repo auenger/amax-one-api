@@ -224,29 +224,33 @@ type LogStatistic struct {
 
 // ReportData holds the aggregated usage report data.
 type ReportData struct {
-	Summary  ReportSummary   `json:"summary"`
-	ByDate   []ReportRow     `json:"by_date"`
-	ByToken  []ReportRow     `json:"by_token"`
-	ByModel  []ReportRow     `json:"by_model"`
+	Summary    ReportSummary `json:"summary"`
+	ByDate     []ReportRow   `json:"by_date"`
+	ByDateUser []ReportRow   `json:"by_date_user"`
+	ByToken    []ReportRow   `json:"by_token"`
+	ByModel    []ReportRow   `json:"by_model"`
+	Usernames  []string      `json:"usernames"`
+	TokenName  []string      `json:"token_names"`
 }
 
 // ReportSummary holds the overall totals.
 type ReportSummary struct {
-	TotalRequests       int `json:"total_requests"`
-	TotalPromptTokens   int `json:"total_prompt_tokens"`
+	TotalRequests         int `json:"total_requests"`
+	TotalPromptTokens     int `json:"total_prompt_tokens"`
 	TotalCompletionTokens int `json:"total_completion_tokens"`
-	TotalQuota          int `json:"total_quota"`
+	TotalQuota            int `json:"total_quota"`
 }
 
 // ReportRow is a generic aggregation row used in by_date, by_token, by_model.
 type ReportRow struct {
-	Date              string `json:"date,omitempty"`
-	TokenName         string `json:"token_name,omitempty"`
-	ModelName         string `json:"model_name,omitempty"`
-	Requests          int    `json:"requests"`
-	PromptTokens      int    `json:"prompt_tokens"`
-	CompletionTokens  int    `json:"completion_tokens"`
-	Quota             int    `json:"quota"`
+	Date             string `json:"date,omitempty"`
+	Username         string `json:"username,omitempty"`
+	TokenName        string `json:"token_name,omitempty"`
+	ModelName        string `json:"model_name,omitempty"`
+	Requests         int    `json:"requests"`
+	PromptTokens     int    `json:"prompt_tokens"`
+	CompletionTokens int    `json:"completion_tokens"`
+	Quota            int    `json:"quota"`
 }
 
 func dayExpr() string {
@@ -308,6 +312,35 @@ func GetUsageReport(username string, tokenNames []string, startTimestamp, endTim
 	}
 	report.ByDate = byDate
 
+	// By date + username (for multi-user trend chart)
+	dateUserBase := buildReportBaseQuery(username, tokenNames, startTimestamp, endTimestamp)
+	var byDateUser []ReportRow
+	err = dateUserBase.Select(
+		dayExpr()+" as date",
+		"username",
+		"COUNT(1) as requests",
+		"COALESCE(SUM(prompt_tokens),0) as prompt_tokens",
+		"COALESCE(SUM(completion_tokens),0) as completion_tokens",
+		"COALESCE(SUM(quota),0) as quota",
+	).Group(dayExpr() + ", username").Order("date ASC, username ASC").Scan(&byDateUser).Error
+	if err != nil {
+		return nil, err
+	}
+	report.ByDateUser = byDateUser
+
+	// Extract distinct usernames from date-user data
+	usernameSet := make(map[string]bool)
+	for _, row := range byDateUser {
+		if row.Username != "" {
+			usernameSet[row.Username] = true
+		}
+	}
+	var usernames []string
+	for u := range usernameSet {
+		usernames = append(usernames, u)
+	}
+	report.Usernames = usernames
+
 	// By token
 	tokenBase := buildReportBaseQuery(username, tokenNames, startTimestamp, endTimestamp)
 	var byToken []ReportRow
@@ -322,6 +355,19 @@ func GetUsageReport(username string, tokenNames []string, startTimestamp, endTim
 		return nil, err
 	}
 	report.ByToken = byToken
+
+	// Extract distinct token names
+	tokenNameSet := make(map[string]bool)
+	for _, row := range byToken {
+		if row.TokenName != "" {
+			tokenNameSet[row.TokenName] = true
+		}
+	}
+	var tokenNameList []string
+	for t := range tokenNameSet {
+		tokenNameList = append(tokenNameList, t)
+	}
+	report.TokenName = tokenNameList
 
 	// By model
 	modelBase := buildReportBaseQuery(username, tokenNames, startTimestamp, endTimestamp)
