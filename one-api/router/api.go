@@ -92,6 +92,11 @@ func SetApiRouter(router *gin.Engine) {
 			channelRoute.GET("/budget/:id", controller.GetChannelBudget)
 			channelRoute.PUT("/budget/:id", controller.UpdateChannelBudget)
 			channelRoute.POST("/budget/:id/reset", controller.ResetChannelBudget)
+			// Enterprise: Provider quota query
+			channelRoute.GET("/quota", controller.GetAllChannelQuotas)
+			channelRoute.GET("/quotas_map", controller.GetChannelQuotasMap)
+			channelRoute.GET("/:id/quota", controller.GetChannelQuota)
+			channelRoute.POST("/:id/quota/refresh", controller.RefreshChannelQuota)
 		}
 		routingRoute := apiRouter.Group("/routing")
 		routingRoute.Use(middleware.AdminAuth())
