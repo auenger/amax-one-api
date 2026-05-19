@@ -1,7 +1,7 @@
 meta:
   last_updated: '2026-05-19'
   version: 1
-  total_completed: 24
+  total_completed: 25
 records:
 - id: feat-concurrency-tracker
   name: 并发量追踪后端
@@ -1161,3 +1161,53 @@ records:
     duration: ~15min
     commits: 1
     files_changed: 3
+
+- id: feat-provider-quota-refresh
+  name: 定时刷新与缓存
+  completed: '2026-05-19'
+  tag: feat-provider-quota-refresh-20260519
+  merge_commit: 15cd7c1
+  merged_to: main
+  branch_deleted: true
+  branch_name: feature/provider-quota-refresh
+  worktree_deleted: true
+  worktree_path: ../aihub-provider-quota-refresh
+  keywords:
+  - provider
+  - quota
+  - refresh
+  - cache
+  - goroutine
+  - scheduled
+  - concurrency
+  - alert
+  - degraded
+  - threshold
+  - redis
+  - ttl
+  - monitor
+  - channel
+  - balance
+  - window
+  - last-refresh
+  - api
+  category: backend
+  value_points: 2
+  related_features:
+  - feat-provider-quota-api
+  - feat-provider-quota-ui
+  - feat-provider-quota-monitor
+  - feat-channel-smart-lb
+  - feat-channel-failover
+  conflicts:
+    had_conflict: false
+    conflict_files: []
+  verification:
+    status: passed
+    scenarios_total: 4
+    scenarios_passed: 4
+  stats:
+    started: '2026-05-19T15:00:00'
+    duration: ~10min
+    commits: 1
+    files_changed: 5
