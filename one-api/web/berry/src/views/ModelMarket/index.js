@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
-  Grid,
+  Box,
   Card,
   CardContent,
   Typography,
@@ -9,39 +9,26 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Box,
   Chip,
   Skeleton,
   InputAdornment,
   Fade,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   IconButton,
-  Divider,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-  Button,
   Tooltip,
-  Stack
+  LinearProgress,
+  Collapse
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
-import { gridSpacing } from 'store/constant';
 import { API } from 'utils/api';
-import { showError } from 'utils/common';
-import { copy } from 'utils/common';
+import { showError, showSuccess, copy } from 'utils/common';
 import {
   IconSearch,
   IconSparkles,
-  IconX,
   IconServer,
-  IconInfoCircle,
-  IconTopologyStarRing3,
+  IconCopy,
+  IconChevronDown,
   IconChevronRight,
-  IconCopy
+  IconLoader
 } from '@tabler/icons-react';
 
 // Channel type ID -> label mapping
@@ -65,15 +52,15 @@ const CHANNEL_TYPE_MAP = {
 
 // Channel type ID -> color for Chip
 const CHANNEL_COLOR_MAP = {
-  1: 'success', // OpenAI
-  3: 'info', // Azure
-  14: 'secondary', // Anthropic
-  24: 'warning', // Google Gemini
-  15: 'primary', // Baidu
-  17: 'info', // Ali
-  40: 'default', // Moonshot
-  43: 'primary', // Mistral
-  45: 'info' // Zhipu
+  1: 'success',
+  3: 'info',
+  14: 'secondary',
+  24: 'warning',
+  15: 'primary',
+  17: 'info',
+  40: 'default',
+  43: 'primary',
+  45: 'info'
 };
 
 // Channel status display
@@ -116,200 +103,307 @@ function getChipColor(channelType, theme) {
   return colorMap[channelType] || 'default';
 }
 
-// ==============================|| MODEL DETAIL DIALOG ||============================== //
+// Concurrency color based on load level
+// Green: 0-2, Yellow: 3-5, Red: 6+
+function getConcurrencyColor(count) {
+  if (count <= 2) return 'success';
+  if (count <= 5) return 'warning';
+  return 'error';
+}
 
-const ModelDetailDialog = ({ open, model, onClose, userTokens }) => {
-  const theme = useTheme();
+function getConcurrencyLabel(count) {
+  if (count === 0) return '空闲';
+  if (count <= 2) return '低负载';
+  if (count <= 5) return '中负载';
+  return '高负载';
+}
 
-  if (!model) return null;
+// Quota progress bar color based on usage percent
+// Green: 0-60%, Yellow: 60-85%, Red: 85-100%
+function getQuotaColor(percent) {
+  if (percent <= 60) return 'success';
+  if (percent <= 85) return 'warning';
+  return 'error';
+}
 
-  const channels = model.channels || [];
-  // Get the first enabled token key for copy
-  const firstToken = userTokens && userTokens.length > 0 ? userTokens.find((t) => t.status === 1) : null;
+// Format remaining time from milliseconds
+function formatRemaining(ms) {
+  if (!ms || ms <= 0) return '';
+  const totalMin = Math.floor(ms / 60000);
+  if (totalMin < 60) return `${totalMin}m`;
+  const hours = Math.floor(totalMin / 60);
+  const min = totalMin % 60;
+  if (hours < 24) return `${hours}h${min > 0 ? min + 'm' : ''}`;
+  const days = Math.floor(hours / 24);
+  const remainH = hours % 24;
+  return `${days}d${remainH > 0 ? remainH + 'h' : ''}`;
+}
 
-  const handleCopyToken = (channelId) => {
-    if (!firstToken) {
-      showError('没有可用的令牌，请先创建令牌');
-      return;
-    }
-    const tokenWithChannel = `sk-${firstToken.key}-${channelId}`;
-    copy(tokenWithChannel, '带渠道令牌');
-  };
+// ==============================|| QUOTA PROGRESS BAR ||============================== //
+
+const QuotaProgressBar = ({ windows, theme }) => {
+  if (!windows || windows.length === 0) return null;
 
   return (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      maxWidth="sm"
-      fullWidth
-      PaperProps={{
-        sx: {
-          borderRadius: 3,
-          bgcolor: theme.palette.mode === 'dark' ? theme.palette.background.paper : theme.palette.background.default
-        }
-      }}
-    >
-      <DialogTitle
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          pb: 1
-        }}
-      >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <IconSparkles size={22} color={theme.palette.primary.main} />
-          <Typography variant="h5" sx={{ fontWeight: 600, fontSize: '1.1rem' }}>
-            模型详情
+    <Box sx={{ mt: 0.5 }}>
+      {windows.map((w, idx) => (
+        <Box key={idx} sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: idx < windows.length - 1 ? 0.5 : 0 }}>
+          <LinearProgress
+            variant="determinate"
+            value={Math.min(w.used_percent, 100)}
+            color={getQuotaColor(w.used_percent)}
+            sx={{
+              flex: 1,
+              height: 6,
+              borderRadius: 3,
+              bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'
+            }}
+          />
+          <Typography variant="caption" sx={{ fontSize: '0.65rem', color: theme.palette.text.secondary, whiteSpace: 'nowrap', minWidth: 60 }}>
+            {w.used_percent.toFixed(0)}% · {w.label}
+            {w.remaining_ms > 0 && ` 剩余 ${formatRemaining(w.remaining_ms)}`}
           </Typography>
         </Box>
-        <IconButton onClick={onClose} size="small" sx={{ color: theme.palette.text.secondary }}>
-          <IconX size={18} />
-        </IconButton>
-      </DialogTitle>
+      ))}
+    </Box>
+  );
+};
 
-      <Divider />
+// ==============================|| CHANNEL ROW (expanded) ||============================== //
 
-      <DialogContent sx={{ pt: 2.5 }}>
-        {/* Model Name */}
-        <Typography variant="h6" sx={{ fontWeight: 700, mb: 1, wordBreak: 'break-all' }}>
-          {model.name}
+const ChannelRow = ({ channel, concurrency, quota, onCopyToken, hasToken, theme }) => {
+  const typeLabel = CHANNEL_TYPE_MAP[channel.type] || `Type ${channel.type}`;
+  const statusInfo = CHANNEL_STATUS_MAP[channel.status] || CHANNEL_STATUS_MAP[0];
+  const concCount = concurrency?.count || 0;
+
+  return (
+    <Box
+      sx={{
+        p: 1.5,
+        borderRadius: 1.5,
+        bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
+        border: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'}`,
+        mb: 1,
+        '&:last-child': { mb: 0 }
+      }}
+    >
+      {/* Channel header: name + chips + copy button */}
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 0.5, flexWrap: 'wrap' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap' }}>
+          <Typography variant="body2" sx={{ fontWeight: 600, fontSize: '0.8rem' }}>
+            {channel.name || typeLabel}
+          </Typography>
+          <Chip label={`ID:${channel.id}`} size="small" variant="outlined" sx={{ fontSize: '0.6rem', height: 18, '& .MuiChip-label': { px: 0.5 } }} />
+          <Chip label={typeLabel} size="small" color={CHANNEL_COLOR_MAP[channel.type] || 'default'} variant="outlined" sx={{ fontSize: '0.6rem', height: 18, '& .MuiChip-label': { px: 0.5 } }} />
+          <Chip label={statusInfo.label} size="small" color={statusInfo.color} variant="filled" sx={{ fontSize: '0.6rem', height: 18, '& .MuiChip-label': { px: 0.5 } }} />
+        </Box>
+        <Tooltip title={hasToken ? '复制带渠道的令牌' : '请先创建令牌'} arrow>
+          <IconButton size="small" onClick={() => onCopyToken(channel.id)} sx={{ color: hasToken ? theme.palette.primary.main : theme.palette.text.disabled }}>
+            <IconCopy size={16} />
+          </IconButton>
+        </Tooltip>
+      </Box>
+
+      {/* Concurrency indicator */}
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mt: 0.75 }}>
+        <Typography variant="caption" sx={{ color: theme.palette.text.secondary, fontSize: '0.7rem' }}>
+          并发: {concCount}
         </Typography>
+        <Chip
+          label={getConcurrencyLabel(concCount)}
+          size="small"
+          color={getConcurrencyColor(concCount)}
+          sx={{ fontSize: '0.6rem', height: 16, '& .MuiChip-label': { px: 0.5 } }}
+        />
+      </Box>
 
-        {/* Primary Channel Type Badge */}
-        <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap', mb: 2.5 }}>
-          {model.channelType && (
+      {/* Quota progress bars */}
+      {quota && quota.windows && quota.windows.length > 0 && (
+        <Box sx={{ mt: 0.75 }}>
+          <Typography variant="caption" sx={{ color: theme.palette.text.secondary, fontSize: '0.7rem', mr: 1 }}>
+            配额:
+          </Typography>
+          <QuotaProgressBar windows={quota.windows} theme={theme} />
+        </Box>
+      )}
+
+      {/* Balance display if available */}
+      {quota && quota.balance != null && (
+        <Typography variant="caption" sx={{ display: 'block', mt: 0.5, color: theme.palette.text.secondary, fontSize: '0.65rem' }}>
+          余额: {quota.balance.toFixed(2)} {quota.balance_unit || ''}
+        </Typography>
+      )}
+    </Box>
+  );
+};
+
+// ==============================|| MODEL CARD (accordion) ||============================== //
+
+const ModelCard = ({ model, userTokens, concurrencyData, quotaData, theme }) => {
+  const [expanded, setExpanded] = useState(false);
+  const channels = model.channels || [];
+  const firstToken = userTokens && userTokens.length > 0 ? userTokens.find((t) => t.status === 1) : null;
+
+  // Build concurrency map for this model: channelId -> count
+  const modelConcurrency = useMemo(() => {
+    const map = {};
+    if (concurrencyData) {
+      const entry = concurrencyData.find((e) => e.model === model.name);
+      if (entry && entry.items) {
+        entry.items.forEach((item) => {
+          map[item.channel_id] = item;
+        });
+      }
+    }
+    return map;
+  }, [concurrencyData, model.name]);
+
+  // Summary stats
+  const totalConcurrency = useMemo(() => {
+    return Object.values(modelConcurrency).reduce((sum, item) => sum + (item.count || 0), 0);
+  }, [modelConcurrency]);
+
+  const maxQuotaPercent = useMemo(() => {
+    let max = 0;
+    channels.forEach((ch) => {
+      const q = quotaData?.[ch.id];
+      if (q && q.windows) {
+        q.windows.forEach((w) => {
+          if (w.used_percent > max) max = w.used_percent;
+        });
+      }
+    });
+    return max;
+  }, [channels, quotaData]);
+
+  const handleCopyToken = useCallback(
+    (channelId) => {
+      if (!firstToken) {
+        showError('没有可用的令牌，请先创建令牌');
+        return;
+      }
+      const tokenWithChannel = `sk-${firstToken.key}-${channelId}`;
+      copy(tokenWithChannel, '带渠道令牌');
+      showSuccess('已复制令牌到剪贴板');
+    },
+    [firstToken]
+  );
+
+  return (
+    <Card
+      variant="outlined"
+      sx={{
+        borderRadius: 2,
+        transition: 'all 0.2s ease-in-out',
+        borderColor: expanded ? theme.palette.primary.main : undefined,
+        boxShadow: expanded ? `0 2px 8px ${theme.palette.mode === 'dark' ? 'rgba(144,202,249,0.12)' : 'rgba(33,150,243,0.12)'}` : undefined,
+        backgroundColor: theme.palette.mode === 'dark' ? theme.palette.background.paper : theme.palette.background.default,
+        overflow: 'hidden'
+      }}
+    >
+      {/* Collapsed header - always visible */}
+      <CardContent
+        onClick={() => setExpanded(!expanded)}
+        sx={{
+          p: 2,
+          '&:last-child': { pb: 2 },
+          cursor: 'pointer',
+          '&:hover': { bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)' }
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1, minWidth: 0 }}>
+            {expanded ? <IconChevronDown size={18} color={theme.palette.primary.main} /> : <IconChevronRight size={18} color={theme.palette.text.secondary} />}
+            <Typography variant="subtitle2" sx={{ fontWeight: 600, fontSize: '0.85rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {model.name}
+            </Typography>
             <Chip
               label={model.channelType}
               size="small"
               color={getChipColor(model.channelType, theme)}
               variant="outlined"
-              sx={{ fontSize: '0.75rem' }}
+              sx={{ fontSize: '0.65rem', height: 20, '& .MuiChip-label': { px: 0.75 }, flexShrink: 0 }}
             />
-          )}
-          {channels.length > 0 && (
-            <Chip
-              label={`${channels.length} 个可用渠道`}
-              size="small"
-              color="primary"
-              variant="filled"
-              sx={{ fontSize: '0.75rem' }}
-            />
-          )}
-        </Box>
-
-        {/* Copy Hint */}
-        {firstToken && channels.length > 0 && (
-          <Box
-            sx={{
-              mb: 2,
-              px: 1.5,
-              py: 1,
-              borderRadius: 1,
-              bgcolor: theme.palette.mode === 'dark' ? 'rgba(144,202,249,0.08)' : 'rgba(33,150,243,0.06)',
-              border: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(144,202,249,0.15)' : 'rgba(33,150,243,0.12)'}`
-            }}
-          >
-            <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>
-              点击渠道旁的复制按钮可复制带渠道 ID 的令牌格式：<strong>sk-{'{'}令牌密钥{'}'}-{'{'}渠道ID{'}'}</strong>
-            </Typography>
           </Box>
-        )}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0, ml: 1 }}>
+            {channels.length > 0 && (
+              <Typography variant="caption" sx={{ color: theme.palette.text.secondary, fontSize: '0.7rem' }}>
+                <IconServer size={12} style={{ verticalAlign: 'middle', marginRight: 2 }} />
+                {channels.length} 渠道
+              </Typography>
+            )}
+            {totalConcurrency > 0 && (
+              <Chip label={`并发 ${totalConcurrency}`} size="small" color={getConcurrencyColor(totalConcurrency)} variant="filled" sx={{ fontSize: '0.6rem', height: 18, '& .MuiChip-label': { px: 0.5 } }} />
+            )}
+            {maxQuotaPercent > 0 && (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, minWidth: 80 }}>
+                <LinearProgress
+                  variant="determinate"
+                  value={Math.min(maxQuotaPercent, 100)}
+                  color={getQuotaColor(maxQuotaPercent)}
+                  sx={{ width: 40, height: 4, borderRadius: 2, bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)' }}
+                />
+                <Typography variant="caption" sx={{ fontSize: '0.65rem', color: theme.palette.text.secondary }}>
+                  {maxQuotaPercent.toFixed(0)}%
+                </Typography>
+              </Box>
+            )}
+          </Box>
+        </Box>
+      </CardContent>
 
-        {/* Channel List */}
-        {channels.length > 0 ? (
-          <Box>
-            <Typography variant="subtitle2" sx={{ mb: 1, color: theme.palette.text.secondary, fontWeight: 600 }}>
-              <IconServer size={14} style={{ verticalAlign: 'middle', marginRight: 4 }} />
-              可用渠道列表
-            </Typography>
-            <List
-              dense
+      {/* Expanded content */}
+      <Collapse in={expanded} timeout={300}>
+        <Box
+          sx={{
+            px: 2,
+            pb: 2,
+            borderTop: `1px solid ${theme.palette.divider}`
+          }}
+        >
+          {/* Copy format hint */}
+          {firstToken && channels.length > 0 && (
+            <Box
               sx={{
-                bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
-                borderRadius: 2,
-                py: 0.5
+                mb: 1.5,
+                mt: 1.5,
+                px: 1.5,
+                py: 0.75,
+                borderRadius: 1,
+                bgcolor: theme.palette.mode === 'dark' ? 'rgba(144,202,249,0.08)' : 'rgba(33,150,243,0.06)',
+                border: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(144,202,249,0.15)' : 'rgba(33,150,243,0.12)'}`
               }}
             >
-              {channels.map((ch, idx) => {
-                const typeLabel = CHANNEL_TYPE_MAP[ch.type] || `Type ${ch.type}`;
-                const statusInfo = CHANNEL_STATUS_MAP[ch.status] || CHANNEL_STATUS_MAP[0];
-                return (
-                  <ListItem
-                    key={idx}
-                    secondaryAction={
-                      firstToken ? (
-                        <Tooltip title="复制带渠道的令牌" arrow>
-                          <IconButton edge="end" size="small" onClick={() => handleCopyToken(ch.id)} sx={{ color: theme.palette.primary.main }}>
-                            <IconCopy size={16} />
-                          </IconButton>
-                        </Tooltip>
-                      ) : null
-                    }
-                    sx={{ py: 0.5, pr: firstToken ? 5 : 2 }}
-                  >
-                    <ListItemIcon sx={{ minWidth: 32 }}>
-                      <IconTopologyStarRing3 size={16} style={{ color: theme.palette.primary.main }} />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={
-                        <Stack direction="row" spacing={0.75} alignItems="center">
-                          <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                            {ch.name || typeLabel}
-                          </Typography>
-                          <Chip
-                            label={`ID: ${ch.id}`}
-                            size="small"
-                            sx={{ fontSize: '0.6rem', height: 18, '& .MuiChip-label': { px: 0.75 } }}
-                            variant="outlined"
-                          />
-                          <Chip
-                            label={typeLabel}
-                            size="small"
-                            color={CHANNEL_COLOR_MAP[ch.type] || 'default'}
-                            sx={{ fontSize: '0.6rem', height: 18, '& .MuiChip-label': { px: 0.75 } }}
-                            variant="outlined"
-                          />
-                          <Chip
-                            label={statusInfo.label}
-                            size="small"
-                            color={statusInfo.color}
-                            sx={{ fontSize: '0.6rem', height: 18, '& .MuiChip-label': { px: 0.75 } }}
-                            variant="filled"
-                          />
-                        </Stack>
-                      }
-                    />
-                  </ListItem>
-                );
-              })}
-            </List>
-          </Box>
-        ) : (
-          <Box
-            sx={{
-              textAlign: 'center',
-              py: 3,
-              color: theme.palette.text.secondary,
-              opacity: 0.6
-            }}
-          >
-            <IconInfoCircle size={32} stroke={1} />
-            <Typography variant="body2" sx={{ mt: 1 }}>
-              暂无渠道信息
-            </Typography>
-          </Box>
-        )}
-      </DialogContent>
+              <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>
+                复制格式: <strong>sk-{'{'}令牌{'}'}-{'{'}渠道ID{'}'}</strong>
+              </Typography>
+            </Box>
+          )}
 
-      <Divider />
-
-      <DialogActions sx={{ px: 3, py: 1.5 }}>
-        <Button onClick={onClose} variant="outlined" size="small">
-          关闭
-        </Button>
-      </DialogActions>
-    </Dialog>
+          {/* Channel list */}
+          {channels.length > 0 ? (
+            channels.map((ch, idx) => (
+              <ChannelRow
+                key={idx}
+                channel={ch}
+                concurrency={modelConcurrency[ch.id]}
+                quota={quotaData?.[ch.id]}
+                onCopyToken={handleCopyToken}
+                hasToken={!!firstToken}
+                theme={theme}
+              />
+            ))
+          ) : (
+            <Box sx={{ textAlign: 'center', py: 2, color: theme.palette.text.secondary, opacity: 0.6 }}>
+              <IconServer size={24} stroke={1} />
+              <Typography variant="body2" sx={{ mt: 0.5 }}>
+                暂无渠道信息
+              </Typography>
+            </Box>
+          )}
+        </Box>
+      </Collapse>
+    </Card>
   );
 };
 
@@ -318,24 +412,25 @@ const ModelDetailDialog = ({ open, model, onClose, userTokens }) => {
 const ModelMarket = () => {
   const theme = useTheme();
   const [isLoading, setLoading] = useState(true);
-  const [models, setModels] = useState([]); // [{name, channelType, channels: [{id, name, type, status}]}]
+  const [models, setModels] = useState([]);
   const [searchKeyword, setSearchKeyword] = useState('');
   const [channelFilter, setChannelFilter] = useState('all');
-  const [detailModel, setDetailModel] = useState(null);
   const [userTokens, setUserTokens] = useState([]);
+  const [concurrencyData, setConcurrencyData] = useState(null);
+  const [quotaData, setQuotaData] = useState(null);
+  const [concurrencyLoading, setConcurrencyLoading] = useState(false);
+  const refreshTimerRef = useRef(null);
 
-  // Load models with channel info
+  // Load models with channel info (primary data)
   const loadModels = useCallback(async () => {
     setLoading(true);
     try {
-      // Fetch user available models, real channel data, and user tokens in parallel
       const [userRes, channelRes, tokensRes] = await Promise.allSettled([
         API.get('/api/user/available_models'),
         API.get('/api/user/model_channels'),
         API.get('/api/token/?p=0')
       ]);
 
-      // Parse user available models
       let availableModels = [];
       if (userRes.status === 'fulfilled') {
         const { success, data } = userRes.value.data;
@@ -344,7 +439,6 @@ const ModelMarket = () => {
         }
       }
 
-      // Parse real channel data: modelName -> [{id, name, type, status}]
       let realChannelMap = {};
       if (channelRes.status === 'fulfilled') {
         const { success, data } = channelRes.value.data;
@@ -353,7 +447,6 @@ const ModelMarket = () => {
         }
       }
 
-      // Parse user tokens for copy functionality
       if (tokensRes.status === 'fulfilled') {
         const { success, data } = tokensRes.value.data;
         if (success && Array.isArray(data)) {
@@ -361,7 +454,6 @@ const ModelMarket = () => {
         }
       }
 
-      // Build model list using real channel data
       if (availableModels.length > 0) {
         setModels(
           availableModels.map((name) => {
@@ -374,7 +466,6 @@ const ModelMarket = () => {
           })
         );
       } else if (Object.keys(realChannelMap).length > 0) {
-        // Fallback: use real channel data directly
         const modelList = [];
         const seen = new Set();
         Object.entries(realChannelMap).forEach(([name, channels]) => {
@@ -398,9 +489,52 @@ const ModelMarket = () => {
     setLoading(false);
   }, []);
 
+  // Load concurrency and quota data (async, non-blocking)
+  const loadExtraData = useCallback(async () => {
+    setConcurrencyLoading(true);
+    try {
+      const [concRes, quotaRes] = await Promise.allSettled([
+        API.get('/api/user/model_concurrency'),
+        API.get('/api/user/channel_quotas')
+      ]);
+
+      if (concRes.status === 'fulfilled') {
+        const { success, data } = concRes.value.data;
+        if (success && Array.isArray(data)) {
+          setConcurrencyData(data);
+        }
+      }
+
+      if (quotaRes.status === 'fulfilled') {
+        const { success, data } = quotaRes.value.data;
+        if (success && data && typeof data === 'object') {
+          setQuotaData(data);
+        }
+      }
+    } catch (err) {
+      // Silently fail - extra data is optional
+    }
+    setConcurrencyLoading(false);
+  }, []);
+
+  // Initial load
   useEffect(() => {
-    loadModels();
-  }, [loadModels]);
+    loadModels().then(() => {
+      // Load extra data asynchronously after main data is rendered
+      loadExtraData();
+    });
+  }, [loadModels, loadExtraData]);
+
+  // Auto-refresh every 30 seconds
+  useEffect(() => {
+    if (refreshTimerRef.current) clearInterval(refreshTimerRef.current);
+    refreshTimerRef.current = setInterval(() => {
+      loadExtraData();
+    }, 30000);
+    return () => {
+      if (refreshTimerRef.current) clearInterval(refreshTimerRef.current);
+    };
+  }, [loadExtraData]);
 
   // Available channel types for filter
   const channelTypes = useMemo(() => {
@@ -430,90 +564,64 @@ const ModelMarket = () => {
     return counts;
   }, [models]);
 
-  // Open detail dialog
-  const handleCardClick = (model) => {
-    setDetailModel(model);
-  };
-
-  const handleCloseDetail = () => {
-    setDetailModel(null);
-  };
-
   return (
     <Box>
       {/* Header */}
-      <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+      <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
         <IconSparkles size={28} color={theme.palette.primary.main} />
         <Typography variant="h3" sx={{ fontWeight: 600 }}>
           模型广场
         </Typography>
-        <Chip
-          label={`${models.length} 个模型`}
-          size="small"
-          color="primary"
-          variant="outlined"
-          sx={{ ml: 1 }}
-        />
+        <Chip label={`${models.length} 个模型`} size="small" color="primary" variant="outlined" />
+        {concurrencyLoading && (
+          <Tooltip title="正在刷新并发和配额数据..." arrow>
+            <IconLoader size={16} className="spin" style={{ color: theme.palette.text.secondary, animation: 'spin 1s linear infinite' }} />
+          </Tooltip>
+        )}
       </Box>
 
       {/* Search & Filter Bar */}
-      <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} md={4}>
-          <TextField
-            fullWidth
-            size="small"
-            placeholder="搜索模型名称..."
-            value={searchKeyword}
-            onChange={(e) => setSearchKeyword(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <IconSearch size={18} />
-                </InputAdornment>
-              )
-            }}
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <FormControl fullWidth size="small">
-            <InputLabel>渠道类型</InputLabel>
-            <Select
-              value={channelFilter}
-              label="渠道类型"
-              onChange={(e) => setChannelFilter(e.target.value)}
-            >
-              {channelTypes.map((type) => (
-                <MenuItem key={type} value={type}>
-                  {type === 'all' ? '全部' : type}
-                  {type !== 'all' && channelCounts[type] ? ` (${channelCounts[type]})` : ''}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Grid>
-      </Grid>
+      <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
+        <TextField
+          size="small"
+          placeholder="搜索模型名称..."
+          value={searchKeyword}
+          onChange={(e) => setSearchKeyword(e.target.value)}
+          sx={{ flex: '1 1 240px', maxWidth: 360 }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <IconSearch size={18} />
+              </InputAdornment>
+            )
+          }}
+        />
+        <FormControl size="small" sx={{ flex: '0 1 200px' }}>
+          <InputLabel>渠道类型</InputLabel>
+          <Select value={channelFilter} label="渠道类型" onChange={(e) => setChannelFilter(e.target.value)}>
+            {channelTypes.map((type) => (
+              <MenuItem key={type} value={type}>
+                {type === 'all' ? '全部' : type}
+                {type !== 'all' && channelCounts[type] ? ` (${channelCounts[type]})` : ''}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      </Box>
 
       {/* Loading State */}
       {isLoading && (
-        <Grid container spacing={gridSpacing}>
-          {Array.from(new Array(12)).map((_, index) => (
-            <Grid item xs={6} sm={4} md={3} lg={2} key={index}>
-              <Skeleton variant="rounded" height={90} sx={{ borderRadius: 2 }} />
-            </Grid>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+          {Array.from(new Array(8)).map((_, index) => (
+            <Skeleton key={index} variant="rounded" height={56} sx={{ borderRadius: 2 }} />
           ))}
-        </Grid>
+        </Box>
       )}
 
       {/* Empty State */}
       {!isLoading && filteredModels.length === 0 && (
         <Fade in>
-          <Box
-            sx={{
-              textAlign: 'center',
-              py: 8,
-              color: theme.palette.text.secondary
-            }}
-          >
+          <Box sx={{ textAlign: 'center', py: 8, color: theme.palette.text.secondary }}>
             <IconSparkles size={48} stroke={1} style={{ opacity: 0.3 }} />
             <Typography variant="h5" sx={{ mt: 2, opacity: 0.6 }}>
               {models.length === 0 ? '暂无可用模型' : '没有匹配的模型'}
@@ -525,111 +633,32 @@ const ModelMarket = () => {
         </Fade>
       )}
 
-      {/* Model Card Grid */}
+      {/* Model Cards - flat list layout */}
       {!isLoading && filteredModels.length > 0 && (
-        <Grid container spacing={gridSpacing}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
           {filteredModels.map((model, index) => (
-            <Grid item xs={6} sm={4} md={3} lg={2} key={`${model.name}-${index}`}>
-              <Fade in timeout={{ enter: Math.min(index * 30, 500) }}>
-                <Card
-                  variant="outlined"
-                  onClick={() => handleCardClick(model)}
-                  sx={{
-                    height: '100%',
-                    borderRadius: 2,
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease-in-out',
-                    '&:hover': {
-                      borderColor: theme.palette.primary.main,
-                      boxShadow: `0 2px 12px ${theme.palette.mode === 'dark' ? 'rgba(144,202,249,0.15)' : 'rgba(33,150,243,0.15)'}`,
-                      transform: 'translateY(-2px)'
-                    },
-                    backgroundColor: theme.palette.mode === 'dark' ? theme.palette.background.paper : theme.palette.background.default
-                  }}
-                >
-                  <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                    {/* Model Name */}
-                    <Typography
-                      variant="subtitle2"
-                      sx={{
-                        fontWeight: 600,
-                        fontSize: '0.8rem',
-                        lineHeight: 1.3,
-                        mb: 1.5,
-                        wordBreak: 'break-all',
-                        minHeight: 32,
-                        display: '-webkit-box',
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: 'vertical',
-                        overflow: 'hidden'
-                      }}
-                    >
-                      {model.name}
-                    </Typography>
-
-                    {/* Channel Type Badge + Channel Count */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap' }}>
-                      <Chip
-                        label={model.channelType}
-                        size="small"
-                        sx={{
-                          fontSize: '0.65rem',
-                          height: 20,
-                          '& .MuiChip-label': { px: 1 }
-                        }}
-                        color={getChipColor(model.channelType, theme)}
-                        variant="outlined"
-                      />
-                      {model.channels.length > 0 && (
-                        <Tooltip title={`${model.channels.length} 个可用渠道`} arrow>
-                          <Chip
-                            icon={<IconServer size={12} />}
-                            label={model.channels.length}
-                            size="small"
-                            color="primary"
-                            variant="filled"
-                            sx={{
-                              fontSize: '0.6rem',
-                              height: 20,
-                              '& .MuiChip-label': { px: 0.5 },
-                              '& .MuiChip-icon': { ml: 0.5 }
-                            }}
-                          />
-                        </Tooltip>
-                      )}
-                    </Box>
-
-                    {/* Click hint on hover */}
-                    <Box
-                      sx={{
-                        mt: 1,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'flex-end',
-                        opacity: 0,
-                        transition: 'opacity 0.2s',
-                        '.MuiCard-root:hover &': {
-                          opacity: 0.5
-                        }
-                      }}
-                    >
-                      <IconChevronRight size={14} />
-                    </Box>
-                  </CardContent>
-                </Card>
-              </Fade>
-            </Grid>
+            <Fade in key={`${model.name}-${index}`} timeout={{ enter: Math.min(index * 50, 500) }}>
+              <div>
+                <ModelCard
+                  model={model}
+                  userTokens={userTokens}
+                  concurrencyData={concurrencyData}
+                  quotaData={quotaData}
+                  theme={theme}
+                />
+              </div>
+            </Fade>
           ))}
-        </Grid>
+        </Box>
       )}
 
-      {/* Model Detail Dialog */}
-      <ModelDetailDialog
-        open={Boolean(detailModel)}
-        model={detailModel}
-        onClose={handleCloseDetail}
-        userTokens={userTokens}
-      />
+      {/* Spin animation for refresh indicator */}
+      <style>{`
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </Box>
   );
 };

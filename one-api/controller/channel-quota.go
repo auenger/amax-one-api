@@ -10,6 +10,7 @@ import (
 
 	"github.com/songquanpeng/one-api/common"
 	"github.com/songquanpeng/one-api/common/client"
+	"github.com/songquanpeng/one-api/common/ctxkey"
 	"github.com/songquanpeng/one-api/common/logger"
 	"github.com/songquanpeng/one-api/model"
 	"github.com/songquanpeng/one-api/monitor"
@@ -513,5 +514,61 @@ func RefreshAllChannelQuotasHandler(c *gin.Context) {
 		"data": gin.H{
 			"refreshed_count": refreshed,
 		},
+	})
+}
+
+// GetUserChannelQuotas handles GET /api/user/channel_quotas
+// Returns quota data for channels accessible to the authenticated user.
+// Used by the model marketplace to display quota progress bars.
+func GetUserChannelQuotas(c *gin.Context) {
+	userId := c.GetInt(ctxkey.Id)
+	userGroup, err := model.CacheGetUserGroup(userId)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	// Get model -> channels mapping for the user's group
+	channelRefs := model.CacheGetModelChannelRefs(userGroup)
+	if channelRefs == nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"message": "",
+			"data":    map[int]*model.QuotaSummary{},
+		})
+		return
+	}
+
+	// Collect unique channel IDs
+	channelIdSet := make(map[int]bool)
+	for _, refs := range channelRefs {
+		for _, ref := range refs {
+			channelIdSet[ref.Id] = true
+		}
+	}
+
+	// Fetch cached quota for each channel
+	result := make(map[int]*model.QuotaSummary)
+	for chId := range channelIdSet {
+		quota, err := getCachedQuota(chId)
+		if err != nil || quota == nil {
+			continue
+		}
+		result[chId] = &model.QuotaSummary{
+			AccountLevel: quota.AccountLevel,
+			Balance:      quota.Balance,
+			BalanceUnit:  quota.BalanceUnit,
+			Windows:      quota.Windows,
+			LastUpdated:  quota.LastUpdated,
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data":    result,
 	})
 }
