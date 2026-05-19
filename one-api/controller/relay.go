@@ -52,6 +52,12 @@ func Relay(c *gin.Context) {
 	}
 	channelId := c.GetInt(ctxkey.ChannelId)
 	userId := c.GetInt(ctxkey.Id)
+	originalModel := c.GetString(ctxkey.OriginalModel)
+
+	// Track concurrency: increment on entry, decrement on exit
+	monitor.IncrConcurrency(channelId, originalModel)
+	defer monitor.DecrConcurrency(channelId, originalModel)
+
 	startTime := time.Now()
 	bizErr := relayHelper(c, relayMode)
 	latencyMs := time.Since(startTime).Milliseconds()
@@ -64,7 +70,6 @@ func Relay(c *gin.Context) {
 	lastFailedChannelId := channelId
 	channelName := c.GetString(ctxkey.ChannelName)
 	group := c.GetString(ctxkey.Group)
-	originalModel := c.GetString(ctxkey.OriginalModel)
 	go processChannelRelayError(ctx, userId, channelId, channelName, *bizErr)
 	// Record metrics for smart load balancing (failure)
 	monitor.RecordMetrics(channelId, latencyMs, false, 0)
@@ -92,7 +97,10 @@ func Relay(c *gin.Context) {
 		middleware.SetupContextForSelectedChannel(c, channel, originalModel)
 		requestBody, err := common.GetRequestBody(c)
 		c.Request.Body = io.NopCloser(bytes.NewBuffer(requestBody))
+		// Track concurrency for retry channel
+		monitor.IncrConcurrency(channel.Id, originalModel)
 		bizErr = relayHelper(c, relayMode)
+		monitor.DecrConcurrency(channel.Id, originalModel)
 		if bizErr == nil {
 			// Record new affinity mapping for the successful retry channel
 			if affinityErr := middleware.RecordAffinityMapping(c, channel.Id); affinityErr != nil {

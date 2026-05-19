@@ -154,6 +154,10 @@ func RelayAnthropic(c *gin.Context) {
 	group := c.GetString(ctxkey.Group)
 	originalModel := c.GetString(ctxkey.OriginalModel)
 
+	// Track concurrency: increment on entry, decrement on exit
+	monitor.IncrConcurrency(channelId, originalModel)
+	defer monitor.DecrConcurrency(channelId, originalModel)
+
 	startTime := time.Now()
 	bizErr := relayHelper(c, relaymode.ChatCompletions)
 	latencyMs := time.Since(startTime).Milliseconds()
@@ -197,7 +201,10 @@ func RelayAnthropic(c *gin.Context) {
 				streamBuffer.body.Reset()
 			}
 
+			// Track concurrency for retry channel
+			monitor.IncrConcurrency(channel.Id, originalModel)
 			bizErr = relayHelper(c, relaymode.ChatCompletions)
+			monitor.DecrConcurrency(channel.Id, originalModel)
 			if bizErr == nil {
 				// Record new affinity mapping for the successful retry channel
 				if affinityErr := middleware.RecordAffinityMapping(c, channel.Id); affinityErr != nil {

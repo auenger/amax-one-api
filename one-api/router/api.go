@@ -49,6 +49,7 @@ func SetApiRouter(router *gin.Engine) {
 				selfRoute.POST("/topup", controller.TopUp)
 				selfRoute.GET("/available_models", controller.GetUserAvailableModels)
 				selfRoute.GET("/model_channels", controller.GetModelChannels)
+				selfRoute.GET("/model_concurrency", controller.GetUserModelConcurrency)
 				selfRoute.GET("/report", controller.GetUsageReport)
 			}
 
@@ -77,6 +78,7 @@ func SetApiRouter(router *gin.Engine) {
 			channelRoute.GET("/search", controller.SearchChannels)
 			channelRoute.GET("/models", controller.ListAllModels)
 			channelRoute.GET("/metrics", controller.GetChannelMetrics)
+			channelRoute.GET("/concurrency", controller.GetChannelConcurrency)
 			channelRoute.GET("/:id", controller.GetChannel)
 			channelRoute.GET("/test", controller.TestChannels)
 			channelRoute.GET("/test/:id", controller.TestChannel)
