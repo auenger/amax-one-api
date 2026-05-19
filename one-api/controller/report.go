@@ -14,6 +14,7 @@ func GetUsageReport(c *gin.Context) {
 	tokenName := c.Query("token_name")
 	startTimestamp, _ := parseTimestamp(c.Query("start_timestamp"))
 	endTimestamp, _ := parseTimestamp(c.Query("end_timestamp"))
+	granularity := c.DefaultQuery("granularity", "day")
 
 	var tokenNames []string
 	if tokenName != "" {
@@ -23,7 +24,7 @@ func GetUsageReport(c *gin.Context) {
 		}
 	}
 
-	report, err := model.GetUsageReport(username, tokenNames, startTimestamp, endTimestamp)
+	report, err := model.GetUsageReport(username, tokenNames, startTimestamp, endTimestamp, granularity)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
