@@ -316,3 +316,76 @@ func weightedRandomSelect(channels []*Channel) *Channel {
 	// fallback to last channel (should not reach here)
 	return channels[len(channels)-1]
 }
+
+// IsChannelInGroup checks whether a channel belongs to the specified user group.
+// It uses the in-memory channel cache (group2model2channels) for fast lookup.
+func IsChannelInGroup(channelIdStr string, userGroup string) bool {
+	if channelIdStr == "" || userGroup == "" {
+		return false
+	}
+	channelId, err := strconv.Atoi(channelIdStr)
+	if err != nil {
+		return false
+	}
+	if !config.MemoryCacheEnabled {
+		// Fallback: query DB directly
+		var channel Channel
+		if err := DB.Where("id = ?", channelId).Select("id", "status", "group").First(&channel).Error; err != nil {
+			return false
+		}
+		groups := strings.Split(channel.Group, ",")
+		for _, g := range groups {
+			if strings.TrimSpace(g) == userGroup {
+				return true
+			}
+		}
+		return false
+	}
+	channelSyncLock.RLock()
+	defer channelSyncLock.RUnlock()
+	for _, channels := range group2model2channels[userGroup] {
+		for _, ch := range channels {
+			if ch.Id == channelId {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// CacheGetModelChannels returns a map of model name -> channel info list for a given group.
+// This is used by the model marketplace to show available channels per model.
+func CacheGetModelChannels(group string) map[string][]ChannelInfo {
+	if !config.MemoryCacheEnabled {
+		// Fallback: not available without memory cache
+		return nil
+	}
+	channelSyncLock.RLock()
+	defer channelSyncLock.RUnlock()
+	model2channels, ok := group2model2channels[group]
+	if !ok {
+		return nil
+	}
+	result := make(map[string][]ChannelInfo)
+	for modelName, channels := range model2channels {
+		infos := make([]ChannelInfo, 0, len(channels))
+		for _, ch := range channels {
+			infos = append(infos, ChannelInfo{
+				Id:     ch.Id,
+				Name:   ch.Name,
+				Type:   ch.Type,
+				Status: ch.Status,
+			})
+		}
+		result[modelName] = infos
+	}
+	return result
+}
+
+// ChannelInfo represents a channel's basic info for the marketplace.
+type ChannelInfo struct {
+	Id     int    `json:"id"`
+	Name   string `json:"name"`
+	Type   int    `json:"type"`
+	Status int    `json:"status"`
+}

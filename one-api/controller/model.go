@@ -211,3 +211,23 @@ func GetUserAvailableModels(c *gin.Context) {
 	})
 	return
 }
+
+// GetModelChannels returns the available channels for each model in the user's group.
+// The response is a map: modelName -> []ChannelInfo
+func GetModelChannels(c *gin.Context) {
+	userId := c.GetInt(ctxkey.Id)
+	userGroup, err := model.CacheGetUserGroup(userId)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+	result := model.CacheGetModelChannels(userGroup)
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data":    result,
+	})
+}

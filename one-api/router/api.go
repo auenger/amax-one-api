@@ -48,6 +48,7 @@ func SetApiRouter(router *gin.Engine) {
 				selfRoute.GET("/aff", controller.GetAffCode)
 				selfRoute.POST("/topup", controller.TopUp)
 				selfRoute.GET("/available_models", controller.GetUserAvailableModels)
+				selfRoute.GET("/model_channels", controller.GetModelChannels)
 			}
 
 			adminRoute := userRoute.Group("/")

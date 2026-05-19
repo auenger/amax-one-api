@@ -25,12 +25,14 @@ import {
   ListItemIcon,
   ListItemText,
   Button,
-  Tooltip
+  Tooltip,
+  Stack
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { gridSpacing } from 'store/constant';
 import { API } from 'utils/api';
 import { showError } from 'utils/common';
+import { copy } from 'utils/common';
 import {
   IconSearch,
   IconBrain,
@@ -38,7 +40,8 @@ import {
   IconServer,
   IconInfoCircle,
   IconTopologyStarRing3,
-  IconChevronRight
+  IconChevronRight,
+  IconCopy
 } from '@tabler/icons-react';
 
 // Channel type ID -> label mapping
@@ -62,15 +65,23 @@ const CHANNEL_TYPE_MAP = {
 
 // Channel type ID -> color for Chip
 const CHANNEL_COLOR_MAP = {
-  1: 'success',     // OpenAI
-  3: 'info',        // Azure
-  14: 'secondary',  // Anthropic
-  24: 'warning',    // Google Gemini
-  15: 'primary',    // Baidu
-  17: 'info',       // Ali
-  40: 'default',    // Moonshot
-  43: 'primary',    // Mistral
-  45: 'info'        // Zhipu
+  1: 'success', // OpenAI
+  3: 'info', // Azure
+  14: 'secondary', // Anthropic
+  24: 'warning', // Google Gemini
+  15: 'primary', // Baidu
+  17: 'info', // Ali
+  40: 'default', // Moonshot
+  43: 'primary', // Mistral
+  45: 'info' // Zhipu
+};
+
+// Channel status display
+const CHANNEL_STATUS_MAP = {
+  0: { label: '未知', color: 'default' },
+  1: { label: '正常', color: 'success' },
+  2: { label: '已禁用', color: 'error' },
+  3: { label: '自动禁用', color: 'error' }
 };
 
 // Guess channel type from model name prefix (fallback when no channel data)
@@ -107,12 +118,23 @@ function getChipColor(channelType, theme) {
 
 // ==============================|| MODEL DETAIL DIALOG ||============================== //
 
-const ModelDetailDialog = ({ open, model, onClose }) => {
+const ModelDetailDialog = ({ open, model, onClose, userTokens }) => {
   const theme = useTheme();
 
   if (!model) return null;
 
   const channels = model.channels || [];
+  // Get the first enabled token key for copy
+  const firstToken = userTokens && userTokens.length > 0 ? userTokens.find((t) => t.status === 1) : null;
+
+  const handleCopyToken = (channelId) => {
+    if (!firstToken) {
+      showError('没有可用的令牌，请先创建令牌');
+      return;
+    }
+    const tokenWithChannel = `sk-${firstToken.key}-${channelId}`;
+    copy(tokenWithChannel, '带渠道令牌');
+  };
 
   return (
     <Dialog
@@ -176,6 +198,24 @@ const ModelDetailDialog = ({ open, model, onClose }) => {
           )}
         </Box>
 
+        {/* Copy Hint */}
+        {firstToken && channels.length > 0 && (
+          <Box
+            sx={{
+              mb: 2,
+              px: 1.5,
+              py: 1,
+              borderRadius: 1,
+              bgcolor: theme.palette.mode === 'dark' ? 'rgba(144,202,249,0.08)' : 'rgba(33,150,243,0.06)',
+              border: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(144,202,249,0.15)' : 'rgba(33,150,243,0.12)'}`
+            }}
+          >
+            <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>
+              点击渠道旁的复制按钮可复制带渠道 ID 的令牌格式：<strong>sk-{'{'}令牌密钥{'}'}-{'{'}渠道ID{'}'}</strong>
+            </Typography>
+          </Box>
+        )}
+
         {/* Channel List */}
         {channels.length > 0 ? (
           <Box>
@@ -191,28 +231,58 @@ const ModelDetailDialog = ({ open, model, onClose }) => {
                 py: 0.5
               }}
             >
-              {channels.map((ch, idx) => (
-                <ListItem key={idx} sx={{ py: 0.5 }}>
-                  <ListItemIcon sx={{ minWidth: 32 }}>
-                    <IconTopologyStarRing3 size={16} style={{ color: theme.palette.primary.main }} />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary={
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                          {ch.label}
-                        </Typography>
-                        <Chip
-                          label={`ID: ${ch.id}`}
-                          size="small"
-                          sx={{ fontSize: '0.6rem', height: 18, '& .MuiChip-label': { px: 0.75 } }}
-                          variant="outlined"
-                        />
-                      </Box>
+              {channels.map((ch, idx) => {
+                const typeLabel = CHANNEL_TYPE_MAP[ch.type] || `Type ${ch.type}`;
+                const statusInfo = CHANNEL_STATUS_MAP[ch.status] || CHANNEL_STATUS_MAP[0];
+                return (
+                  <ListItem
+                    key={idx}
+                    secondaryAction={
+                      firstToken ? (
+                        <Tooltip title="复制带渠道的令牌" arrow>
+                          <IconButton edge="end" size="small" onClick={() => handleCopyToken(ch.id)} sx={{ color: theme.palette.primary.main }}>
+                            <IconCopy size={16} />
+                          </IconButton>
+                        </Tooltip>
+                      ) : null
                     }
-                  />
-                </ListItem>
-              ))}
+                    sx={{ py: 0.5, pr: firstToken ? 5 : 2 }}
+                  >
+                    <ListItemIcon sx={{ minWidth: 32 }}>
+                      <IconTopologyStarRing3 size={16} style={{ color: theme.palette.primary.main }} />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={
+                        <Stack direction="row" spacing={0.75} alignItems="center">
+                          <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                            {ch.name || typeLabel}
+                          </Typography>
+                          <Chip
+                            label={`ID: ${ch.id}`}
+                            size="small"
+                            sx={{ fontSize: '0.6rem', height: 18, '& .MuiChip-label': { px: 0.75 } }}
+                            variant="outlined"
+                          />
+                          <Chip
+                            label={typeLabel}
+                            size="small"
+                            color={CHANNEL_COLOR_MAP[ch.type] || 'default'}
+                            sx={{ fontSize: '0.6rem', height: 18, '& .MuiChip-label': { px: 0.75 } }}
+                            variant="outlined"
+                          />
+                          <Chip
+                            label={statusInfo.label}
+                            size="small"
+                            color={statusInfo.color}
+                            sx={{ fontSize: '0.6rem', height: 18, '& .MuiChip-label': { px: 0.75 } }}
+                            variant="filled"
+                          />
+                        </Stack>
+                      }
+                    />
+                  </ListItem>
+                );
+              })}
             </List>
           </Box>
         ) : (
@@ -248,19 +318,21 @@ const ModelDetailDialog = ({ open, model, onClose }) => {
 const ModelMarket = () => {
   const theme = useTheme();
   const [isLoading, setLoading] = useState(true);
-  const [models, setModels] = useState([]); // [{name, channelType, channels: [{id, label}]}]
+  const [models, setModels] = useState([]); // [{name, channelType, channels: [{id, name, type, status}]}]
   const [searchKeyword, setSearchKeyword] = useState('');
   const [channelFilter, setChannelFilter] = useState('all');
   const [detailModel, setDetailModel] = useState(null);
+  const [userTokens, setUserTokens] = useState([]);
 
   // Load models with channel info
   const loadModels = useCallback(async () => {
     setLoading(true);
     try {
-      // Strategy 1: Fetch both APIs for rich data
-      const [userRes, modelsRes] = await Promise.allSettled([
+      // Fetch user available models, real channel data, and user tokens in parallel
+      const [userRes, channelRes, tokensRes] = await Promise.allSettled([
         API.get('/api/user/available_models'),
-        API.get('/api/models')
+        API.get('/api/user/model_channels'),
+        API.get('/api/token/?p=0')
       ]);
 
       // Parse user available models
@@ -272,61 +344,51 @@ const ModelMarket = () => {
         }
       }
 
-      // Parse channelId2Models to build reverse map
-      let channelMap = {}; // modelName -> [{id, label}]
-      let hasChannelData = false;
-
-      if (modelsRes.status === 'fulfilled') {
-        const { success, data } = modelsRes.value.data;
-        if (success && data && typeof data === 'object' && !Array.isArray(data)) {
-          hasChannelData = true;
-          Object.entries(data).forEach(([channelId, names]) => {
-            const typeId = parseInt(channelId);
-            const typeLabel = CHANNEL_TYPE_MAP[typeId] || `Type ${channelId}`;
-            if (Array.isArray(names)) {
-              names.forEach((name) => {
-                if (!channelMap[name]) {
-                  channelMap[name] = [];
-                }
-                channelMap[name].push({ id: typeId, label: typeLabel });
-              });
-            }
-          });
+      // Parse real channel data: modelName -> [{id, name, type, status}]
+      let realChannelMap = {};
+      if (channelRes.status === 'fulfilled') {
+        const { success, data } = channelRes.value.data;
+        if (success && data && typeof data === 'object') {
+          realChannelMap = data;
         }
       }
 
-      // Build model list
+      // Parse user tokens for copy functionality
+      if (tokensRes.status === 'fulfilled') {
+        const { success, data } = tokensRes.value.data;
+        if (success && Array.isArray(data)) {
+          setUserTokens(data);
+        }
+      }
+
+      // Build model list using real channel data
       if (availableModels.length > 0) {
         setModels(
-          availableModels.map((name) => ({
-            name,
-            channelType: guessChannelType(name),
-            channels: channelMap[name] || []
-          }))
+          availableModels.map((name) => {
+            const channels = realChannelMap[name] || [];
+            return {
+              name,
+              channelType: channels.length > 0 ? CHANNEL_TYPE_MAP[channels[0].type] || guessChannelType(name) : guessChannelType(name),
+              channels
+            };
+          })
         );
-      } else if (hasChannelData) {
-        // Fallback: use channelMap data directly
+      } else if (Object.keys(realChannelMap).length > 0) {
+        // Fallback: use real channel data directly
         const modelList = [];
         const seen = new Set();
-        Object.entries(channelMap).forEach(([name, channels]) => {
-          if (!seen.has(name)) {
+        Object.entries(realChannelMap).forEach(([name, channels]) => {
+          if (!seen.has(name) && Array.isArray(channels)) {
             seen.add(name);
             modelList.push({
               name,
-              channelType: channels.length > 0 ? channels[0].label : guessChannelType(name),
+              channelType: channels.length > 0 ? CHANNEL_TYPE_MAP[channels[0].type] || guessChannelType(name) : guessChannelType(name),
               channels
             });
           }
         });
         setModels(modelList);
       } else {
-        // Final fallback
-        if (userRes.status === 'fulfilled') {
-          const { success, data, message } = userRes.value.data;
-          if (!success) showError(message);
-        } else {
-          showError(userRes.reason);
-        }
         setModels([]);
       }
     } catch (err) {
@@ -566,6 +628,7 @@ const ModelMarket = () => {
         open={Boolean(detailModel)}
         model={detailModel}
         onClose={handleCloseDetail}
+        userTokens={userTokens}
       />
     </Box>
   );
