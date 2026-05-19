@@ -10,7 +10,14 @@ import (
 )
 
 func GetUsageReport(c *gin.Context) {
+	role := c.GetInt("role")
+
 	username := c.Query("username")
+	// Non-admin users can only see their own data
+	if role < model.RoleAdminUser {
+		username = c.GetString("username")
+	}
+
 	tokenName := c.Query("token_name")
 	startTimestamp, _ := parseTimestamp(c.Query("start_timestamp"))
 	endTimestamp, _ := parseTimestamp(c.Query("end_timestamp"))

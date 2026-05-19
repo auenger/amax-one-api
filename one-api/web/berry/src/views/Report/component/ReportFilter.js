@@ -10,7 +10,8 @@ import {
   Button,
   Card,
   Box,
-  InputAdornment
+  InputAdornment,
+  Tooltip
 } from '@mui/material';
 import { LocalizationProvider, DateTimePicker } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
@@ -25,7 +26,8 @@ export default function ReportFilter({
   handleSearch,
   handleReset,
   usernameOptions,
-  tokenNameOptions
+  tokenNameOptions,
+  showUsernameFilter
 }) {
   const theme = useTheme();
 
@@ -33,39 +35,41 @@ export default function ReportFilter({
     <Card>
       <Box sx={{ padding: '24px 24px 0 24px' }}>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={{ xs: 3, sm: 2, md: 4 }} alignItems="center">
-          <FormControl sx={{ minWidth: 180 }}>
-            <Autocomplete
-              id="report-username"
-              options={usernameOptions || []}
-              value={filter.username || null}
-              onChange={(event, newValue) => {
-                handleFilterChange({ target: { name: 'username', value: newValue || '' } });
-              }}
-              inputValue={filter.username || ''}
-              onInputChange={(event, newInputValue) => {
-                handleFilterChange({ target: { name: 'username', value: newInputValue } });
-              }}
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  label="用户名称"
-                  placeholder="搜索用户名"
-                  InputProps={{
-                    ...params.InputProps,
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <IconUser stroke={1.5} size="20px" color={theme.palette.grey[500]} />
-                      </InputAdornment>
-                    )
-                  }}
-                />
-              )}
-              size="small"
-              freeSolo
-              selectOnFocus
-              blurOnSelect
-            />
-          </FormControl>
+          {showUsernameFilter && (
+            <FormControl sx={{ minWidth: 180 }}>
+              <Autocomplete
+                id="report-username"
+                options={usernameOptions || []}
+                value={filter.username || null}
+                onChange={(event, newValue) => {
+                  handleFilterChange({ target: { name: 'username', value: newValue || '' } });
+                }}
+                inputValue={filter.username || ''}
+                onInputChange={(event, newInputValue) => {
+                  handleFilterChange({ target: { name: 'username', value: newInputValue } });
+                }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="用户名称"
+                    placeholder="搜索用户名"
+                    InputProps={{
+                      ...params.InputProps,
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <IconUser stroke={1.5} size="20px" color={theme.palette.grey[500]} />
+                        </InputAdornment>
+                      )
+                    }}
+                  />
+                )}
+                size="small"
+                freeSolo
+                selectOnFocus
+                blurOnSelect
+              />
+            </FormControl>
+          )}
 
           <FormControl sx={{ minWidth: 240 }}>
             <Autocomplete
@@ -142,12 +146,16 @@ export default function ReportFilter({
           </FormControl>
 
           <ButtonGroup variant="outlined" aria-label="report actions">
-            <Button onClick={handleReset} startIcon={<IconRefresh width={'18px'} />}>
-              重置
-            </Button>
-            <Button onClick={handleSearch} startIcon={<IconSearch width={'18px'} />}>
-              查询
-            </Button>
+            <Tooltip title="重置">
+              <Button onClick={handleReset} sx={{ minWidth: '40px', px: 1 }}>
+                <IconRefresh width={'18px'} />
+              </Button>
+            </Tooltip>
+            <Tooltip title="查询">
+              <Button onClick={handleSearch} sx={{ minWidth: '40px', px: 1 }}>
+                <IconSearch width={'18px'} />
+              </Button>
+            </Tooltip>
           </ButtonGroup>
         </Stack>
       </Box>
@@ -162,5 +170,6 @@ ReportFilter.propTypes = {
   handleSearch: PropTypes.func,
   handleReset: PropTypes.func,
   usernameOptions: PropTypes.array,
-  tokenNameOptions: PropTypes.array
+  tokenNameOptions: PropTypes.array,
+  showUsernameFilter: PropTypes.bool
 };

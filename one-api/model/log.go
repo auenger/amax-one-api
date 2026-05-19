@@ -224,13 +224,15 @@ type LogStatistic struct {
 
 // ReportData holds the aggregated usage report data.
 type ReportData struct {
-	Summary    ReportSummary `json:"summary"`
-	ByDate     []ReportRow   `json:"by_date"`
-	ByDateUser []ReportRow   `json:"by_date_user"`
-	ByToken    []ReportRow   `json:"by_token"`
-	ByModel    []ReportRow   `json:"by_model"`
-	Usernames  []string      `json:"usernames"`
-	TokenName  []string      `json:"token_names"`
+	Summary     ReportSummary `json:"summary"`
+	ByDate      []ReportRow   `json:"by_date"`
+	ByDateUser  []ReportRow   `json:"by_date_user"`
+	ByToken     []ReportRow   `json:"by_token"`
+	ByModel     []ReportRow   `json:"by_model"`
+	ByChannel   []ReportRow   `json:"by_channel"`
+	Usernames   []string      `json:"usernames"`
+	TokenName   []string      `json:"token_names"`
+	ChannelName []string      `json:"channel_names"`
 }
 
 // ReportSummary holds the overall totals.
@@ -241,16 +243,25 @@ type ReportSummary struct {
 	TotalQuota            int `json:"total_quota"`
 }
 
-// ReportRow is a generic aggregation row used in by_date, by_token, by_model.
+// ReportRow is a generic aggregation row used in by_date, by_token, by_model, by_channel.
 type ReportRow struct {
 	Date             string `json:"date,omitempty"`
 	Username         string `json:"username,omitempty"`
 	TokenName        string `json:"token_name,omitempty"`
 	ModelName        string `json:"model_name,omitempty"`
+	ChannelName      string `json:"channel_name,omitempty"`
 	Requests         int    `json:"requests"`
 	PromptTokens     int    `json:"prompt_tokens"`
 	CompletionTokens int    `json:"completion_tokens"`
 	Quota            int    `json:"quota"`
+}
+
+type channelAggRow struct {
+	ChannelId        int
+	Requests         int
+	PromptTokens     int
+	CompletionTokens int
+	Quota            int
 }
 
 func dayExpr() string {
@@ -404,6 +415,63 @@ func GetUsageReport(username string, tokenNames []string, startTimestamp, endTim
 		return nil, err
 	}
 	report.ByModel = byModel
+
+	// By channel
+	channelBase := buildReportBaseQuery(username, tokenNames, startTimestamp, endTimestamp)
+	var channelAggs []channelAggRow
+	err = channelBase.Select(
+		"channel as channel_id",
+		"COUNT(1) as requests",
+		"COALESCE(SUM(prompt_tokens),0) as prompt_tokens",
+		"COALESCE(SUM(completion_tokens),0) as completion_tokens",
+		"COALESCE(SUM(quota),0) as quota",
+	).Group("channel").Order("quota DESC").Scan(&channelAggs).Error
+	if err != nil {
+		return nil, err
+	}
+
+	if len(channelAggs) > 0 {
+		channelIds := make([]int, 0, len(channelAggs))
+		for _, agg := range channelAggs {
+			if agg.ChannelId > 0 {
+				channelIds = append(channelIds, agg.ChannelId)
+			}
+		}
+		channelMap := make(map[int]string)
+		if len(channelIds) > 0 {
+			var channels []Channel
+			DB.Where("id IN ?", channelIds).Find(&channels)
+			for _, ch := range channels {
+				channelMap[ch.Id] = ch.Name
+			}
+		}
+
+		byChannel := make([]ReportRow, 0, len(channelAggs))
+		channelNameSet := make(map[string]bool)
+		for _, agg := range channelAggs {
+			name := channelMap[agg.ChannelId]
+			if name == "" && agg.ChannelId > 0 {
+				name = fmt.Sprintf("渠道#%d", agg.ChannelId)
+			} else if name == "" {
+				name = "未知渠道"
+			}
+			channelNameSet[name] = true
+			byChannel = append(byChannel, ReportRow{
+				ChannelName:      name,
+				Requests:         agg.Requests,
+				PromptTokens:     agg.PromptTokens,
+				CompletionTokens: agg.CompletionTokens,
+				Quota:            agg.Quota,
+			})
+		}
+		report.ByChannel = byChannel
+
+		var channelNames []string
+		for n := range channelNameSet {
+			channelNames = append(channelNames, n)
+		}
+		report.ChannelName = channelNames
+	}
 
 	return report, nil
 }

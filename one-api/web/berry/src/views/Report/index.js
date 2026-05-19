@@ -7,6 +7,7 @@ import ReportFilter from './component/ReportFilter';
 import SummaryCards from './component/SummaryCards';
 import TrendChart from './component/TrendChart';
 import TokenUsageTable from './component/TokenUsageTable';
+import ChannelUsageTable from './component/ChannelUsageTable';
 
 const Report = () => {
   const [isLoading, setLoading] = useState(false);
@@ -33,8 +34,6 @@ const Report = () => {
 
   const userIsAdmin = isAdmin();
 
-  // Determine granularity based on the selected time range:
-  // If start and end are on the same calendar day, use "hour"; otherwise "day".
   const computeGranularity = useCallback(() => {
     if (!filter.start_timestamp || !filter.end_timestamp) return 'day';
     const startDate = new Date(filter.start_timestamp * 1000);
@@ -93,10 +92,8 @@ const Report = () => {
     setReportData(null);
   };
 
-  // Extract username and token name options from report data
   const usernameOptions = useMemo(() => {
     if (!reportData) return [];
-    // Use the dedicated usernames list from API, or fall back to extracting from by_date_user
     if (reportData.usernames && reportData.usernames.length > 0) {
       return reportData.usernames;
     }
@@ -109,7 +106,6 @@ const Report = () => {
 
   const tokenNameOptions = useMemo(() => {
     if (!reportData) return [];
-    // Use the dedicated token_names list from API, or fall back to extracting from by_token
     if (reportData.token_names && reportData.token_names.length > 0) {
       return reportData.token_names;
     }
@@ -120,20 +116,8 @@ const Report = () => {
   }, [reportData]);
 
   useEffect(() => {
-    if (userIsAdmin) {
-      loadReport();
-    }
+    loadReport();
   }, []);
-
-  if (!userIsAdmin) {
-    return (
-      <Stack direction="row" alignItems="center" justifyContent="center" sx={{ minHeight: '60vh' }}>
-        <Typography variant="h3" color="textSecondary">
-          无权访问此页面
-        </Typography>
-      </Stack>
-    );
-  }
 
   return (
     <>
@@ -148,6 +132,7 @@ const Report = () => {
         handleReset={handleReset}
         usernameOptions={usernameOptions}
         tokenNameOptions={tokenNameOptions}
+        showUsernameFilter={userIsAdmin}
       />
       <Grid container spacing={gridSpacing} mt={0}>
         <Grid item xs={12}>
@@ -163,6 +148,9 @@ const Report = () => {
         </Grid>
         <Grid item xs={12}>
           <TokenUsageTable isLoading={isLoading} data={reportData?.by_token || []} />
+        </Grid>
+        <Grid item xs={12}>
+          <ChannelUsageTable isLoading={isLoading} data={reportData?.by_channel || []} />
         </Grid>
       </Grid>
     </>

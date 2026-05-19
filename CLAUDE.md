@@ -79,6 +79,34 @@ Prisma schema 包含以下核心模型（`packages/database/prisma/schema.prisma
 - `UsageLog` — Token 用量记录
 - `ChannelSyncLog` — new-api Channel 同步日志
 
+## one-api (new-api) 本地测试构建
+
+one-api 是 Go 后端，通过 `//go:embed web/build/*` 将前端产物嵌入二进制。
+
+**一键构建**（推荐）:
+
+```bash
+cd one-api && ./rebuild.sh   # 前端构建 + 产物拷贝 + Go 编译，三步合一
+./bin/one-api                 # 启动服务
+```
+
+手动步骤：
+
+```bash
+# 1. 重新构建前端
+cd one-api/web/berry && rm -rf build && npm run build
+cd ../.. && rm -rf web/build/berry/static web/build/berry/index.html web/build/berry/asset-manifest.json web/build/berry/favicon.ico web/build/berry/bg.png
+cp -r web/build/berry/build/* web/build/berry/ && rm -rf web/build/berry/build
+
+# 2. 清理 Go 构建缓存并编译
+go clean -cache && go build -o bin/one-api .
+```
+
+**关键点**:
+- `npm run build` 产物在 `berry/build/` 子目录，必须拷贝到 `berry/` 根层（Go 的 `EmbedFolder` 路径是 `web/build/berry`）
+- embed 是编译时嵌入，前端改动后必须 `go clean -cache` + 重新 `go build`
+- `rebuild.sh` 已包含所有步骤，前端改动后直接运行即可
+
 ## Feature Workflow
 
 项目使用 `feature-workflow/` 系统管理需求开发流程（queue.yaml 排队、worktree 隔离、归档）。配置见 `feature-workflow/config.yaml`。

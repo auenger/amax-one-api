@@ -49,6 +49,7 @@ func SetApiRouter(router *gin.Engine) {
 				selfRoute.POST("/topup", controller.TopUp)
 				selfRoute.GET("/available_models", controller.GetUserAvailableModels)
 				selfRoute.GET("/model_channels", controller.GetModelChannels)
+				selfRoute.GET("/report", controller.GetUsageReport)
 			}
 
 			adminRoute := userRoute.Group("/")
@@ -56,7 +57,6 @@ func SetApiRouter(router *gin.Engine) {
 			{
 				adminRoute.GET("/", controller.GetAllUsers)
 				adminRoute.GET("/search", controller.SearchUsers)
-				adminRoute.GET("/report", controller.GetUsageReport)
 				adminRoute.GET("/:id", controller.GetUser)
 				adminRoute.POST("/", controller.CreateUser)
 				adminRoute.POST("/manage", controller.ManageUser)

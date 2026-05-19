@@ -1,7 +1,7 @@
 meta:
   last_updated: '2026-05-19'
   version: 1
-  total_completed: 19
+  total_completed: 21
 records:
 - id: feat-project-init
   name: 项目基础设施初始化
@@ -938,3 +938,93 @@ records:
     commits: 0
     files_changed: 0
     note: Split into feat-marketplace-card-enhance and feat-usage-report-v2
+- id: feat-user-channel-select
+  name: 用户渠道选择
+  completed: '2026-05-19'
+  tag: feat-user-channel-select-20260519
+  merge_commit: 8a5c8af
+  merged_to: main
+  branch_deleted: true
+  branch_name: feature/user-channel-select
+  worktree_deleted: true
+  worktree_path: ../aihub-user-channel-select
+  keywords:
+  - channel
+  - select
+  - user
+  - group
+  - token
+  - copy
+  - marketplace
+  - model
+  - auth
+  - sk-key-channelId
+  - IsChannelInGroup
+  - model-channels
+  - api
+  category: fullstack
+  value_points: 2
+  related_features:
+  - feat-channel-routing
+  - feat-channel-affinity
+  - feat-model-marketplace
+  - feat-marketplace-card-enhance
+  conflicts:
+    had_conflict: false
+    conflict_files: []
+  verification:
+    status: passed
+    scenarios_total: 6
+    scenarios_passed: 6
+  stats:
+    started: '2026-05-19'
+    duration: ~15min
+    commits: 1
+    files_changed: 5
+- id: feat-usage-chart-granularity
+  name: 用量图表时间粒度
+  completed: '2026-05-19'
+  tag: feat-usage-chart-granularity-20260519
+  merge_commit: 008110d
+  merged_to: main
+  branch_deleted: true
+  branch_name: feature/usage-chart-granularity
+  worktree_deleted: true
+  worktree_path: ../aihub-usage-chart-granularity
+  keywords:
+  - usage
+  - chart
+  - granularity
+  - hour
+  - day
+  - trend
+  - report
+  - dashboard
+  - time-range
+  - date-picker
+  - hourexpr
+  - postgresql
+  - sqlite
+  - mysql
+  - apexcharts
+  - mui
+  - berry
+  - x-axis
+  - aggregation
+  category: fullstack
+  value_points: 2
+  related_features:
+  - feat-usage-report
+  - feat-usage-report-v2
+  conflicts:
+    had_conflict: false
+    conflict_files: []
+  verification:
+    status: passed
+    scenarios_total: 5
+    scenarios_passed: 5
+  stats:
+    started: '2026-05-19'
+    duration: ~10min
+    commits: 1
+    files_changed: 7

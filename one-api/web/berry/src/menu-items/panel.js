@@ -71,7 +71,7 @@ const panel = {
       url: '/panel/report',
       icon: icons.IconChartBar,
       breadcrumbs: false,
-      isAdmin: true
+      isAdmin: false
     },
     {
       id: 'redemption',
