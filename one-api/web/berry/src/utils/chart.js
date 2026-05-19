@@ -13,6 +13,31 @@ export function getLastSevenDays() {
   return dates;
 }
 
+// Generate 24 hour labels: "00:00" through "23:00"
+export function get24Hours() {
+  const hours = [];
+  for (let i = 0; i < 24; i++) {
+    hours.push(String(i).padStart(2, '0') + ':00');
+  }
+  return hours;
+}
+
+// Generate day labels for a given date range (inclusive)
+// e.g. getDaysInRange("2026-05-13", "2026-05-19") => ["2026-05-13", ..., "2026-05-19"]
+export function getDaysInRange(startStr, endStr) {
+  const dates = [];
+  const d = new Date(startStr + 'T00:00:00');
+  const end = new Date(endStr + 'T00:00:00');
+  while (d <= end) {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    dates.push(`${year}-${month}-${day}`);
+    d.setDate(d.getDate() + 1);
+  }
+  return dates;
+}
+
 export function getTodayDay() {
   let today = new Date();
   return today.toISOString().slice(0, 10);

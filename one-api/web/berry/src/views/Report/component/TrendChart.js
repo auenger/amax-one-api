@@ -9,13 +9,26 @@ import SkeletonTotalGrowthBarChart from 'ui-component/cards/Skeleton/TotalGrowth
 // Color palette for different users
 const USER_COLORS = ['#008FFB', '#00E396', '#FEB019', '#FF4560', '#775DD0', '#00D9E9', '#FF66C3', '#9C27B0'];
 
-const TrendChart = ({ isLoading, data, dataByUser }) => {
+const TrendChart = ({ isLoading, data, dataByUser, granularity }) => {
   const theme = useTheme();
+  const isHourGranularity = granularity === 'hour';
 
   const { chartOptions, series, allDates } = useMemo(() => {
+    const xaxisConfig = (dates) => ({
+      categories: dates,
+      type: 'category',
+      labels: {
+        rotate: isHourGranularity ? -45 : 0,
+        rotateAlways: isHourGranularity,
+        hideOverlappingLabels: isHourGranularity,
+        style: {
+          colors: theme.palette.mode === 'dark' ? '#ccc' : '#666'
+        }
+      }
+    });
+
     // If we have by_date_user data, use multi-user lines
     if (dataByUser && dataByUser.length > 0) {
-      // Extract unique dates and usernames
       const dateSet = new Set();
       const userMap = {};
 
@@ -30,14 +43,12 @@ const TrendChart = ({ isLoading, data, dataByUser }) => {
       const dates = Array.from(dateSet).sort();
       const usernames = Object.keys(userMap).sort();
 
-      // Build series: for each user, two lines (tokens and requests)
       const seriesData = [];
       const colors = [];
 
       usernames.forEach((username, userIndex) => {
         const baseColor = USER_COLORS[userIndex % USER_COLORS.length];
 
-        // Tokens line (prompt + completion)
         seriesData.push({
           name: `${username} - Tokens`,
           data: dates.map((date) => {
@@ -47,7 +58,6 @@ const TrendChart = ({ isLoading, data, dataByUser }) => {
         });
         colors.push(baseColor);
 
-        // Requests line (dashed)
         seriesData.push({
           name: `${username} - 请求数`,
           data: dates.map((date) => {
@@ -74,8 +84,8 @@ const TrendChart = ({ isLoading, data, dataByUser }) => {
             return baseIdx % 4 < 2 ? 3 : 2;
           }),
           dashArray: usernames.reduce((acc, _) => {
-            acc.push(0); // tokens line - solid
-            acc.push(5); // requests line - dashed
+            acc.push(0);
+            acc.push(5);
             return acc;
           }, [])
         },
@@ -83,15 +93,7 @@ const TrendChart = ({ isLoading, data, dataByUser }) => {
           size: 3,
           hover: { size: 6 }
         },
-        xaxis: {
-          categories: dates,
-          type: 'category',
-          labels: {
-            style: {
-              colors: theme.palette.mode === 'dark' ? '#ccc' : '#666'
-            }
-          }
-        },
+        xaxis: xaxisConfig(dates),
         yaxis: [
           {
             title: { text: 'Token 数' },
@@ -126,7 +128,6 @@ const TrendChart = ({ isLoading, data, dataByUser }) => {
         theme: { mode: theme.palette.mode }
       };
 
-      // Assign yaxis per series: tokens on left (0), requests on right (1)
       seriesData.forEach((s, i) => {
         s.type = 'line';
       });
@@ -156,15 +157,7 @@ const TrendChart = ({ isLoading, data, dataByUser }) => {
         size: 3,
         hover: { size: 6 }
       },
-      xaxis: {
-        categories: dates,
-        type: 'category',
-        labels: {
-          style: {
-            colors: theme.palette.mode === 'dark' ? '#ccc' : '#666'
-          }
-        }
-      },
+      xaxis: xaxisConfig(dates),
       yaxis: [
         {
           title: { text: 'Token 数' },
@@ -200,7 +193,7 @@ const TrendChart = ({ isLoading, data, dataByUser }) => {
     ];
 
     return { chartOptions: options, series: seriesData, allDates: dates };
-  }, [data, dataByUser, theme.palette.mode]);
+  }, [data, dataByUser, theme.palette.mode, isHourGranularity]);
 
   if (isLoading) {
     return <SkeletonTotalGrowthBarChart />;
@@ -242,7 +235,8 @@ const TrendChart = ({ isLoading, data, dataByUser }) => {
 TrendChart.propTypes = {
   isLoading: PropTypes.bool,
   data: PropTypes.array,
-  dataByUser: PropTypes.array
+  dataByUser: PropTypes.array,
+  granularity: PropTypes.string
 };
 
 export default TrendChart;

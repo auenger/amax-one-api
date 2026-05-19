@@ -263,6 +263,25 @@ func dayExpr() string {
 	return "DATE_FORMAT(FROM_UNIXTIME(created_at), '%Y-%m-%d')"
 }
 
+func hourExpr() string {
+	if common.UsingPostgreSQL {
+		return "TO_CHAR(date_trunc('hour', to_timestamp(created_at)), 'HH24:00')"
+	}
+	if common.UsingSQLite {
+		return "strftime('%H:00', datetime(created_at, 'unixepoch'))"
+	}
+	return "DATE_FORMAT(FROM_UNIXTIME(created_at), '%H:00')"
+}
+
+// timeExpr returns the appropriate SQL expression for grouping by time,
+// based on the granularity parameter ("hour" or "day").
+func timeExpr(granularity string) string {
+	if granularity == "hour" {
+		return hourExpr()
+	}
+	return dayExpr()
+}
+
 func buildReportBaseQuery(username string, tokenNames []string, startTimestamp, endTimestamp int64) *gorm.DB {
 	tx := LOG_DB.Table("logs").Where("type = ?", LogTypeConsume)
 	if username != "" {
@@ -280,7 +299,9 @@ func buildReportBaseQuery(username string, tokenNames []string, startTimestamp, 
 	return tx
 }
 
-func GetUsageReport(username string, tokenNames []string, startTimestamp, endTimestamp int64) (*ReportData, error) {
+func GetUsageReport(username string, tokenNames []string, startTimestamp, endTimestamp int64, granularity string) (*ReportData, error) {
+	expr := timeExpr(granularity)
+
 	base := buildReportBaseQuery(username, tokenNames, startTimestamp, endTimestamp)
 
 	// Summary
@@ -297,16 +318,16 @@ func GetUsageReport(username string, tokenNames []string, startTimestamp, endTim
 
 	report := &ReportData{Summary: summary}
 
-	// By date
+	// By date (or hour)
 	dateBase := buildReportBaseQuery(username, tokenNames, startTimestamp, endTimestamp)
 	var byDate []ReportRow
 	err = dateBase.Select(
-		dayExpr()+" as date",
+		expr+" as date",
 		"COUNT(1) as requests",
 		"COALESCE(SUM(prompt_tokens),0) as prompt_tokens",
 		"COALESCE(SUM(completion_tokens),0) as completion_tokens",
 		"COALESCE(SUM(quota),0) as quota",
-	).Group(dayExpr()).Order("date ASC").Scan(&byDate).Error
+	).Group(expr).Order("date ASC").Scan(&byDate).Error
 	if err != nil {
 		return nil, err
 	}
@@ -316,13 +337,13 @@ func GetUsageReport(username string, tokenNames []string, startTimestamp, endTim
 	dateUserBase := buildReportBaseQuery(username, tokenNames, startTimestamp, endTimestamp)
 	var byDateUser []ReportRow
 	err = dateUserBase.Select(
-		dayExpr()+" as date",
+		expr+" as date",
 		"username",
 		"COUNT(1) as requests",
 		"COALESCE(SUM(prompt_tokens),0) as prompt_tokens",
 		"COALESCE(SUM(completion_tokens),0) as completion_tokens",
 		"COALESCE(SUM(quota),0) as quota",
-	).Group(dayExpr() + ", username").Order("date ASC, username ASC").Scan(&byDateUser).Error
+	).Group(expr + ", username").Order("date ASC, username ASC").Scan(&byDateUser).Error
 	if err != nil {
 		return nil, err
 	}
@@ -410,6 +431,28 @@ func SearchLogsByDayAndModel(userId, start, end int) (LogStatistics []*LogStatis
 		AND created_at BETWEEN ? AND ?
 		GROUP BY day, model_name
 		ORDER BY day, model_name
+	`, userId, start, end).Scan(&LogStatistics).Error
+
+	return LogStatistics, err
+}
+
+// SearchLogsByGranularityAndModel aggregates logs grouped by the given granularity ("hour" or "day") and model.
+func SearchLogsByGranularityAndModel(userId, start, end int, granularity string) (LogStatistics []*LogStatistic, err error) {
+	expr := timeExpr(granularity)
+	alias := "day" // reuse the same LogStatistic.Day field
+
+	err = LOG_DB.Raw(`
+		SELECT `+expr+` as `+alias+`,
+		model_name, count(1) as request_count,
+		sum(quota) as quota,
+		sum(prompt_tokens) as prompt_tokens,
+		sum(completion_tokens) as completion_tokens
+		FROM logs
+		WHERE type=2
+		AND user_id= ?
+		AND created_at BETWEEN ? AND ?
+		GROUP BY `+alias+`, model_name
+		ORDER BY `+alias+`, model_name
 	`, userId, start, end).Scan(&LogStatistics).Error
 
 	return LogStatistics, err

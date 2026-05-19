@@ -33,6 +33,22 @@ const Report = () => {
 
   const userIsAdmin = isAdmin();
 
+  // Determine granularity based on the selected time range:
+  // If start and end are on the same calendar day, use "hour"; otherwise "day".
+  const computeGranularity = useCallback(() => {
+    if (!filter.start_timestamp || !filter.end_timestamp) return 'day';
+    const startDate = new Date(filter.start_timestamp * 1000);
+    const endDate = new Date(filter.end_timestamp * 1000);
+    if (
+      startDate.getFullYear() === endDate.getFullYear() &&
+      startDate.getMonth() === endDate.getMonth() &&
+      startDate.getDate() === endDate.getDate()
+    ) {
+      return 'hour';
+    }
+    return 'day';
+  }, [filter.start_timestamp, filter.end_timestamp]);
+
   const loadReport = useCallback(async () => {
     setLoading(true);
     try {
@@ -41,6 +57,7 @@ const Report = () => {
       if (filter.token_name) params.token_name = filter.token_name;
       if (filter.start_timestamp) params.start_timestamp = filter.start_timestamp;
       if (filter.end_timestamp) params.end_timestamp = filter.end_timestamp;
+      params.granularity = computeGranularity();
 
       const res = await API.get('/api/user/report', { params });
       const { success, message, data } = res.data;
@@ -53,7 +70,7 @@ const Report = () => {
       showError(error);
     }
     setLoading(false);
-  }, [filter]);
+  }, [filter, computeGranularity]);
 
   const handleSearch = () => {
     loadReport();
@@ -96,7 +113,10 @@ const Report = () => {
     if (reportData.token_names && reportData.token_names.length > 0) {
       return reportData.token_names;
     }
-    return (reportData.by_token || []).map((row) => row.token_name).filter(Boolean).sort();
+    return (reportData.by_token || [])
+      .map((row) => row.token_name)
+      .filter(Boolean)
+      .sort();
   }, [reportData]);
 
   useEffect(() => {
@@ -138,6 +158,7 @@ const Report = () => {
             isLoading={isLoading}
             data={reportData?.by_date || []}
             dataByUser={reportData?.by_date_user || []}
+            granularity={computeGranularity()}
           />
         </Grid>
         <Grid item xs={12}>

@@ -261,11 +261,30 @@ func GetUser(c *gin.Context) {
 
 func GetUserDashboard(c *gin.Context) {
 	id := c.GetInt(ctxkey.Id)
-	now := time.Now()
-	startOfDay := now.Truncate(24*time.Hour).AddDate(0, 0, -6).Unix()
-	endOfDay := now.Truncate(24 * time.Hour).Add(24*time.Hour - time.Second).Unix()
 
-	dashboards, err := model.SearchLogsByDayAndModel(id, int(startOfDay), int(endOfDay))
+	// Support optional query params for custom time range and granularity
+	startTimestampStr := c.Query("start_timestamp")
+	endTimestampStr := c.Query("end_timestamp")
+	granularity := c.DefaultQuery("granularity", "")
+
+	var startVal, endVal int64
+	if startTimestampStr != "" && endTimestampStr != "" {
+		startVal, _ = parseInt64(startTimestampStr)
+		endVal, _ = parseInt64(endTimestampStr)
+	} else {
+		// Default: last 7 days
+		now := time.Now()
+		startVal = now.Truncate(24*time.Hour).AddDate(0, 0, -6).Unix()
+		endVal = now.Truncate(24 * time.Hour).Add(24*time.Hour - time.Second).Unix()
+	}
+
+	var dashboards []*model.LogStatistic
+	var err error
+	if granularity == "hour" {
+		dashboards, err = model.SearchLogsByGranularityAndModel(id, int(startVal), int(endVal), "hour")
+	} else {
+		dashboards, err = model.SearchLogsByDayAndModel(id, int(startVal), int(endVal))
+	}
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
@@ -280,6 +299,12 @@ func GetUserDashboard(c *gin.Context) {
 		"data":    dashboards,
 	})
 	return
+}
+
+func parseInt64(s string) (int64, error) {
+	var v int64
+	_, err := fmt.Sscanf(s, "%d", &v)
+	return v, err
 }
 
 func GenerateAccessToken(c *gin.Context) {
