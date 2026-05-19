@@ -1,5 +1,5 @@
 meta:
-  last_updated: '2026-05-19T12:00:00'
+  last_updated: '2026-05-19T13:00:00'
   total_features: 36
   started: '2026-05-12'
   last_completed: feat-concurrency-tracker
@@ -20,11 +20,6 @@ pending:
   - feat-provider-quota-api
   - feat-provider-quota-refresh
   - feat-provider-quota-ui
-- id: feat-provider-quota-api
-  name: 提供商配额查询 API
-  priority: 75
-  size: S
-  parent: feat-provider-quota-monitor
 - id: feat-provider-quota-refresh
   name: 定时刷新与缓存
   priority: 75
@@ -62,7 +57,15 @@ pending:
   parent: feat-channel-concurrency
   depends_on:
   - feat-concurrency-tracker
-active: []
+active:
+- id: feat-provider-quota-api
+  name: 提供商配额查询 API
+  priority: 75
+  size: S
+  parent: feat-provider-quota-monitor
+  branch: feature/provider-quota-api
+  worktree: ../aihub-provider-quota-api
+  started: '2026-05-19T13:00:00'
 blocked: []
 completed:
 - id: feat-concurrency-tracker
