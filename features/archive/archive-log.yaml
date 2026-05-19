@@ -1211,3 +1211,51 @@ records:
     duration: ~10min
     commits: 1
     files_changed: 5
+
+- id: feat-marketplace-flat-layout
+  name: 模型广场平铺布局
+  completed: '2026-05-19'
+  tag: feat-marketplace-flat-layout-20260519
+  merge_commit: 29312e2
+  merged_to: main
+  branch_deleted: true
+  branch_name: feature/marketplace-flat-layout
+  worktree_deleted: true
+  worktree_path: ../aihub-marketplace-flat-layout
+  keywords:
+  - marketplace
+  - flat
+  - layout
+  - accordion
+  - collapse
+  - card
+  - channel
+  - concurrency
+  - quota
+  - progress-bar
+  - copy
+  - token
+  - async
+  - auto-refresh
+  - mui
+  - react
+  category: frontend
+  value_points: 3
+  related_features:
+  - feat-concurrency-tracker
+  - feat-provider-quota-refresh
+  - feat-model-marketplace
+  - feat-marketplace-card-enhance
+  - feat-user-channel-select
+  conflicts:
+    had_conflict: false
+    conflict_files: []
+  verification:
+    status: passed
+    scenarios_total: 8
+    scenarios_passed: 8
+  stats:
+    started: '2026-05-19T16:00:00'
+    duration: ~20min
+    commits: 1
+    files_changed: 3
