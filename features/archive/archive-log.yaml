@@ -1,8 +1,147 @@
 meta:
-  last_updated: '2026-05-19'
+  last_updated: '2026-05-20'
   version: 1
-  total_completed: 25
+  total_completed: 29
 records:
+- id: feat-monitoring-timing
+  name: 监控数据时序优化
+  completed: '2026-05-20'
+  tag: feat-monitoring-timing-20260520
+  merge_commit: 8a52c9c
+  merged_to: main
+  branch_deleted: true
+  branch_name: feature/monitoring-timing
+  worktree_deleted: true
+  worktree_path: n/a
+  keywords:
+  - monitoring
+  - timing
+  - concurrency
+  - decr
+  - delayed
+  - async
+  - goroutine
+  - polling
+  - refresh
+  - quota
+  - cache
+  - ttl
+  - interval
+  - redis
+  - frontend
+  - useconcurrencydata
+  category: fullstack
+  value_points: 1
+  related_features:
+  - feat-concurrency-tracker
+  - feat-provider-quota-refresh
+  - feat-concurrency-market
+  conflicts:
+    had_conflict: false
+    conflict_files: []
+  verification:
+    status: passed
+    scenarios_total: 3
+    scenarios_passed: 3
+  stats:
+    started: '2026-05-20'
+    duration: ~5min
+    commits: 1
+    files_changed: 4
+
+- id: feat-log-channel-visibility
+  name: 日志渠道信息可见
+  completed: '2026-05-20'
+  tag: feat-log-channel-visibility-20260520
+  merge_commit: e508db1
+  merged_to: main
+  branch_deleted: true
+  branch_name: feature/log-channel-visibility
+  worktree_deleted: true
+  worktree_path: ../aihub-log-channel-visibility
+  keywords:
+  - log
+  - channel
+  - visibility
+  - channel-names
+  - user-api
+  - filter
+  - degraded
+  - cache
+  - cachelgetmodelchannels
+  - permission-isolation
+  - user-group
+  - tablerow
+  - tabletoolbar
+  - select-dropdown
+  - mui
+  - react
+  - berry
+  category: fullstack
+  value_points: 1
+  related_features:
+  - feat-concurrency-tracker
+  - feat-channel-concurrency
+  - feat-user-channel-select
+  conflicts:
+    had_conflict: false
+    conflict_files: []
+  verification:
+    status: passed
+    scenarios_total: 3
+    scenarios_passed: 3
+  stats:
+    started: '2026-05-20'
+    duration: ~5min
+    commits: 1
+    files_changed: 7
+
+- id: feat-concurrency-market
+  name: 模型广场并发数据对接
+  completed: '2026-05-19'
+  tag: feat-concurrency-market-20260519
+  merge_commit: ebe618d
+  merged_to: main
+  branch_deleted: true
+  branch_name: feature/concurrency-market
+  worktree_deleted: true
+  worktree_path: ../aihub-concurrency-market
+  keywords:
+  - concurrency
+  - market
+  - marketplace
+  - load-level
+  - hook
+  - react
+  - auto-refresh
+  - async
+  - model-concurrency
+  - getloadlevel
+  - getloadcolor
+  - buildconcurrencymap
+  - thresholds
+  - reusable
+  - data-layer
+  - utils
+  category: frontend
+  value_points: 1
+  related_features:
+  - feat-concurrency-tracker
+  - feat-marketplace-flat-layout
+  - feat-channel-concurrency
+  conflicts:
+    had_conflict: false
+    conflict_files: []
+  verification:
+    status: passed
+    scenarios_total: 2
+    scenarios_passed: 2
+  stats:
+    started: '2026-05-19'
+    duration: ~10min
+    commits: 1
+    files_changed: 3
+
 - id: feat-concurrency-tracker
   name: 并发量追踪后端
   completed: '2026-05-19'
@@ -1259,3 +1398,52 @@ records:
     duration: ~20min
     commits: 1
     files_changed: 3
+
+- id: feat-provider-quota-ui
+  name: Channel 管理页配额面板
+  completed: '2026-05-19'
+  tag: feat-provider-quota-ui-20260519
+  merge_commit: f03acbb
+  merged_to: main
+  branch_deleted: true
+  branch_name: feature/provider-quota-ui
+  worktree_deleted: true
+  worktree_path: ../aihub-provider-quota-ui
+  keywords:
+  - provider
+  - quota
+  - ui
+  - channel
+  - progress-bar
+  - color-rule
+  - balance
+  - window
+  - account-level
+  - refresh
+  - compact
+  - standard
+  - mui
+  - react
+  - berry
+  - tabler-icons
+  - table-cell
+  - card
+  - edit-modal
+  category: frontend
+  value_points: 2
+  related_features:
+  - feat-provider-quota-refresh
+  - feat-provider-quota-monitor
+  - feat-marketplace-flat-layout
+  conflicts:
+    had_conflict: false
+    conflict_files: []
+  verification:
+    status: passed
+    scenarios_total: 14
+    scenarios_passed: 14
+  stats:
+    started: '2026-05-19T18:00:00'
+    duration: ~15min
+    commits: 1
+    files_changed: 8
