@@ -30,14 +30,14 @@ export default function LogTableRow({ item, userIsAdmin, channelMap }) {
     if (!item.channel) return '';
     const name = channelMap?.[item.channel];
     if (name) return `${name}(#${item.channel})`;
-    return `#${item.channel}`;
+    return `渠道#${item.channel}`;
   };
   return (
     <>
       <TableRow tabIndex={item.id}>
         <TableCell>{timestamp2string(item.created_at)}</TableCell>
 
-        {userIsAdmin && <TableCell>{renderChannel()}</TableCell>}
+        <TableCell>{renderChannel()}</TableCell>
         {userIsAdmin && (
           <TableCell>
             <Label color="default" variant="outlined">

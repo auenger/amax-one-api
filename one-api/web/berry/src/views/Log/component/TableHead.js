@@ -6,7 +6,7 @@ const LogTableHead = ({ userIsAdmin }) => {
     <TableHead>
       <TableRow>
         <TableCell>时间</TableCell>
-        {userIsAdmin && <TableCell>渠道</TableCell>}
+        <TableCell>渠道</TableCell>
         {userIsAdmin && <TableCell>用户</TableCell>}
         <TableCell>令牌</TableCell>
         <TableCell>类型</TableCell>

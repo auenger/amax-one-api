@@ -32,6 +32,7 @@ export default function Log() {
   };
   const [logs, setLogs] = useState([]);
   const [channelMap, setChannelMap] = useState({});
+  const [channelOptions, setChannelOptions] = useState([]);
   const [activePage, setActivePage] = useState(0);
   const [searching, setSearching] = useState(false);
   const [searchKeyword, setSearchKeyword] = useState(originalKeyword);
@@ -39,22 +40,45 @@ export default function Log() {
   const userIsAdmin = isAdmin();
 
   const loadChannels = async () => {
-    if (!userIsAdmin) return;
-    let allChannels = {};
-    let page = 0;
-    let hasMore = true;
-    while (hasMore) {
-      const res = await API.get(`/api/channel/?p=${page}`);
-      const { success, data } = res.data;
-      if (success && data) {
-        data.forEach((ch) => { allChannels[ch.id] = ch.name; });
-        hasMore = data.length >= 100;
-        page++;
-      } else {
-        hasMore = false;
+    if (userIsAdmin) {
+      // Admin: load all channels via admin API
+      let allChannels = {};
+      let page = 0;
+      let hasMore = true;
+      while (hasMore) {
+        const res = await API.get(`/api/channel/?p=${page}`);
+        const { success, data } = res.data;
+        if (success && data) {
+          data.forEach((ch) => { allChannels[ch.id] = ch.name; });
+          hasMore = data.length >= 100;
+          page++;
+        } else {
+          hasMore = false;
+        }
+      }
+      setChannelMap(allChannels);
+      setChannelOptions(
+        Object.entries(allChannels)
+          .map(([id, name]) => ({ id: Number(id), name }))
+          .sort((a, b) => a.id - b.id)
+      );
+    } else {
+      // Regular user: load channel names via user API
+      try {
+        const res = await API.get('/api/user/channel_names');
+        const { success, data } = res.data;
+        if (success && data) {
+          setChannelMap(data);
+          setChannelOptions(
+            Object.entries(data)
+              .map(([id, name]) => ({ id: Number(id), name }))
+              .sort((a, b) => a.id - b.id)
+          );
+        }
+      } catch {
+        // Silently fail — channel column will show IDs only
       }
     }
-    setChannelMap(allChannels);
   };
 
   const loadLogs = async (startIdx) => {
@@ -65,7 +89,6 @@ export default function Log() {
     query.p = startIdx;
     if (!userIsAdmin) {
       delete query.username;
-      delete query.channel;
     }
     const res = await API.get(url, { params: query });
     const { success, message, data } = res.data;
@@ -128,7 +151,7 @@ export default function Log() {
       </Stack>
       <Card>
         <Box component="form" onSubmit={searchLogs} noValidate sx={{marginTop: 2}}>
-          <TableToolBar filterName={searchKeyword} handleFilterName={handleSearchKeyword} userIsAdmin={userIsAdmin} />
+          <TableToolBar filterName={searchKeyword} handleFilterName={handleSearchKeyword} userIsAdmin={userIsAdmin} channelOptions={channelOptions} />
         </Box>
         <Toolbar
           sx={{

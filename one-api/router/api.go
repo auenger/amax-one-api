@@ -51,6 +51,7 @@ func SetApiRouter(router *gin.Engine) {
 				selfRoute.GET("/model_channels", controller.GetModelChannels)
 				selfRoute.GET("/model_concurrency", controller.GetUserModelConcurrency)
 				selfRoute.GET("/channel_quotas", controller.GetUserChannelQuotas)
+				selfRoute.GET("/channel_names", controller.GetUserChannelNames)
 				selfRoute.GET("/report", controller.GetUsageReport)
 			}
 
