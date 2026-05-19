@@ -31,11 +31,31 @@ export default function Log() {
     channel: ''
   };
   const [logs, setLogs] = useState([]);
+  const [channelMap, setChannelMap] = useState({});
   const [activePage, setActivePage] = useState(0);
   const [searching, setSearching] = useState(false);
   const [searchKeyword, setSearchKeyword] = useState(originalKeyword);
   const [initPage, setInitPage] = useState(true);
   const userIsAdmin = isAdmin();
+
+  const loadChannels = async () => {
+    if (!userIsAdmin) return;
+    let allChannels = {};
+    let page = 0;
+    let hasMore = true;
+    while (hasMore) {
+      const res = await API.get(`/api/channel/?p=${page}`);
+      const { success, data } = res.data;
+      if (success && data) {
+        data.forEach((ch) => { allChannels[ch.id] = ch.name; });
+        hasMore = data.length >= 100;
+        page++;
+      } else {
+        hasMore = false;
+      }
+    }
+    setChannelMap(allChannels);
+  };
 
   const loadLogs = async (startIdx) => {
     setSearching(true);
@@ -92,6 +112,7 @@ export default function Log() {
   useEffect(() => {
     setSearchKeyword(originalKeyword);
     setActivePage(0);
+    loadChannels();
     loadLogs(0)
       .then()
       .catch((reason) => {
@@ -137,7 +158,7 @@ export default function Log() {
               <LogTableHead userIsAdmin={userIsAdmin} />
               <TableBody>
                 {logs.slice(activePage * ITEMS_PER_PAGE, (activePage + 1) * ITEMS_PER_PAGE).map((row, index) => (
-                  <LogTableRow item={row} key={`${row.id}_${index}`} userIsAdmin={userIsAdmin} />
+                  <LogTableRow item={row} key={`${row.id}_${index}`} userIsAdmin={userIsAdmin} channelMap={channelMap} />
                 ))}
               </TableBody>
             </Table>

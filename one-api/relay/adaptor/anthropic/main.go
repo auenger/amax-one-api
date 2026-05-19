@@ -98,16 +98,18 @@ func ConvertRequest(textRequest model.GeneralOpenAIRequest) *Request {
 		}
 		var content Content
 		if message.IsStringContent() {
-			content.Type = "text"
-			content.Text = message.StringContent()
+			textContent := message.StringContent()
 			if message.Role == "tool" {
 				claudeMessage.Role = "user"
 				content.Type = "tool_result"
-				content.Content = content.Text
-				content.Text = ""
+				content.Content = textContent
 				content.ToolUseId = message.ToolCallId
+				claudeMessage.Content = append(claudeMessage.Content, content)
+			} else if textContent != "" || len(message.ToolCalls) == 0 {
+				content.Type = "text"
+				content.Text = textContent
+				claudeMessage.Content = append(claudeMessage.Content, content)
 			}
-			claudeMessage.Content = append(claudeMessage.Content, content)
 			for i := range message.ToolCalls {
 				inputParam := make(map[string]any)
 				_ = json.Unmarshal([]byte(message.ToolCalls[i].Function.Arguments.(string)), &inputParam)

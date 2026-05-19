@@ -35,7 +35,7 @@ import { showError } from 'utils/common';
 import { copy } from 'utils/common';
 import {
   IconSearch,
-  IconBrain,
+  IconSparkles,
   IconX,
   IconServer,
   IconInfoCircle,
@@ -158,7 +158,7 @@ const ModelDetailDialog = ({ open, model, onClose, userTokens }) => {
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <IconBrain size={22} color={theme.palette.primary.main} />
+          <IconSparkles size={22} color={theme.palette.primary.main} />
           <Typography variant="h5" sx={{ fontWeight: 600, fontSize: '1.1rem' }}>
             模型详情
           </Typography>
@@ -443,7 +443,7 @@ const ModelMarket = () => {
     <Box>
       {/* Header */}
       <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-        <IconBrain size={28} color={theme.palette.primary.main} />
+        <IconSparkles size={28} color={theme.palette.primary.main} />
         <Typography variant="h3" sx={{ fontWeight: 600 }}>
           模型广场
         </Typography>
@@ -514,7 +514,7 @@ const ModelMarket = () => {
               color: theme.palette.text.secondary
             }}
           >
-            <IconBrain size={48} stroke={1} style={{ opacity: 0.3 }} />
+            <IconSparkles size={48} stroke={1} style={{ opacity: 0.3 }} />
             <Typography variant="h5" sx={{ mt: 2, opacity: 0.6 }}>
               {models.length === 0 ? '暂无可用模型' : '没有匹配的模型'}
             </Typography>

@@ -420,12 +420,12 @@ func GetUsageReport(username string, tokenNames []string, startTimestamp, endTim
 	channelBase := buildReportBaseQuery(username, tokenNames, startTimestamp, endTimestamp)
 	var channelAggs []channelAggRow
 	err = channelBase.Select(
-		"channel as channel_id",
+		"channel_id as channel_id",
 		"COUNT(1) as requests",
 		"COALESCE(SUM(prompt_tokens),0) as prompt_tokens",
 		"COALESCE(SUM(completion_tokens),0) as completion_tokens",
 		"COALESCE(SUM(quota),0) as quota",
-	).Group("channel").Order("quota DESC").Scan(&channelAggs).Error
+	).Group("channel_id").Order("quota DESC").Scan(&channelAggs).Error
 	if err != nil {
 		return nil, err
 	}
@@ -450,7 +450,9 @@ func GetUsageReport(username string, tokenNames []string, startTimestamp, endTim
 		channelNameSet := make(map[string]bool)
 		for _, agg := range channelAggs {
 			name := channelMap[agg.ChannelId]
-			if name == "" && agg.ChannelId > 0 {
+			if name != "" && agg.ChannelId > 0 {
+				name = fmt.Sprintf("%s(#%d)", name, agg.ChannelId)
+			} else if name == "" && agg.ChannelId > 0 {
 				name = fmt.Sprintf("渠道#%d", agg.ChannelId)
 			} else if name == "" {
 				name = "未知渠道"

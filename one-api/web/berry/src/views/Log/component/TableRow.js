@@ -25,13 +25,19 @@ function renderType(type) {
   }
 }
 
-export default function LogTableRow({ item, userIsAdmin }) {
+export default function LogTableRow({ item, userIsAdmin, channelMap }) {
+  const renderChannel = () => {
+    if (!item.channel) return '';
+    const name = channelMap?.[item.channel];
+    if (name) return `${name}(#${item.channel})`;
+    return `#${item.channel}`;
+  };
   return (
     <>
       <TableRow tabIndex={item.id}>
         <TableCell>{timestamp2string(item.created_at)}</TableCell>
 
-        {userIsAdmin && <TableCell>{item.channel || ''}</TableCell>}
+        {userIsAdmin && <TableCell>{renderChannel()}</TableCell>}
         {userIsAdmin && (
           <TableCell>
             <Label color="default" variant="outlined">
@@ -65,5 +71,6 @@ export default function LogTableRow({ item, userIsAdmin }) {
 
 LogTableRow.propTypes = {
   item: PropTypes.object,
-  userIsAdmin: PropTypes.bool
+  userIsAdmin: PropTypes.bool,
+  channelMap: PropTypes.object
 };

@@ -9,12 +9,12 @@ import {
   IconGardenCart,
   IconUser,
   IconUserScan,
-  IconBrain,
+  IconSparkles,
   IconChartBar
 } from '@tabler/icons-react';
 
 // constant
-const icons = { IconDashboard, IconSitemap, IconArticle, IconCoin, IconAdjustments, IconKey, IconGardenCart, IconUser, IconUserScan, IconBrain, IconChartBar };
+const icons = { IconDashboard, IconSitemap, IconArticle, IconCoin, IconAdjustments, IconKey, IconGardenCart, IconUser, IconUserScan, IconSparkles, IconChartBar };
 
 // ==============================|| DASHBOARD MENU ITEMS ||============================== //
 
@@ -36,7 +36,7 @@ const panel = {
       title: '模型广场',
       type: 'item',
       url: '/panel/models',
-      icon: icons.IconBrain,
+      icon: icons.IconSparkles,
       breadcrumbs: false
     },
     {
@@ -72,23 +72,6 @@ const panel = {
       icon: icons.IconChartBar,
       breadcrumbs: false,
       isAdmin: false
-    },
-    {
-      id: 'redemption',
-      title: '兑换',
-      type: 'item',
-      url: '/panel/redemption',
-      icon: icons.IconCoin,
-      breadcrumbs: false,
-      isAdmin: true
-    },
-    {
-      id: 'topup',
-      title: '充值',
-      type: 'item',
-      url: '/panel/topup',
-      icon: icons.IconGardenCart,
-      breadcrumbs: false
     },
     {
       id: 'user',
