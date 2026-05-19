@@ -98,6 +98,8 @@ func main() {
 	}
 	// Start smart load balancer metrics collector
 	monitor.StartMetricsCollector()
+	// Start quota refresher for periodic provider quota refresh
+	monitor.StartQuotaRefresher()
 	openai.InitTokenEncoders()
 	client.Init()
 

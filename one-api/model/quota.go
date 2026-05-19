@@ -33,10 +33,19 @@ type QuotaSummary struct {
 	LastUpdated  int64         `json:"last_updated"`
 }
 
-// Redis key pattern for cached quota data.
-const quotaRedisKeyPrefix = "channel:quota:"
+// Redis key patterns for cached quota data.
+const (
+	quotaRedisKeyPrefix    = "channel:quota:"
+	quotaLastRefreshKey    = "channel:quota:last_refresh"
+	QuotaCacheTTL          = 30 * 60 // 30 minutes in seconds
+)
 
 // QuotaRedisKey returns the Redis key for a channel's cached quota data.
 func QuotaRedisKey(channelId int) string {
 	return quotaRedisKeyPrefix + fmt.Sprintf("%d", channelId)
+}
+
+// QuotaLastRefreshKey returns the Redis key for the last full refresh timestamp.
+func QuotaLastRefreshKey() string {
+	return quotaLastRefreshKey
 }

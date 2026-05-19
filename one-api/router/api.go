@@ -95,6 +95,7 @@ func SetApiRouter(router *gin.Engine) {
 			// Enterprise: Provider quota query
 			channelRoute.GET("/quota", controller.GetAllChannelQuotas)
 			channelRoute.GET("/quotas_map", controller.GetChannelQuotasMap)
+			channelRoute.POST("/quota/refresh", controller.RefreshAllChannelQuotasHandler)
 			channelRoute.GET("/:id/quota", controller.GetChannelQuota)
 			channelRoute.POST("/:id/quota/refresh", controller.RefreshChannelQuota)
 		}
