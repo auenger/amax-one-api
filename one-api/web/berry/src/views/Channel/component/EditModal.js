@@ -31,6 +31,7 @@ import { defaultConfig, typeConfig } from '../type/Config'; //typeConfig
 import { createFilterOptions } from '@mui/material/Autocomplete';
 import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank';
 import CheckBoxIcon from '@mui/icons-material/CheckBox';
+import ChannelQuotaCard from './ChannelQuotaCard';
 
 const icon = <CheckBoxOutlineBlankIcon fontSize="small" />;
 const checkedIcon = <CheckBoxIcon fontSize="small" />;
@@ -68,7 +69,7 @@ const validationSchema = Yup.object().shape({
   })
 });
 
-const EditModal = ({ open, channelId, onCancel, onOk }) => {
+const EditModal = ({ open, channelId, onCancel, onOk, quota }) => {
   const theme = useTheme();
   // const [loading, setLoading] = useState(false);
   const [initialInput, setInitialInput] = useState(defaultConfig.input);
@@ -281,6 +282,7 @@ const EditModal = ({ open, channelId, onCancel, onOk }) => {
       </DialogTitle>
       <Divider />
       <DialogContent>
+        {channelId > 0 && <ChannelQuotaCard channelId={parseInt(channelId)} quota={quota} />}
         <Formik initialValues={initialInput} enableReinitialize validationSchema={validationSchema} onSubmit={submit}>
           {({ errors, handleBlur, handleChange, handleSubmit, isSubmitting, touched, values, setFieldValue }) => (
             <form noValidate onSubmit={handleSubmit}>
@@ -637,5 +639,6 @@ EditModal.propTypes = {
   open: PropTypes.bool,
   channelId: PropTypes.number,
   onCancel: PropTypes.func,
-  onOk: PropTypes.func
+  onOk: PropTypes.func,
+  quota: PropTypes.object
 };

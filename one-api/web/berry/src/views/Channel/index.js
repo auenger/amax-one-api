@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { showError, showSuccess, showInfo, loadChannelModels } from 'utils/common';
 
 import { useTheme } from '@mui/material/styles';
@@ -32,6 +32,23 @@ export default function ChannelPage() {
   const matchUpMd = useMediaQuery(theme.breakpoints.up('sm'));
   const [openModal, setOpenModal] = useState(false);
   const [editChannelId, setEditChannelId] = useState(0);
+  const [quotaMap, setQuotaMap] = useState({});
+
+  const loadQuotaData = useCallback(async () => {
+    try {
+      const res = await API.get('/api/channel/quota');
+      const { success, data } = res.data;
+      if (success && Array.isArray(data)) {
+        const map = {};
+        data.forEach((q) => {
+          map[q.channel_id] = q;
+        });
+        setQuotaMap(map);
+      }
+    } catch (err) {
+      // Quota data is optional, fail silently
+    }
+  }, []);
 
   const loadChannels = async (startIdx) => {
     setSearching(true);
@@ -127,6 +144,7 @@ export default function ChannelPage() {
   // 处理刷新
   const handleRefresh = async () => {
     await loadChannels(activePage);
+    await loadQuotaData();
   };
 
   // 处理测试所有启用渠道
@@ -189,7 +207,8 @@ export default function ChannelPage() {
         showError(reason);
       });
     loadChannelModels().then();
-  }, []);
+    loadQuotaData().then();
+  }, [loadQuotaData]);
 
   return (
     <>
@@ -255,7 +274,7 @@ export default function ChannelPage() {
         {searching && <LinearProgress />}
         <PerfectScrollbar component="div">
           <TableContainer sx={{ overflow: 'unset' }}>
-            <Table sx={{ minWidth: 800 }}>
+            <Table sx={{ minWidth: 960 }}>
               <ChannelTableHead />
               <TableBody>
                 {channels.slice(activePage * ITEMS_PER_PAGE, (activePage + 1) * ITEMS_PER_PAGE).map((row) => (
@@ -265,6 +284,7 @@ export default function ChannelPage() {
                     key={row.id}
                     handleOpenModal={handleOpenModal}
                     setModalChannelId={setEditChannelId}
+                    quota={quotaMap[row.id] || null}
                   />
                 ))}
               </TableBody>
@@ -280,7 +300,7 @@ export default function ChannelPage() {
           rowsPerPageOptions={[ITEMS_PER_PAGE]}
         />
       </Card>
-      <EditeModal open={openModal} onCancel={handleCloseModal} onOk={handleOkModal} channelId={editChannelId} />
+      <EditeModal open={openModal} onCancel={handleCloseModal} onOk={handleOkModal} channelId={editChannelId} quota={quotaMap[editChannelId] || null} />
     </>
   );
 }
