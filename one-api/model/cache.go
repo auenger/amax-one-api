@@ -389,3 +389,35 @@ type ChannelInfo struct {
 	Type   int    `json:"type"`
 	Status int    `json:"status"`
 }
+
+// ChannelRef is a lightweight channel reference (id + name) for concurrency tracking.
+type ChannelRef struct {
+	Id   int
+	Name string
+}
+
+// CacheGetModelChannelRefs returns a map of model name -> ChannelRef list for a given group.
+// This is used by the concurrency tracking API to show channel concurrency per model.
+func CacheGetModelChannelRefs(group string) map[string][]ChannelRef {
+	if !config.MemoryCacheEnabled {
+		return nil
+	}
+	channelSyncLock.RLock()
+	defer channelSyncLock.RUnlock()
+	model2channels, ok := group2model2channels[group]
+	if !ok {
+		return nil
+	}
+	result := make(map[string][]ChannelRef)
+	for modelName, channels := range model2channels {
+		refs := make([]ChannelRef, 0, len(channels))
+		for _, ch := range channels {
+			refs = append(refs, ChannelRef{
+				Id:   ch.Id,
+				Name: ch.Name,
+			})
+		}
+		result[modelName] = refs
+	}
+	return result
+}
