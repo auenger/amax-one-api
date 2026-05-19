@@ -12,10 +12,17 @@ import (
 	"github.com/songquanpeng/one-api/common/client"
 	"github.com/songquanpeng/one-api/common/logger"
 	"github.com/songquanpeng/one-api/model"
+	"github.com/songquanpeng/one-api/monitor"
 	"github.com/songquanpeng/one-api/relay/channeltype"
 
 	"github.com/gin-gonic/gin"
 )
+
+func init() {
+	// Register quota query and cache functions with the monitor package
+	// to avoid circular imports between controller and monitor.
+	monitor.RegisterQuotaQueryFunc(queryProviderQuota, cacheQuota)
+}
 
 // ---------------------------------------------------------------------------
 // Provider-specific response types for quota APIs
@@ -313,7 +320,7 @@ func queryProviderQuota(ch *model.Channel) *model.ChannelQuota {
 	}
 }
 
-// cacheQuota stores quota data in Redis with a 10-minute TTL.
+// cacheQuota stores quota data in Redis with a 30-minute TTL.
 func cacheQuota(quota *model.ChannelQuota) {
 	if !common.RedisEnabled || common.RDB == nil {
 		return
@@ -324,7 +331,7 @@ func cacheQuota(quota *model.ChannelQuota) {
 		return
 	}
 	key := model.QuotaRedisKey(quota.ChannelID)
-	if err := common.RedisSet(key, string(data), 10*time.Minute); err != nil {
+	if err := common.RedisSet(key, string(data), time.Duration(model.QuotaCacheTTL)*time.Second); err != nil {
 		logger.SysLog(fmt.Sprintf("failed to cache quota for channel %d: %s", quota.ChannelID, err.Error()))
 	}
 }
@@ -493,5 +500,18 @@ func GetChannelQuotasMap(c *gin.Context) {
 		"success": true,
 		"message": "",
 		"data":    result,
+	})
+}
+
+// RefreshAllChannelQuotasHandler handles POST /api/channel/quota/refresh
+// Triggers an immediate refresh of all enabled channel quotas.
+func RefreshAllChannelQuotasHandler(c *gin.Context) {
+	refreshed := monitor.RefreshAllChannelQuotas()
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": fmt.Sprintf("refreshed %d channels", refreshed),
+		"data": gin.H{
+			"refreshed_count": refreshed,
+		},
 	})
 }
