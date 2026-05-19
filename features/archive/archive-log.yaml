@@ -1,7 +1,7 @@
 meta:
   last_updated: '2026-05-19'
   version: 1
-  total_completed: 21
+  total_completed: 22
 records:
 - id: feat-project-init
   name: 项目基础设施初始化
@@ -1028,3 +1028,46 @@ records:
     duration: ~10min
     commits: 1
     files_changed: 7
+
+- id: feat-error-passthrough
+  name: 上游错误透传
+  completed: '2026-05-19'
+  tag: feat-error-passthrough-20260519
+  merge_commit: e7951fc
+  merged_to: main
+  branch_deleted: true
+  branch_name: feature/error-passthrough
+  worktree_deleted: true
+  worktree_path: ../aihub-error-passthrough
+  keywords:
+  - upstream
+  - error
+  - passthrough
+  - transparent
+  - claude
+  - openai
+  - 429
+  - rate-limit
+  - logging
+  - debug
+  - rawbody
+  - error-handler
+  - anthropic-relay
+  - relay
+  category: backend
+  value_points: 2
+  related_features:
+  - feat-claude-parity
+  - feat-channel-failover
+  conflicts:
+    had_conflict: false
+    conflict_files: []
+  verification:
+    status: passed
+    scenarios_total: 4
+    scenarios_passed: 4
+  stats:
+    started: '2026-05-19'
+    duration: ~5min
+    commits: 1
+    files_changed: 5

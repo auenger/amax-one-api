@@ -132,3 +132,12 @@ Then 返回原有的 "insufficient_user_quota" 错误格式不变
 - [x] 不影响正常请求的成功响应
 - [x] 向后兼容现有客户端
 - [x] 错误日志不泄露敏感信息（API key 等）
+
+## Merge Record
+- **Completed**: 2026-05-19
+- **Branch**: feature/error-passthrough
+- **Merge commit**: (HEAD)
+- **Archive tag**: feat-error-passthrough-20260519
+- **Conflicts**: none
+- **Verification**: 4/4 Gherkin scenarios passed (code analysis)
+- **Stats**: 5 files changed, +13 -11, 1 commit

@@ -2,15 +2,18 @@ meta:
   last_updated: '2026-05-19'
   total_features: 27
   started: '2026-05-12'
-  last_completed: feat-usage-chart-granularity
-pending:
+  last_completed: feat-error-passthrough
+pending: []
+active: []
+blocked: []
+completed:
 - id: feat-error-passthrough
   name: 上游错误透传
   priority: 65
   size: S
-active: []
-blocked: []
-completed:
+  completed_at: '2026-05-19'
+  archive_path: features/archive/done-feat-error-passthrough-20260519
+  value_points: 2
 - id: feat-usage-chart-granularity
   name: 用量图表时间粒度
   priority: 60
