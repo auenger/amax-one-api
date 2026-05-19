@@ -3,7 +3,6 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/songquanpeng/one-api/common/config"
 	"github.com/songquanpeng/one-api/common/logger"
 	"github.com/songquanpeng/one-api/relay/model"
 	"io"
@@ -76,9 +75,8 @@ func RelayErrorHandler(resp *http.Response) (ErrorWithStatusCode *model.ErrorWit
 	if err != nil {
 		return
 	}
-	if config.DebugEnabled {
-		logger.SysLog(fmt.Sprintf("error happened, status code: %d, response: \n%s", resp.StatusCode, string(responseBody)))
-	}
+	logger.SysLog(fmt.Sprintf("upstream error, status code: %d, response: %s", resp.StatusCode, string(responseBody)))
+	ErrorWithStatusCode.RawBody = string(responseBody)
 	err = resp.Body.Close()
 	if err != nil {
 		return

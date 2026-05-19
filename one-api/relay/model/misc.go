@@ -23,5 +23,6 @@ type Error struct {
 
 type ErrorWithStatusCode struct {
 	Error
-	StatusCode int `json:"status_code"`
+	StatusCode int    `json:"status_code"`
+	RawBody    string `json:"-"`
 }

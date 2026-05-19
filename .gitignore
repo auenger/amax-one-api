@@ -46,3 +46,4 @@ docker-data/
 one-api/one-api
 one-api/__debug_bin*
 one-api/data/
+one-api/bin/

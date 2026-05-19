@@ -220,12 +220,14 @@ func RelayAnthropic(c *gin.Context) {
 			}
 			c.Request.URL.Path = origPath
 			bizErr.Error.Message = helper.MessageWithRequestId(bizErr.Error.Message, requestId)
-			c.JSON(bizErr.StatusCode, service.ClaudeError{
-				Type: "api_error",
-				Error: service.ClaudeErrorDetail{
-					Type:    "api_error",
-					Message: bizErr.Error.Message,
+			c.JSON(bizErr.StatusCode, gin.H{
+				"type": "error",
+				"error": gin.H{
+					"type":    bizErr.Error.Type,
+					"message": bizErr.Error.Message,
 				},
+				"upstream_code":   bizErr.Error.Code,
+				"upstream_status": bizErr.StatusCode,
 			})
 			return
 		}
