@@ -115,3 +115,13 @@ type QuotaSummary struct {
 3. 查询 DeepSeek Channel 配额 → 返回 CNY 余额
 4. 不支持的 Channel 类型 → 返回友好错误
 5. 提供商 API 不可用 → 返回错误但不影响系统
+
+## Merge Record
+- **Completed**: 2026-05-19
+- **Branch**: feature/provider-quota-api
+- **Merge Commit**: 26e75d9
+- **Archive Tag**: feat-provider-quota-api-20260519
+- **Conflicts**: none
+- **Verification**: passed (5/5 Gherkin scenarios)
+- **Files Changed**: 3 (2 new, 1 modified)
+- **Commits**: 1

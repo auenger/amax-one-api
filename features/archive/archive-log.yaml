@@ -1,7 +1,7 @@
 meta:
   last_updated: '2026-05-19'
   version: 1
-  total_completed: 23
+  total_completed: 24
 records:
 - id: feat-concurrency-tracker
   name: 并发量追踪后端
@@ -1113,3 +1113,51 @@ records:
     duration: ~5min
     commits: 1
     files_changed: 5
+
+- id: feat-provider-quota-api
+  name: 提供商配额查询 API
+  completed: '2026-05-19'
+  tag: feat-provider-quota-api-20260519
+  merge_commit: 26e75d9
+  merged_to: main
+  branch_deleted: true
+  branch_name: feature/provider-quota-api
+  worktree_deleted: true
+  worktree_path: ../aihub-provider-quota-api
+  keywords:
+  - provider
+  - quota
+  - api
+  - channel
+  - zhipu
+  - minimax
+  - deepseek
+  - siliconflow
+  - openrouter
+  - stepfun
+  - balance
+  - coding-plan
+  - redis
+  - cache
+  - adapter
+  - windows
+  - percentage
+  category: backend
+  value_points: 2
+  related_features:
+  - feat-provider-quota-refresh
+  - feat-provider-quota-ui
+  - feat-provider-quota-monitor
+  - feat-channel-smart-lb
+  conflicts:
+    had_conflict: false
+    conflict_files: []
+  verification:
+    status: passed
+    scenarios_total: 5
+    scenarios_passed: 5
+  stats:
+    started: '2026-05-19T13:00:00'
+    duration: ~15min
+    commits: 1
+    files_changed: 3
