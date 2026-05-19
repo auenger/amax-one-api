@@ -91,7 +91,22 @@ type QuotaSummary struct {
 - cc-switch `src-tauri/src/services/coding_plan.rs` — 智谱/MiniMax 配额查询参考实现
 
 ## Technical Solution
-<!-- To be filled during implementation -->
+
+### 架构设计
+- **model/quota.go**: 定义 ChannelQuota、QuotaWindow、QuotaSummary 结构体，提供 Redis key helper
+- **controller/channel-quota.go**: 6 个提供商适配器函数 + Redis 缓存层 + 4 个 API handler
+- **router/api.go**: 注册 GET /quota, GET /quotas_map, GET /:id/quota, POST /:id/quota/refresh
+
+### 数据流
+1. GET /api/channel/:id/quota → 先查 Redis 缓存，miss 时直接查询提供商 API → 结果缓存 10min
+2. GET /api/channel/quota → 仅从缓存读取，不触发实时查询
+3. POST /api/channel/:id/quota/refresh → 强制查询提供商 API 并更新缓存
+4. GET /api/channel/quotas_map → 返回 {channelId: QuotaSummary} 供模型广场使用
+
+### 缓存策略
+- Redis key: `channel:quota:{channelId}`
+- TTL: 10 分钟
+- 错误也缓存（防止频繁重试）
 
 ## Acceptance Criteria (Gherkin)
 ### Scenarios
