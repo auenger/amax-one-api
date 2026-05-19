@@ -2,16 +2,16 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { API } from 'utils/api';
 
 /**
- * Default refresh interval in milliseconds (30 seconds).
+ * Default refresh interval in milliseconds (15 seconds).
  */
-const DEFAULT_REFRESH_INTERVAL = 30000;
+const DEFAULT_REFRESH_INTERVAL = 15000;
 
 /**
  * Hook for fetching and auto-refreshing model concurrency data.
  * Provides non-blocking async loading with configurable auto-refresh.
  *
  * @param {object} [options]
- * @param {number} [options.refreshInterval=30000] - Auto-refresh interval in ms. Set to 0 to disable.
+ * @param {number} [options.refreshInterval=15000] - Auto-refresh interval in ms. Set to 0 to disable.
  * @param {boolean} [options.enabled=true] - Whether to enable auto-fetching.
  * @returns {{
  *   concurrencyData: Array|null,
@@ -22,7 +22,7 @@ const DEFAULT_REFRESH_INTERVAL = 30000;
  * }}
  *
  * @example
- * const { concurrencyData, loading, refresh } = useConcurrencyData({ refreshInterval: 30000 });
+ * const { concurrencyData, loading, refresh } = useConcurrencyData({ refreshInterval: 15000 });
  */
 const useConcurrencyData = ({ refreshInterval = DEFAULT_REFRESH_INTERVAL, enabled = true } = {}) => {
   const [concurrencyData, setConcurrencyData] = useState(null);

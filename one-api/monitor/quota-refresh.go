@@ -17,8 +17,8 @@ import (
 // ────────────────────────────────────────────────────────────
 
 const (
-	// Default refresh interval: 30 minutes.
-	defaultQuotaRefreshInterval = 30
+	// Default refresh interval: 10 minutes.
+	defaultQuotaRefreshInterval = 10
 	// Max concurrent quota queries to avoid provider rate limits.
 	defaultQuotaRefreshConcurrency = 5
 	// Sleep between individual quota queries (seconds).

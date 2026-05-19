@@ -37,7 +37,7 @@ type QuotaSummary struct {
 const (
 	quotaRedisKeyPrefix    = "channel:quota:"
 	quotaLastRefreshKey    = "channel:quota:last_refresh"
-	QuotaCacheTTL          = 30 * 60 // 30 minutes in seconds
+	QuotaCacheTTL          = 10 * 60 // 10 minutes in seconds
 )
 
 // QuotaRedisKey returns the Redis key for a channel's cached quota data.

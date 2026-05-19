@@ -83,24 +83,25 @@ func IncrConcurrency(channelId int, model string) {
 	common.RDB.Expire(ctx, key, concurrencyKeyTTL)
 }
 
-// DecrConcurrency atomically decrements the concurrency counter for a channel+model.
-// It ensures the counter never goes below 0.
+// DecrConcurrency delays 1 minute then atomically decrements the concurrency counter.
+// The delay gives frontend polling enough time to capture the concurrent state.
 func DecrConcurrency(channelId int, model string) {
 	if !common.RedisEnabled || common.RDB == nil {
 		return
 	}
-	ctx := context.Background()
-	key := fmt.Sprintf("%s%d:%s", concurrencyKeyPrefix, channelId, model)
-	// Decr and clamp to >= 0
-	val, err := common.RDB.Decr(ctx, key).Result()
-	if err != nil {
-		return
-	}
-	if val < 0 {
-		// Reset to 0 if it went negative (e.g., due to crash recovery)
-		common.RDB.Set(ctx, key, 0, concurrencyKeyTTL)
-	}
-	common.RDB.Expire(ctx, key, concurrencyKeyTTL)
+	go func() {
+		time.Sleep(1 * time.Minute)
+		ctx := context.Background()
+		key := fmt.Sprintf("%s%d:%s", concurrencyKeyPrefix, channelId, model)
+		val, err := common.RDB.Decr(ctx, key).Result()
+		if err != nil {
+			return
+		}
+		if val < 0 {
+			common.RDB.Set(ctx, key, 0, concurrencyKeyTTL)
+		}
+		common.RDB.Expire(ctx, key, concurrencyKeyTTL)
+	}()
 }
 
 // GetConcurrency returns the current concurrency count for a specific channel+model.
