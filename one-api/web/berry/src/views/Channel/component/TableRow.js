@@ -27,6 +27,7 @@ import TableSwitch from "ui-component/Switch";
 import ResponseTimeLabel from "./ResponseTimeLabel";
 import GroupLabel from "./GroupLabel";
 import NameLabel from "./NameLabel";
+import ChannelQuotaCell from "./ChannelQuotaCell";
 
 import { IconDotsVertical, IconEdit, IconTrash } from "@tabler/icons-react";
 
@@ -35,6 +36,7 @@ export default function ChannelTableRow({
   manageChannel,
   handleOpenModal,
   setModalChannelId,
+  quota,
 }) {
   const [open, setOpen] = useState(null);
   const [openDelete, setOpenDelete] = useState(false);
@@ -181,6 +183,9 @@ export default function ChannelTableRow({
           </Tooltip>
         </TableCell>
         <TableCell>
+          <ChannelQuotaCell quota={quota} />
+        </TableCell>
+        <TableCell>
           <TextField
             id={`priority-${item.id}`}
             onBlur={handlePriority}
@@ -250,6 +255,7 @@ ChannelTableRow.propTypes = {
   manageChannel: PropTypes.func,
   handleOpenModal: PropTypes.func,
   setModalChannelId: PropTypes.func,
+  quota: PropTypes.object,
 };
 
 function renderBalance(type, balance) {
