@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Box,
   Card,
@@ -21,6 +21,9 @@ import {
 import { useTheme } from '@mui/material/styles';
 import { API } from 'utils/api';
 import { showError, showSuccess, copy } from 'utils/common';
+import { getLoadLevel, getLoadColor, buildConcurrencyMap, getTotalConcurrency } from 'utils/concurrency';
+import { getQuotaColor, formatRemaining } from 'utils/quota';
+import useConcurrencyData from 'hooks/useConcurrencyData';
 import {
   IconSearch,
   IconSparkles,
@@ -103,41 +106,8 @@ function getChipColor(channelType, theme) {
   return colorMap[channelType] || 'default';
 }
 
-// Concurrency color based on load level
-// Green: 0-2, Yellow: 3-5, Red: 6+
-function getConcurrencyColor(count) {
-  if (count <= 2) return 'success';
-  if (count <= 5) return 'warning';
-  return 'error';
-}
-
-function getConcurrencyLabel(count) {
-  if (count === 0) return '空闲';
-  if (count <= 2) return '低负载';
-  if (count <= 5) return '中负载';
-  return '高负载';
-}
-
-// Quota progress bar color based on usage percent
-// Green: 0-60%, Yellow: 60-85%, Red: 85-100%
-function getQuotaColor(percent) {
-  if (percent <= 60) return 'success';
-  if (percent <= 85) return 'warning';
-  return 'error';
-}
-
-// Format remaining time from milliseconds
-function formatRemaining(ms) {
-  if (!ms || ms <= 0) return '';
-  const totalMin = Math.floor(ms / 60000);
-  if (totalMin < 60) return `${totalMin}m`;
-  const hours = Math.floor(totalMin / 60);
-  const min = totalMin % 60;
-  if (hours < 24) return `${hours}h${min > 0 ? min + 'm' : ''}`;
-  const days = Math.floor(hours / 24);
-  const remainH = hours % 24;
-  return `${days}d${remainH > 0 ? remainH + 'h' : ''}`;
-}
+// NOTE: Concurrency color/label functions moved to utils/concurrency.js (getLoadLevel, getLoadColor, getLoadLabel)
+// NOTE: Quota color and formatRemaining moved to utils/quota.js
 
 // ==============================|| QUOTA PROGRESS BAR ||============================== //
 
@@ -210,9 +180,9 @@ const ChannelRow = ({ channel, concurrency, quota, onCopyToken, hasToken, theme 
           并发: {concCount}
         </Typography>
         <Chip
-          label={getConcurrencyLabel(concCount)}
+          label={getLoadLevel(concCount).label}
           size="small"
-          color={getConcurrencyColor(concCount)}
+          color={getLoadColor(concCount)}
           sx={{ fontSize: '0.6rem', height: 16, '& .MuiChip-label': { px: 0.5 } }}
         />
       </Box>
@@ -245,23 +215,11 @@ const ModelCard = ({ model, userTokens, concurrencyData, quotaData, theme }) => 
   const firstToken = userTokens && userTokens.length > 0 ? userTokens.find((t) => t.status === 1) : null;
 
   // Build concurrency map for this model: channelId -> count
-  const modelConcurrency = useMemo(() => {
-    const map = {};
-    if (concurrencyData) {
-      const entry = concurrencyData.find((e) => e.model === model.name);
-      if (entry && entry.items) {
-        entry.items.forEach((item) => {
-          map[item.channel_id] = item;
-        });
-      }
-    }
-    return map;
-  }, [concurrencyData, model.name]);
+  const allConcurrencyMap = useMemo(() => buildConcurrencyMap(concurrencyData), [concurrencyData]);
+  const modelConcurrency = allConcurrencyMap[model.name] || {};
 
   // Summary stats
-  const totalConcurrency = useMemo(() => {
-    return Object.values(modelConcurrency).reduce((sum, item) => sum + (item.count || 0), 0);
-  }, [modelConcurrency]);
+  const totalConcurrency = useMemo(() => getTotalConcurrency(modelConcurrency), [modelConcurrency]);
 
   const maxQuotaPercent = useMemo(() => {
     let max = 0;
@@ -333,7 +291,7 @@ const ModelCard = ({ model, userTokens, concurrencyData, quotaData, theme }) => 
               </Typography>
             )}
             {totalConcurrency > 0 && (
-              <Chip label={`并发 ${totalConcurrency}`} size="small" color={getConcurrencyColor(totalConcurrency)} variant="filled" sx={{ fontSize: '0.6rem', height: 18, '& .MuiChip-label': { px: 0.5 } }} />
+              <Chip label={`并发 ${totalConcurrency}`} size="small" color={getLoadColor(totalConcurrency)} variant="filled" sx={{ fontSize: '0.6rem', height: 18, '& .MuiChip-label': { px: 0.5 } }} />
             )}
             {maxQuotaPercent > 0 && (
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, minWidth: 80 }}>
@@ -416,10 +374,10 @@ const ModelMarket = () => {
   const [searchKeyword, setSearchKeyword] = useState('');
   const [channelFilter, setChannelFilter] = useState('all');
   const [userTokens, setUserTokens] = useState([]);
-  const [concurrencyData, setConcurrencyData] = useState(null);
   const [quotaData, setQuotaData] = useState(null);
-  const [concurrencyLoading, setConcurrencyLoading] = useState(false);
-  const refreshTimerRef = useRef(null);
+
+  // Use the shared concurrency data hook with 30s auto-refresh
+  const { concurrencyData, loading: concurrencyLoading } = useConcurrencyData({ refreshInterval: 30000 });
 
   // Load models with channel info (primary data)
   const loadModels = useCallback(async () => {
@@ -489,52 +447,26 @@ const ModelMarket = () => {
     setLoading(false);
   }, []);
 
-  // Load concurrency and quota data (async, non-blocking)
-  const loadExtraData = useCallback(async () => {
-    setConcurrencyLoading(true);
+  // Load quota data (async, non-blocking)
+  const loadQuotaData = useCallback(async () => {
     try {
-      const [concRes, quotaRes] = await Promise.allSettled([
-        API.get('/api/user/model_concurrency'),
-        API.get('/api/user/channel_quotas')
-      ]);
-
-      if (concRes.status === 'fulfilled') {
-        const { success, data } = concRes.value.data;
-        if (success && Array.isArray(data)) {
-          setConcurrencyData(data);
-        }
-      }
-
-      if (quotaRes.status === 'fulfilled') {
-        const { success, data } = quotaRes.value.data;
-        if (success && data && typeof data === 'object') {
-          setQuotaData(data);
-        }
+      const quotaRes = await API.get('/api/user/channel_quotas');
+      const { success, data } = quotaRes.data;
+      if (success && data && typeof data === 'object') {
+        setQuotaData(data);
       }
     } catch (err) {
-      // Silently fail - extra data is optional
+      // Silently fail - quota data is optional
     }
-    setConcurrencyLoading(false);
   }, []);
 
   // Initial load
   useEffect(() => {
     loadModels().then(() => {
-      // Load extra data asynchronously after main data is rendered
-      loadExtraData();
+      // Load quota data asynchronously after main data is rendered
+      loadQuotaData();
     });
-  }, [loadModels, loadExtraData]);
-
-  // Auto-refresh every 30 seconds
-  useEffect(() => {
-    if (refreshTimerRef.current) clearInterval(refreshTimerRef.current);
-    refreshTimerRef.current = setInterval(() => {
-      loadExtraData();
-    }, 30000);
-    return () => {
-      if (refreshTimerRef.current) clearInterval(refreshTimerRef.current);
-    };
-  }, [loadExtraData]);
+  }, [loadModels, loadQuotaData]);
 
   // Available channel types for filter
   const channelTypes = useMemo(() => {
