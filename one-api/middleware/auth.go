@@ -133,12 +133,14 @@ func TokenAuth() func(c *gin.Context) {
 		c.Set(ctxkey.TokenId, token.Id)
 		c.Set(ctxkey.TokenName, token.Name)
 		if len(parts) > 1 {
-			if model.IsAdmin(token.UserId) {
-				c.Set(ctxkey.SpecificChannelId, parts[1])
-			} else {
-				abortWithMessage(c, http.StatusForbidden, "普通用户不支持指定渠道")
+			channelId := parts[1]
+			// Validate that the specified channel belongs to the user's group
+			userGroup, _ := model.CacheGetUserGroup(token.UserId)
+			if !model.IsChannelInGroup(channelId, userGroup) {
+				abortWithMessage(c, http.StatusForbidden, "该渠道不在您的可用分组内")
 				return
 			}
+			c.Set(ctxkey.SpecificChannelId, channelId)
 		}
 
 		// set channel id for proxy relay
