@@ -26,6 +26,7 @@ export default function TableToolBar({
   filterName,
   handleFilterName,
   userIsAdmin,
+  channelOptions,
 }) {
   const theme = useTheme();
   const grey500 = theme.palette.grey[500];
@@ -155,27 +156,34 @@ export default function TableToolBar({
         spacing={{ xs: 3, sm: 2, md: 4 }}
         padding={"24px"}
       >
-        {userIsAdmin && (
-          <FormControl>
-            <InputLabel htmlFor="channel-channel-label">渠道ID</InputLabel>
-            <OutlinedInput
-              id="channel"
-              name="channel"
-              sx={{
-                minWidth: "100%",
-              }}
-              label="渠道ID"
-              value={filterName.channel}
-              onChange={handleFilterName}
-              placeholder="渠道ID"
-              startAdornment={
-                <InputAdornment position="start">
-                  <IconSitemap stroke={1.5} size="20px" color={grey500} />
-                </InputAdornment>
-              }
-            />
-          </FormControl>
-        )}
+        <FormControl sx={{ minWidth: 200 }}>
+          <InputLabel htmlFor="channel-filter-label">渠道</InputLabel>
+          <Select
+            id="channel-filter-label"
+            label="渠道"
+            value={filterName.channel}
+            name="channel"
+            onChange={handleFilterName}
+            sx={{
+              minWidth: "100%",
+            }}
+            MenuProps={{
+              PaperProps: {
+                style: {
+                  maxHeight: 200,
+                },
+              },
+            }}
+          >
+            <MenuItem value="">全部渠道</MenuItem>
+            {channelOptions &&
+              channelOptions.map((option) => (
+                <MenuItem key={option.id} value={option.id}>
+                  {option.name}
+                </MenuItem>
+              ))}
+          </Select>
+        </FormControl>
 
         {userIsAdmin && (
           <FormControl>
@@ -236,4 +244,5 @@ TableToolBar.propTypes = {
   filterName: PropTypes.object,
   handleFilterName: PropTypes.func,
   userIsAdmin: PropTypes.bool,
+  channelOptions: PropTypes.array,
 };

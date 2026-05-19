@@ -48,7 +48,8 @@ func GetUserLogs(c *gin.Context) {
 	endTimestamp, _ := strconv.ParseInt(c.Query("end_timestamp"), 10, 64)
 	tokenName := c.Query("token_name")
 	modelName := c.Query("model_name")
-	logs, err := model.GetUserLogs(userId, logType, startTimestamp, endTimestamp, modelName, tokenName, p*config.ItemsPerPage, config.ItemsPerPage)
+	channel, _ := strconv.Atoi(c.Query("channel"))
+	logs, err := model.GetUserLogs(userId, logType, startTimestamp, endTimestamp, modelName, tokenName, p*config.ItemsPerPage, config.ItemsPerPage, channel)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
@@ -166,4 +167,31 @@ func DeleteHistoryLogs(c *gin.Context) {
 		"data":    count,
 	})
 	return
+}
+
+// GetUserChannelNames returns a map of channel_id -> channel_name
+// for channels the user's group has access to (used in log display).
+func GetUserChannelNames(c *gin.Context) {
+	userId := c.GetInt(ctxkey.Id)
+	userGroup, err := model.CacheGetUserGroup(userId)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+	modelChannels := model.CacheGetModelChannels(userGroup)
+	// Build deduplicated {id: name} map from model->channels
+	channelMap := make(map[int]string)
+	for _, channels := range modelChannels {
+		for _, ch := range channels {
+			channelMap[ch.Id] = ch.Name
+		}
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data":    channelMap,
+	})
 }
