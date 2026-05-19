@@ -1,12 +1,78 @@
 meta:
-  last_updated: '2026-05-19'
-  total_features: 27
+  last_updated: '2026-05-19T12:00:00'
+  total_features: 36
   started: '2026-05-12'
-  last_completed: feat-error-passthrough
-pending: []
+  last_completed: feat-concurrency-tracker
+pending:
+- id: feat-marketplace-flat-layout
+  name: 模型广场平铺布局
+  priority: 80
+  size: M
+  depends_on:
+  - feat-concurrency-tracker
+  - feat-provider-quota-refresh
+- id: feat-provider-quota-monitor
+  name: 提供商配额监控
+  priority: 75
+  size: L
+  split: true
+  children:
+  - feat-provider-quota-api
+  - feat-provider-quota-refresh
+  - feat-provider-quota-ui
+- id: feat-provider-quota-api
+  name: 提供商配额查询 API
+  priority: 75
+  size: S
+  parent: feat-provider-quota-monitor
+- id: feat-provider-quota-refresh
+  name: 定时刷新与缓存
+  priority: 75
+  size: S
+  parent: feat-provider-quota-monitor
+  depends_on:
+  - feat-provider-quota-api
+- id: feat-provider-quota-ui
+  name: Channel 管理页配额面板
+  priority: 75
+  size: S
+  parent: feat-provider-quota-monitor
+  depends_on:
+  - feat-provider-quota-refresh
+- id: feat-channel-concurrency
+  name: 渠道并发监控
+  priority: 75
+  size: L
+  split: true
+  children:
+  - feat-concurrency-tracker
+  - feat-concurrency-market
+  - feat-log-channel-visibility
+- id: feat-concurrency-market
+  name: 模型广场并发数据对接
+  priority: 75
+  size: S
+  parent: feat-channel-concurrency
+  depends_on:
+  - feat-concurrency-tracker
+- id: feat-log-channel-visibility
+  name: 日志渠道信息可见
+  priority: 75
+  size: S
+  parent: feat-channel-concurrency
+  depends_on:
+  - feat-concurrency-tracker
 active: []
 blocked: []
 completed:
+- id: feat-concurrency-tracker
+  name: 并发量追踪后端
+  priority: 75
+  size: S
+  parent: feat-channel-concurrency
+  completed_at: '2026-05-19'
+  archive_path: features/archive/done-feat-concurrency-tracker-20260519
+  value_points: 1
 - id: feat-error-passthrough
   name: 上游错误透传
   priority: 65
