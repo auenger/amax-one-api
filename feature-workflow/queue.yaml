@@ -1,12 +1,20 @@
 meta:
-  last_updated: '2026-05-20T14:00:00'
-  total_features: 38
+  last_updated: '2026-05-20T15:30:00'
+  total_features: 39
   started: '2026-05-12'
-  last_completed: feat-monitoring-timing
+  last_completed: feat-ccswitch-import
 pending: []
 active: []
 blocked: []
 completed:
+- id: feat-ccswitch-import
+  name: 一键导入 cc-switch
+  priority: 60
+  size: S
+  depends_on: []
+  completed_at: '2026-05-20'
+  archive_path: features/archive/done-feat-ccswitch-import-20260520
+  value_points: 1
 - id: feat-monitoring-timing
   name: 监控数据时序优化
   priority: 70
