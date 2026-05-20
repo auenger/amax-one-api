@@ -4,108 +4,98 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-AIHub (Enterprise AI Control Plane) — 企业级 AI 控制平台，提供统一 API 网关、Virtual Key 鉴权池化、Token 计量、模型代理转发等功能。当前处于 Phase 1（接入层 MVP）。
+AIHub — 企业级 AI 管理平台，基于 [one-api](https://github.com/songquanpeng/one-api) (Go + Gin) 深度二开。提供 38 供应商代理转发、Token 鉴权（4 级角色）、智能渠道路由、并发追踪、配额监控、模型广场、用量报表等功能。
 
-## Monorepo Structure
+前端使用 Berry 主题 (React + MUI 5)，通过 `go:embed` 嵌入 Go 二进制。
 
-pnpm workspace + Turborepo monorepo：
+## Project Structure
 
-- **`apps/gateway`** (`@aihub/gateway`) — Fastify API 网关，路由注册在 `src/routes/`，服务层在 `src/services/`，插件在 `src/plugins/`
-- **`apps/web`** (`@aihub/web`) — Next.js 14 管理后台前端，shadcn/ui + TailwindCSS 4，端口 3002
-- **`packages/database`** (`@aihub/database`) — Prisma 数据层，schema 在 `prisma/schema.prisma`
-- **`packages/shared`** (`@aihub/shared`) — 共享工具库：ProblemError (RFC 7807)、ULID 生成、Logger、Cursor 分页
+核心代码在 `one-api/` 目录：
 
-Gateway 通过 `new-api` (calciumion/new-api) 作为上游代理转发引擎，docker-compose 中作为服务运行。
+- **`one-api/controller/`** — HTTP 处理器 (channel, token, log, routing, concurrency, report, billing)
+- **`one-api/model/`** — GORM 数据模型 (User, Token, Channel, Log, Ability, Quota)
+- **`one-api/middleware/`** — 中间件 (auth, distributor, rate-limit, affinity, cors, request-id)
+- **`one-api/router/`** — 路由注册 (api.go, relay.go, web.go)
+- **`one-api/relay/adaptor/`** — 38 个供应商适配器 (openai, anthropic, gemini, aws, baidu, ali...)
+- **`one-api/monitor/`** — 并发追踪、负载均衡、配额刷新、健康检查
+- **`one-api/service/`** — 业务服务 (Claude 格式转换)
+- **`one-api/common/`** — 通用工具 (config, logger, helper, crypto)
+- **`one-api/web/berry/`** — Berry 前端 (MUI 5, 活跃开发)
+- **`one-api/web/default/`** — 默认前端 (Semantic UI, 不活跃)
+- **`one-api/web/air/`** — Air 前端 (不活跃)
+
+Legacy 目录（已废弃，不修改）：`apps/`, `packages/`
 
 ## Commands
 
 ```bash
-# 开发（并行启动所有服务）
-pnpm dev
+# 一键构建（前端 + Go 编译）
+cd one-api && ./rebuild.sh
 
-# 构建 / 类型检查 / lint
-pnpm build
-pnpm typecheck
-pnpm lint
+# 启动服务
+./one-api/bin/one-api
 
-# 格式化
-pnpm format          # 写入
-pnpm format:check    # 检查
-
-# 测试
-pnpm test            # 所有包
-pnpm --filter @aihub/gateway test  # 单个包
-
-# 数据库
-pnpm db:generate     # 生成 Prisma Client
-pnpm db:migrate      # 运行迁移
-pnpm db:studio       # Prisma Studio
+# 前端开发（热更新）
+cd one-api/web/berry && npm start
 
 # 基础设施（需要 Docker）
-docker compose up -d # 启动 PostgreSQL 16 + Redis 7 + new-api
+docker compose up -d          # PostgreSQL 16 + Redis 7 + one-api
+docker compose up -d postgres redis  # 只启动数据库
+
+# Go 测试
+cd one-api && go test ./...
+
+# 前端构建
+cd one-api/web/berry && npm run build
 ```
 
 ## Architecture
 
-请求流：Client → Gateway (VK Auth + Rate Limit) → Model Resolver (alias→actual) → new-api Proxy → Provider (OpenAI/Anthropic)
+请求流：Client → Gin Router → Auth Middleware (Token/Key) → Distributor (Channel Selection) → Relay Adaptor (Provider-specific) → Provider API
 
 关键路径：
 
-- **认证**: `plugins/vk-auth.ts` — Virtual Key 校验（Bearer token）
-- **模型解析**: `services/model-resolver.ts` — 别名映射到实际模型
-- **代理转发**: `services/proxy.ts` → `routes/proxy.ts` — 支持 streaming SSE
-- **用量计量**: `services/usage.ts` — 每次 request 的 token 消耗记录到 `UsageLog`
-- **错误处理**: `plugins/error-handler.ts` — 统一 RFC 7807 Problem Details
+- **认证**: `middleware/auth.go` — Token 校验，4 级角色 (Guest/Common/Admin/Root)
+- **渠道路由**: `middleware/distributor.go` + `controller/routing.go` — 加权随机 + 亲和性 + 故障转移 + 智能 LB
+- **代理转发**: `relay/adaptor/` — 38 个供应商适配器，支持 streaming
+- **并发追踪**: `monitor/concurrency.go` — Redis 实时计数，REST API 查询
+- **配额监控**: `model/quota.go` + `monitor/quota-refresh.go` — 6 提供商适配器 + Redis 缓存
+- **用量报表**: `controller/report.go` — Token 消耗统计 + 时间粒度切换
 
 ## Conventions
 
-- **Prettier**: singleQuote, no semi, trailingComma all, printWidth 100
-- **ESLint**: typescript-eslint recommended，`no-explicit-any: warn`，`_` 前缀忽略 unused args
-- **TypeScript**: strict mode, ES2022 target, NodeNext module resolution
-- **ID**: 使用 cuid (Prisma @default(cuid()))，共享库提供 ULID
-- **错误格式**: RFC 7807 Problem Details，通过 `@aihub/shared` 的 `createProblemError` 创建
-- **API 兼容**: 对外暴露 OpenAI 兼容格式 (`/v1/chat/completions`, `/v1/embeddings`, `/v1/models`) 及 Anthropic 格式 (`/v1/messages`)
-- **环境变量**: 通过 `config/index.ts` 用 zod 校验，`.env.example` 为模板
-- **Pre-commit**: husky + lint-staged (eslint --fix + prettier)
-- **包类型**: 所有包使用 `"type": "module"` (ESM)
+- **Go**: gofmt 标准格式，无额外 linter
+- **Frontend**: MUI 5 组件，函数组件 + hooks，JSX
+- **API 格式**: JSON `{ success: bool, message: string, data: ... }`
+- **API 路径**: `/api/` 管理 API, `/v1/` 代理转发 (OpenAI/Anthropic 兼容)
+- **Auth**: Bearer Token 或 Cookie session
+- **分页**: 页码分页 (page + page_size)
+- **GORM**: 跨数据库兼容（PostgreSQL/MySQL/SQLite），用 `common.UsingPostgreSQL` 判断
+- **Redis**: 并发计数 key `channel:concurrency:*`，配额缓存 key `channel:quota:*`
+- **Embed**: `//go:embed web/build/*` 嵌入前端，前端改动后必须 rebuild
 
-## Database Schema
+## Database
 
-Prisma schema 包含以下核心模型（`packages/database/prisma/schema.prisma`）：
+GORM 模型 (`one-api/model/`)：
 
-- `Provider` → `ProviderKey` — LLM 供应商及加密密钥
-- `Model` → `ModelAlias` — 模型注册与别名映射
-- `VirtualKey` → `AuditLog` — 虚拟密钥与审计日志
-- `UsageLog` — Token 用量记录
-- `ChannelSyncLog` — new-api Channel 同步日志
+- `User` — 用户，4 级角色，AccessToken
+- `Token` — API 密钥，额度限制，模型限制
+- `Channel` — 渠道配置，类型/优先级/权重/预算
+- `Ability` — Group-Model-Channel 映射，控制用户可用模型
+- `Log` — 请求日志，Token 消耗
+- `ChannelQuota` — 配额信息，Redis 缓存
 
-## one-api (new-api) 本地测试构建
-
-one-api 是 Go 后端，通过 `//go:embed web/build/*` 将前端产物嵌入二进制。
-
-**一键构建**（推荐）:
+## one-api 本地构建
 
 ```bash
 cd one-api && ./rebuild.sh   # 前端构建 + 产物拷贝 + Go 编译，三步合一
 ./bin/one-api                 # 启动服务
 ```
 
-手动步骤：
-
-```bash
-# 1. 重新构建前端
-cd one-api/web/berry && rm -rf build && npm run build
-cd ../.. && rm -rf web/build/berry/static web/build/berry/index.html web/build/berry/asset-manifest.json web/build/berry/favicon.ico web/build/berry/bg.png
-cp -r web/build/berry/build/* web/build/berry/ && rm -rf web/build/berry/build
-
-# 2. 清理 Go 构建缓存并编译
-go clean -cache && go build -o bin/one-api .
-```
-
-**关键点**:
-- `npm run build` 产物在 `berry/build/` 子目录，必须拷贝到 `berry/` 根层（Go 的 `EmbedFolder` 路径是 `web/build/berry`）
+关键点：
+- `npm run build` 产物在 `berry/build/` 子目录，rebuild.sh 自动拷贝到 `berry/` 根层
 - embed 是编译时嵌入，前端改动后必须 `go clean -cache` + 重新 `go build`
-- `rebuild.sh` 已包含所有步骤，前端改动后直接运行即可
+- `rebuild.sh` 已包含所有步骤
 
 ## Feature Workflow
 

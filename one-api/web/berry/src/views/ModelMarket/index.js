@@ -50,7 +50,7 @@ const CHANNEL_TYPE_MAP = {
   41: 'Baichuan',
   42: 'Minimax',
   43: 'Mistral',
-  45: 'Zhipu'
+  16: 'Zhipu'
 };
 
 // Channel type ID -> color for Chip

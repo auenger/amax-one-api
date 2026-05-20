@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/songquanpeng/one-api/common"
@@ -29,13 +30,21 @@ func init() {
 // Provider-specific response types for quota APIs
 // ---------------------------------------------------------------------------
 
-// ZhipuQuotaLimitResponse is the response from Zhipu GLM quota API.
-type ZhipuQuotaLimitResponse struct {
+// ZhipuQuotaAPIResponse is the top-level response from Zhipu GLM quota API.
+type ZhipuQuotaAPIResponse struct {
+	Success bool                `json:"success"`
+	Data    ZhipuQuotaLimitData `json:"data"`
+}
+
+// ZhipuQuotaLimitData contains the nested quota data.
+type ZhipuQuotaLimitData struct {
 	Level  string `json:"level"`
 	Limits []struct {
 		Type         string  `json:"type"`
+		Unit         int     `json:"unit"`
+		Number       int     `json:"number"`
 		Percentage   float64 `json:"percentage"`
-		NextResetTime string `json:"nextResetTime"`
+		NextResetTime int64  `json:"nextResetTime"` // Unix milliseconds
 	} `json:"limits"`
 }
 
@@ -78,17 +87,21 @@ func queryZhipuQuota(ch *model.Channel) *model.ChannelQuota {
 		return quota
 	}
 
-	var resp ZhipuQuotaLimitResponse
+	var resp ZhipuQuotaAPIResponse
 	if err := json.Unmarshal(body, &resp); err != nil {
 		quota.QueryError = fmt.Sprintf("zhipu quota parse failed: %s", err.Error())
 		return quota
 	}
 
-	quota.AccountLevel = resp.Level
+	if !resp.Success {
+		quota.QueryError = "zhipu quota api returned success=false"
+		return quota
+	}
 
-	for _, limit := range resp.Limits {
-		resetTime, _ := time.Parse(time.RFC3339, limit.NextResetTime)
-		resetMs := resetTime.UnixMilli()
+	quota.AccountLevel = resp.Data.Level
+
+	for _, limit := range resp.Data.Limits {
+		resetMs := limit.NextResetTime
 		nowMs := time.Now().UnixMilli()
 		remainingMs := resetMs - nowMs
 		if remainingMs < 0 {
@@ -97,7 +110,7 @@ func queryZhipuQuota(ch *model.Channel) *model.ChannelQuota {
 
 		quota.Windows = append(quota.Windows, model.QuotaWindow{
 			Label:       limit.Type,
-			UsedPercent: limit.Percentage * 100, // API returns 0-1, convert to 0-100
+			UsedPercent: limit.Percentage, // API already returns 0-100
 			RemainingMs: remainingMs,
 			ResetAt:     resetMs,
 		})
@@ -297,7 +310,14 @@ func queryProviderQuota(ch *model.Channel) *model.ChannelQuota {
 		ch.BaseURL = &baseURL
 	}
 
-	switch ch.Type {
+	// Determine provider: infer from base URL first, then fall back to channel type
+	providerType := ch.Type
+	baseURL := ch.GetBaseURL()
+	if strings.Contains(baseURL, "bigmodel") {
+		providerType = channeltype.Zhipu
+	}
+
+	switch providerType {
 	case channeltype.Zhipu:
 		return queryZhipuQuota(ch)
 	case channeltype.Minimax:

@@ -26,7 +26,8 @@ func Distribute() func(c *gin.Context) {
 		userId := c.GetInt(ctxkey.Id)
 		userGroup, _ := model.CacheGetUserGroup(userId)
 		c.Set(ctxkey.Group, userGroup)
-		var requestModel string
+		// Always read request model from context (set by auth middleware)
+		requestModel := c.GetString(ctxkey.RequestModel)
 		var channel *model.Channel
 		channelId, ok := c.Get(ctxkey.SpecificChannelId)
 		if ok {
@@ -45,7 +46,6 @@ func Distribute() func(c *gin.Context) {
 				return
 			}
 		} else {
-			requestModel = c.GetString(ctxkey.RequestModel)
 			// Smart load-balancing: use intelligent channel selection for new conversations
 			channel = smartSelectChannel(ctx, userGroup, requestModel)
 			if channel == nil {
