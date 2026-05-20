@@ -22,7 +22,7 @@ import {
 import TableSwitch from 'ui-component/Switch';
 import { renderQuota, timestamp2string, copy } from 'utils/common';
 
-import { IconDotsVertical, IconEdit, IconTrash, IconCaretDownFilled } from '@tabler/icons-react';
+import { IconDotsVertical, IconEdit, IconTrash, IconCaretDownFilled, IconSparkles } from '@tabler/icons-react';
 
 const COPY_OPTIONS = [
   {
@@ -147,6 +147,18 @@ export default function TokensTableRow({ item, manageToken, handleOpenModal, set
     handleCloseMenu();
   };
 
+  const handleCcSwitchImport = () => {
+    const serverAddress = siteInfo?.server_address || window.location.origin;
+    const systemName = siteInfo?.system_name || 'One API';
+    const providerName = `${systemName} · ${item.name}`;
+    const url = `ccswitch://v1/import?resource=provider&app=claude`
+      + `&name=${encodeURIComponent(providerName)}`
+      + `&apiKey=${encodeURIComponent(item.key)}`
+      + `&endpoint=${encodeURIComponent(serverAddress)}`
+      + `&homepage=${encodeURIComponent(serverAddress)}`;
+    window.open(url);
+  };
+
   const copyItems = createMenu(
     COPY_OPTIONS.map((option) => ({
       text: option.text,
@@ -228,6 +240,11 @@ export default function TokensTableRow({ item, manageToken, handleOpenModal, set
                 <IconCaretDownFilled size={'16px'} />
               </Button>
             </ButtonGroup>
+            <Tooltip title="导入 cc-switch" placement="top">
+              <IconButton onClick={handleCcSwitchImport} sx={{ color: 'rgb(99, 115, 129)' }}>
+                <IconSparkles size={'20px'} />
+              </IconButton>
+            </Tooltip>
             <IconButton onClick={(e) => handleOpenMenu(e, 'action')} sx={{ color: 'rgb(99, 115, 129)' }}>
               <IconDotsVertical />
             </IconButton>
