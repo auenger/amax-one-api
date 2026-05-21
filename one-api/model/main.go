@@ -68,8 +68,8 @@ func chooseDB(envName string) (*gorm.DB, error) {
 	dsn := os.Getenv(envName)
 
 	switch {
-	case strings.HasPrefix(dsn, "postgres://"):
-		// Use PostgreSQL
+	case strings.HasPrefix(dsn, "postgres://"), strings.Contains(dsn, "sslmode=") && !strings.Contains(dsn, "tcp("):
+		// Use PostgreSQL (URL format or key=value format)
 		return openPostgreSQL(dsn)
 	case dsn != "":
 		// Use MySQL

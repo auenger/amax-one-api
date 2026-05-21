@@ -97,6 +97,35 @@ cd one-api && ./rebuild.sh   # 前端构建 + 产物拷贝 + Go 编译，三步�
 - embed 是编译时嵌入，前端改动后必须 `go clean -cache` + 重新 `go build`
 - `rebuild.sh` 已包含所有步骤
 
+## 生产部署打包
+
+```bash
+cd one-api
+
+# 1. 构建前端（如果前端有改动）
+cd web/berry && npm run build && cd ../..
+rm -rf web/build/berry/static web/build/berry/index.html web/build/berry/asset-manifest.json
+cp -r web/build/berry/build/* web/build/berry/
+rm -rf web/build/berry/build
+
+# 2. 交叉编译 Linux 二进制
+GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o bin/one-api-linux .
+
+# 3. 构建 Docker 镜像
+docker build -f Dockerfile.slim -t aihub:latest .
+
+# 4. 导出镜像
+docker save aihub:latest | gzip > bin/aihub-image.tar.gz
+```
+
+部署产物（上传到服务器即可）：
+- `bin/aihub-image.tar.gz` — Docker 镜像压缩包（~37MB）
+- `docker-compose.prod.yml` — 编排文件，连接外部 PostgreSQL + Redis
+
+服务器端：`docker load < aihub-image.tar.gz` → 修改 `docker-compose.prod.yml` 中的连接信息 → `docker compose -f docker-compose.prod.yml up -d`
+
+详见 `one-api/DEPLOY.md`。
+
 ## Feature Workflow
 
 项目使用 `feature-workflow/` 系统管理需求开发流程（queue.yaml 排队、worktree 隔离、归档）。配置见 `feature-workflow/config.yaml`。

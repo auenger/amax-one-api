@@ -141,7 +141,7 @@ const QuotaProgressBar = ({ windows, theme }) => {
 
 // ==============================|| CHANNEL ROW (expanded) ||============================== //
 
-const ChannelRow = ({ channel, concurrency, quota, onCopyToken, hasToken, theme }) => {
+const ChannelRow = ({ channel, concurrency, quota, onCopyToken, onCcSwitchImport, hasToken, theme }) => {
   const typeLabel = CHANNEL_TYPE_MAP[channel.type] || `Type ${channel.type}`;
   const statusInfo = CHANNEL_STATUS_MAP[channel.status] || CHANNEL_STATUS_MAP[0];
   const concCount = concurrency?.count || 0;
@@ -167,11 +167,18 @@ const ChannelRow = ({ channel, concurrency, quota, onCopyToken, hasToken, theme 
           <Chip label={typeLabel} size="small" color={CHANNEL_COLOR_MAP[channel.type] || 'default'} variant="outlined" sx={{ fontSize: '0.6rem', height: 18, '& .MuiChip-label': { px: 0.5 } }} />
           <Chip label={statusInfo.label} size="small" color={statusInfo.color} variant="filled" sx={{ fontSize: '0.6rem', height: 18, '& .MuiChip-label': { px: 0.5 } }} />
         </Box>
-        <Tooltip title={hasToken ? '复制带渠道的令牌' : '请先创建令牌'} arrow>
-          <IconButton size="small" onClick={() => onCopyToken(channel.id)} sx={{ color: hasToken ? theme.palette.primary.main : theme.palette.text.disabled }}>
-            <IconCopy size={16} />
-          </IconButton>
-        </Tooltip>
+        <Box sx={{ display: 'flex', gap: 0 }}>
+              <Tooltip title={hasToken ? '复制带渠道的令牌' : '请先创建令牌'} arrow>
+                <IconButton size="small" onClick={() => onCopyToken(channel.id)} sx={{ color: hasToken ? theme.palette.primary.main : theme.palette.text.disabled }}>
+                  <IconCopy size={16} />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title={hasToken ? '导入 cc-switch' : '请先创建令牌'} arrow>
+                <IconButton size="small" onClick={() => onCcSwitchImport(channel.id, channel.name)} sx={{ color: hasToken ? theme.palette.text.secondary : theme.palette.text.disabled }}>
+                  <IconSparkles size={16} />
+                </IconButton>
+              </Tooltip>
+            </Box>
       </Box>
 
       {/* Concurrency indicator */}
@@ -245,6 +252,25 @@ const ModelCard = ({ model, userTokens, concurrencyData, quotaData, theme }) => 
       showSuccess('已复制令牌到剪贴板');
     },
     [firstToken]
+  );
+
+  const handleCcSwitchImport = useCallback(
+    (channelId, channelName) => {
+      if (!firstToken) {
+        showError('没有可用的令牌，请先创建令牌');
+        return;
+      }
+      const serverAddress = window.location.origin;
+      const apiKey = `sk-${firstToken.key}-${channelId}`;
+      const providerName = `${model.name} · ${channelName || channelId}`;
+      const url = `ccswitch://v1/import?resource=provider&app=claude`
+        + `&name=${encodeURIComponent(providerName)}`
+        + `&apiKey=${encodeURIComponent(apiKey)}`
+        + `&endpoint=${encodeURIComponent(serverAddress)}`
+        + `&homepage=${encodeURIComponent(serverAddress)}`;
+      window.open(url);
+    },
+    [firstToken, model.name]
   );
 
   return (
@@ -347,6 +373,7 @@ const ModelCard = ({ model, userTokens, concurrencyData, quotaData, theme }) => 
                 concurrency={modelConcurrency[ch.id]}
                 quota={quotaData?.[ch.id]}
                 onCopyToken={handleCopyToken}
+                onCcSwitchImport={handleCcSwitchImport}
                 hasToken={!!firstToken}
                 theme={theme}
               />

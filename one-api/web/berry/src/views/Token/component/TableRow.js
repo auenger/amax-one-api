@@ -15,30 +15,13 @@ import {
   DialogTitle,
   Button,
   Tooltip,
-  Stack,
-  ButtonGroup
+  Stack
 } from '@mui/material';
 
 import TableSwitch from 'ui-component/Switch';
 import { renderQuota, timestamp2string, copy } from 'utils/common';
 
-import { IconDotsVertical, IconEdit, IconTrash, IconCaretDownFilled, IconSparkles } from '@tabler/icons-react';
-
-const COPY_OPTIONS = [
-  {
-    key: 'next',
-    text: 'ChatGPT Next',
-    url: 'https://app.nextchat.dev/#/?settings={"key":"sk-{key}","url":"{serverAddress}"}',
-    encode: false
-  },
-  { key: 'ama', text: 'BotGem', url: 'ama://set-api-key?server={serverAddress}&key=sk-{key}', encode: true },
-  { key: 'opencat', text: 'OpenCat', url: 'opencat://team/join?domain={serverAddress}&token=sk-{key}', encode: true },
-  { key: 'lobechat', text: 'LobeChat', url: 'https://lobehub.com/?settings={"keyVaults":{"openai":{"apiKey":"sk-{key}","baseURL":"{serverAddress}"}}}', encode: true }
-];
-
-function replacePlaceholders(text, key, serverAddress) {
-  return text.replace('{key}', key).replace('{serverAddress}', serverAddress);
-}
+import { IconDotsVertical, IconEdit, IconTrash, IconSparkles, IconCopy } from '@tabler/icons-react';
 
 function createMenu(menuItems) {
   return (
@@ -69,17 +52,8 @@ export default function TokensTableRow({ item, manageToken, handleOpenModal, set
     setOpenDelete(false);
   };
 
-  const handleOpenMenu = (event, type) => {
-    switch (type) {
-      case 'copy':
-        setMenuItems(copyItems);
-        break;
-      case 'link':
-        setMenuItems(linkItems);
-        break;
-      default:
-        setMenuItems(actionItems);
-    }
+  const handleOpenMenu = (event) => {
+    setMenuItems(actionItems);
     setOpen(event.currentTarget);
   };
 
@@ -119,63 +93,17 @@ export default function TokensTableRow({ item, manageToken, handleOpenModal, set
     }
   ]);
 
-  const handleCopy = (option, type) => {
-    let serverAddress = '';
-    if (siteInfo?.server_address) {
-      serverAddress = siteInfo.server_address;
-    } else {
-      serverAddress = window.location.host;
-    }
-
-    if (option.encode) {
-      serverAddress = encodeURIComponent(serverAddress);
-    }
-
-    let url = option.url;
-
-    if (option.key === 'next' && siteInfo?.chat_link) {
-      url = siteInfo.chat_link + `/#/?settings={"key":"sk-{key}","url":"{serverAddress}"}`;
-    }
-
-    const key = item.key;
-    const text = replacePlaceholders(url, key, serverAddress);
-    if (type === 'link') {
-      window.open(text);
-    } else {
-      copy(text);
-    }
-    handleCloseMenu();
-  };
-
   const handleCcSwitchImport = () => {
-    const serverAddress = siteInfo?.server_address || window.location.origin;
+    const serverAddress = window.location.origin;
     const systemName = siteInfo?.system_name || 'One API';
     const providerName = `${systemName} · ${item.name}`;
     const url = `ccswitch://v1/import?resource=provider&app=claude`
       + `&name=${encodeURIComponent(providerName)}`
-      + `&apiKey=${encodeURIComponent(item.key)}`
+      + `&apiKey=${encodeURIComponent('sk-' + item.key)}`
       + `&endpoint=${encodeURIComponent(serverAddress)}`
       + `&homepage=${encodeURIComponent(serverAddress)}`;
     window.open(url);
   };
-
-  const copyItems = createMenu(
-    COPY_OPTIONS.map((option) => ({
-      text: option.text,
-      icon: undefined,
-      onClick: () => handleCopy(option, 'copy'),
-      color: undefined
-    }))
-  );
-
-  const linkItems = createMenu(
-    COPY_OPTIONS.map((option) => ({
-      text: option.text,
-      icon: undefined,
-      onClick: () => handleCopy(option, 'link'),
-      color: undefined
-    }))
-  );
 
   return (
     <>
@@ -219,33 +147,17 @@ export default function TokensTableRow({ item, manageToken, handleOpenModal, set
 
         <TableCell>
           <Stack direction="row" spacing={1}>
-            <ButtonGroup size="small" aria-label="split button">
-              <Button
-                color="primary"
-                onClick={() => {
-                  copy(`sk-${item.key}`);
-                }}
-              >
-                复制
-              </Button>
-              <Button size="small" onClick={(e) => handleOpenMenu(e, 'copy')}>
-                <IconCaretDownFilled size={'16px'} />
-              </Button>
-            </ButtonGroup>
-            <ButtonGroup size="small" aria-label="split button">
-              <Button color="primary" onClick={(e) => handleCopy(COPY_OPTIONS[0], 'link')}>
-                聊天
-              </Button>
-              <Button size="small" onClick={(e) => handleOpenMenu(e, 'link')}>
-                <IconCaretDownFilled size={'16px'} />
-              </Button>
-            </ButtonGroup>
+            <Tooltip title="复制令牌" placement="top">
+              <IconButton onClick={() => { copy(`sk-${item.key}`); }} sx={{ color: 'rgb(99, 115, 129)' }}>
+                <IconCopy size={'20px'} />
+              </IconButton>
+            </Tooltip>
             <Tooltip title="导入 cc-switch" placement="top">
               <IconButton onClick={handleCcSwitchImport} sx={{ color: 'rgb(99, 115, 129)' }}>
                 <IconSparkles size={'20px'} />
               </IconButton>
             </Tooltip>
-            <IconButton onClick={(e) => handleOpenMenu(e, 'action')} sx={{ color: 'rgb(99, 115, 129)' }}>
+            <IconButton onClick={(e) => handleOpenMenu(e)} sx={{ color: 'rgb(99, 115, 129)' }}>
               <IconDotsVertical />
             </IconButton>
           </Stack>

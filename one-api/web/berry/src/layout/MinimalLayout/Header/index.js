@@ -74,8 +74,8 @@ const Header = () => {
             <Button component={Link} variant="text" to="/" color={pathname === '/' ? 'primary' : 'inherit'}>
               首页
             </Button>
-            <Button component={Link} variant="text" to="/about" color={pathname === '/about' ? 'primary' : 'inherit'}>
-              关于
+            <Button component="a" variant="text" href="/manual.html" target="_blank" rel="noopener" color="inherit">
+              操作手册
             </Button>
             <ThemeButton />
             {account.user ? (
@@ -134,8 +134,8 @@ const Header = () => {
                       <ListItemText primary={<Typography variant="body2">首页</Typography>} />
                     </ListItemButton>
 
-                    <ListItemButton component={Link} variant="text" to="/about">
-                      <ListItemText primary={<Typography variant="body2">关于</Typography>} />
+                    <ListItemButton component="a" href="/manual.html" target="_blank" rel="noopener">
+                      <ListItemText primary={<Typography variant="body2">操作手册</Typography>} />
                     </ListItemButton>
                     <Divider />
                     {account.user ? (

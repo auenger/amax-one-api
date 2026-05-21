@@ -19,7 +19,7 @@ import { API } from 'utils/api';
 import { ITEMS_PER_PAGE } from 'constants';
 import { IconRefresh, IconPlus } from '@tabler/icons-react';
 import EditeModal from './component/EditModal';
-import { useSelector } from 'react-redux';
+
 
 export default function Token() {
   const [tokens, setTokens] = useState([]);
@@ -28,7 +28,6 @@ export default function Token() {
   const [searchKeyword, setSearchKeyword] = useState('');
   const [openModal, setOpenModal] = useState(false);
   const [editTokenId, setEditTokenId] = useState(0);
-  const siteInfo = useSelector((state) => state.siteInfo);
 
   const loadTokens = async (startIdx) => {
     setSearching(true);
@@ -154,14 +153,9 @@ export default function Token() {
           新建令牌
         </Button>
       </Stack>
-      <Stack mb={2} spacing={1}>
-        <Alert severity="info">
-          OpenAI 协议：将 API 基础地址 https://api.openai.com 替换为 <b>{siteInfo.server_address}</b>，使用 <b>/v1/chat/completions</b> 路径，复制下面的密钥即可使用
-        </Alert>
-        <Alert severity="info">
-          Anthropic 协议：将 API 基础地址 https://api.anthropic.com 替换为 <b>{siteInfo.server_address}</b>，使用 <b>/v1/messages</b> 路径，复制下面的密钥即可使用
-        </Alert>
-      </Stack>
+      <Alert severity="info">
+        OpenAI 协议：将 API 基础地址 https://api.openai.com 替换为 <b>{window.location.origin}</b>，使用 <b>/v1/chat/completions</b> 路径，复制下面的密钥即可使用。Anthropic 协议：将 API 基础地址 https://api.anthropic.com 替换为 <b>{window.location.origin}</b>，使用 <b>/v1/messages</b> 路径。尚未下载 CC Switch？请前往 <a href="https://ccswitch.io" target="_blank" rel="noopener noreferrer">ccswitch.io</a> 下载。
+      </Alert>
       <Card>
         <Box component="form" onSubmit={searchTokens} noValidate sx={{marginTop: 2}}>
           <TableToolBar filterName={searchKeyword} handleFilterName={handleSearchKeyword} placeholder={'搜索令牌的名称...'} />

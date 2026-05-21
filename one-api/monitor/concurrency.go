@@ -83,14 +83,14 @@ func IncrConcurrency(channelId int, model string) {
 	common.RDB.Expire(ctx, key, concurrencyKeyTTL)
 }
 
-// DecrConcurrency delays 1 minute then atomically decrements the concurrency counter.
+// DecrConcurrency delays 10 seconds then atomically decrements the concurrency counter.
 // The delay gives frontend polling enough time to capture the concurrent state.
 func DecrConcurrency(channelId int, model string) {
 	if !common.RedisEnabled || common.RDB == nil {
 		return
 	}
 	go func() {
-		time.Sleep(1 * time.Minute)
+		time.Sleep(10 * time.Second)
 		ctx := context.Background()
 		key := fmt.Sprintf("%s%d:%s", concurrencyKeyPrefix, channelId, model)
 		val, err := common.RDB.Decr(ctx, key).Result()

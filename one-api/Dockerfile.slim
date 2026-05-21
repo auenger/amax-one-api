@@ -1,0 +1,10 @@
+FROM alpine:3.19
+
+RUN apk add --no-cache ca-certificates tzdata
+
+COPY bin/one-api-linux /opt/aihub/one-api
+RUN chmod +x /opt/aihub/one-api
+
+EXPOSE 3000
+WORKDIR /data
+ENTRYPOINT ["/opt/aihub/one-api"]

@@ -1,0 +1,1282 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AIHub 使用手册</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<style>
+/* ============ TOKENS ============ */
+:root{
+  --bg:#0a0b0d;
+  --surface:#14171b;
+  --surface-2:#1a1e23;
+  --line:rgba(255,255,255,.10);
+  --line-soft:rgba(255,255,255,.055);
+  --text:#ECEDEA;
+  --text-2:#9a9d98;
+  --text-3:#5f625c;
+  --accent:#CFF44D;
+  --accent-deep:#9bbf2e;
+  --accent-glow:rgba(207,244,77,.13);
+  --loss:#d9926e;
+  --font-display:'Bricolage Grotesque','Noto Sans SC',sans-serif;
+  --font-sans:'Noto Sans SC','Bricolage Grotesque',sans-serif;
+  --font-mono:'IBM Plex Mono',ui-monospace,monospace;
+  --ease:cubic-bezier(.2,.7,.2,1);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:72px}
+body{
+  background:var(--bg);color:var(--text);
+  font-family:var(--font-sans);font-weight:400;
+  -webkit-font-smoothing:antialiased;
+  line-height:1.7;font-size:15px;
+}
+
+/* ============ ATMOSPHERE ============ */
+.bg-grid,.bg-grain,.bg-glow{position:fixed;inset:0;pointer-events:none;z-index:0}
+.bg-grid{
+  background-image:
+    linear-gradient(var(--line-soft) 1px,transparent 1px),
+    linear-gradient(90deg,var(--line-soft) 1px,transparent 1px);
+  background-size:66px 66px;
+  -webkit-mask:radial-gradient(ellipse 100% 85% at 50% 42%,#000 25%,transparent 100%);
+          mask:radial-gradient(ellipse 100% 85% at 50% 42%,#000 25%,transparent 100%);
+}
+.bg-glow{background:radial-gradient(ellipse 50% 40% at 78% 18%,var(--accent-glow),transparent 70%)}
+.bg-grain{
+  opacity:.03;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ============ TOPBAR ============ */
+.topbar{
+  position:fixed;top:0;left:0;right:0;z-index:60;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:18px clamp(24px,4vw,52px);
+  background:rgba(10,11,13,.85);backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--line-soft);
+}
+.brand{display:flex;align-items:center;gap:11px;color:var(--text-2);font-family:var(--font-mono);font-size:11px;letter-spacing:.14em}
+.mark{width:18px;height:18px;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:2px}
+.mark i{background:var(--text-3);border-radius:1px}
+.mark i:nth-child(1){background:var(--accent)}
+.topbar-nav{display:flex;gap:20px}
+.topbar-nav a{
+  font-family:var(--font-mono);font-size:11px;letter-spacing:.1em;
+  color:var(--text-3);transition:color .25s var(--ease);
+}
+.topbar-nav a:hover{color:var(--accent)}
+
+/* ============ LAYOUT ============ */
+.page{position:relative;z-index:1}
+
+/* ============ COVER HERO ============ */
+.hero{
+  min-height:100vh;display:flex;flex-direction:column;justify-content:center;
+  padding:120px clamp(28px,6vw,90px) 80px;
+}
+.hero .inner{width:100%;max-width:1100px;margin:0 auto}
+.kicker{
+  font-family:var(--font-mono);font-size:12px;font-weight:500;
+  letter-spacing:.2em;color:var(--accent);
+  display:flex;align-items:center;gap:12px;margin-bottom:30px;
+}
+.kicker::before{content:"";width:30px;height:1px;background:var(--accent)}
+.kicker em{color:var(--text-3);font-style:normal}
+
+.hero h1{
+  font-family:var(--font-display);font-weight:800;
+  font-size:clamp(3rem,8vw,7rem);line-height:.96;letter-spacing:-.02em;
+}
+.hero h1 .ul{position:relative}
+.hero h1 .ul::after{
+  content:"";position:absolute;left:0;bottom:.06em;width:100%;height:8px;
+  background:var(--accent);opacity:.9;
+}
+.hero h1 .accent-text{color:var(--accent)}
+.hero .lead{
+  font-size:clamp(1rem,1.35vw,1.22rem);line-height:1.7;
+  color:var(--text-2);font-weight:300;max-width:640px;margin-top:34px;
+}
+.hero .lead b{color:var(--text);font-weight:500}
+
+.hero-tags{
+  display:flex;flex-wrap:wrap;gap:0;margin-top:42px;
+  border-top:1px solid var(--line);
+}
+.hero-tags .ct{
+  flex:1;min-width:150px;padding:18px 22px 18px 0;
+  display:flex;align-items:baseline;gap:12px;
+  border-right:1px solid var(--line-soft);
+}
+.hero-tags .ct:last-child{border-right:0}
+.hero-tags .ct b{font-family:var(--font-mono);color:var(--accent);font-size:13px;font-weight:600}
+.hero-tags .ct span{font-size:.96rem;color:var(--text-2)}
+
+/* ============ SECTIONS ============ */
+.section{
+  padding:80px clamp(28px,6vw,90px);
+  border-top:1px solid var(--line-soft);
+}
+.section .inner{width:100%;max-width:1100px;margin:0 auto}
+.section-kicker{
+  font-family:var(--font-mono);font-size:12px;font-weight:500;
+  letter-spacing:.2em;color:var(--accent);
+  display:flex;align-items:center;gap:12px;margin-bottom:20px;
+}
+.section-kicker::before{content:"";width:30px;height:1px;background:var(--accent)}
+.section-kicker em{color:var(--text-3);font-style:normal}
+.section h2{
+  font-family:var(--font-display);font-weight:700;
+  font-size:clamp(1.8rem,3.8vw,3rem);line-height:1.12;letter-spacing:-.015em;
+}
+.section h2 b{color:var(--accent);font-weight:700}
+
+.lead{
+  font-size:clamp(1rem,1.3vw,1.15rem);line-height:1.7;
+  color:var(--text-2);font-weight:300;max-width:680px;margin-top:16px;
+}
+.lead b{color:var(--text);font-weight:500}
+
+/* ============ CARDS ============ */
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:36px}
+.card{
+  background:var(--surface);border:1px solid var(--line);border-radius:4px;
+  padding:28px 26px;position:relative;
+  transition:border-color .3s var(--ease),transform .3s var(--ease);
+}
+.card::before{
+  content:"";position:absolute;top:13px;right:13px;
+  width:9px;height:9px;border-top:1px solid var(--text-3);border-right:1px solid var(--text-3);
+}
+.card:hover{border-color:rgba(207,244,77,.35);transform:translateY(-3px)}
+.card .tab{
+  font-family:var(--font-mono);font-size:11px;letter-spacing:.16em;
+  color:var(--accent);margin-bottom:14px;
+}
+.card h3{
+  font-family:var(--font-display);font-weight:700;
+  font-size:1.1rem;line-height:1.25;margin-bottom:10px;
+}
+.card p{font-size:.95rem;line-height:1.65;color:var(--text-2);font-weight:300}
+.card p b{color:var(--text);font-weight:500}
+@media(max-width:880px){.cards{grid-template-columns:1fr}}
+
+/* ============ 2-COL CARDS ============ */
+.cards2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:36px}
+@media(max-width:880px){.cards2{grid-template-columns:1fr}}
+
+/* ============ POINTS LIST ============ */
+.points{display:flex;flex-direction:column;gap:2px;margin-top:34px}
+.point{
+  display:grid;grid-template-columns:auto 1fr;gap:22px;align-items:start;
+  padding:18px 0;border-bottom:1px solid var(--line-soft);
+}
+.point:first-child{border-top:1px solid var(--line-soft)}
+.point .pn{
+  font-family:var(--font-mono);font-size:12px;color:var(--accent);
+  font-weight:600;padding-top:4px;
+}
+.point .pt b{
+  font-family:var(--font-display);font-weight:700;font-size:1.08rem;
+  color:var(--text);display:block;margin-bottom:4px;
+}
+.point .pt span{font-size:.95rem;color:var(--text-2);line-height:1.6;font-weight:300}
+
+/* ============ CALLOUT ============ */
+.callout{
+  margin-top:30px;padding:18px 24px;
+  background:var(--surface);border:1px solid var(--line);
+  border-left:3px solid var(--accent);border-radius:3px;
+  font-size:1rem;color:var(--text);font-weight:500;line-height:1.5;
+}
+.callout span{color:var(--accent)}
+.callout code{
+  font-family:var(--font-mono);background:rgba(207,244,77,.1);
+  padding:2px 7px;border-radius:3px;font-size:.88em;color:var(--accent);
+}
+
+/* ============ STEPS ============ */
+.steps{counter-reset:step;display:flex;flex-direction:column;gap:2px;margin-top:34px}
+.step{
+  display:grid;grid-template-columns:auto 1fr;gap:22px;align-items:start;
+  padding:18px 0;border-bottom:1px solid var(--line-soft);
+  position:relative;
+}
+.step:first-child{border-top:1px solid var(--line-soft)}
+.step .sn{
+  font-family:var(--font-mono);font-size:12px;color:var(--accent);
+  font-weight:600;padding-top:4px;
+}
+.step .st b{
+  font-family:var(--font-display);font-weight:700;font-size:1.08rem;
+  color:var(--text);display:block;margin-bottom:4px;
+}
+.step .st span{font-size:.95rem;color:var(--text-2);line-height:1.6;font-weight:300}
+
+/* ============ FLOW DIAGRAM ============ */
+.flow{
+  margin-top:30px;background:var(--surface);border:1px solid var(--line);
+  border-radius:4px;padding:28px;display:flex;align-items:center;
+  flex-wrap:wrap;gap:10px;justify-content:center;
+}
+.flow-node{
+  padding:10px 18px;border-radius:3px;font-family:var(--font-mono);
+  font-size:12px;letter-spacing:.08em;font-weight:600;text-align:center;
+  line-height:1.3;
+}
+.flow-node.primary{background:var(--accent);color:var(--bg)}
+.flow-node.surface{background:var(--surface-2);color:var(--text);border:1px solid var(--line)}
+.flow-node.outline{background:transparent;border:1px solid var(--accent);color:var(--accent)}
+.flow-node.dim{background:var(--surface-2);color:var(--text-2);border:1px solid var(--line-soft)}
+.flow-arrow{color:var(--accent);font-size:18px;font-weight:700}
+@media(max-width:600px){
+  .flow{flex-direction:column;align-items:stretch}
+  .flow-arrow{transform:rotate(90deg);text-align:center}
+}
+
+/* ============ ARCHITECTURE DIAGRAM ============ */
+.arch{
+  margin-top:30px;background:var(--surface);border:1px solid var(--line);
+  border-radius:4px;padding:32px;text-align:center;
+}
+.arch-row{display:flex;justify-content:center;gap:16px;margin:14px 0;flex-wrap:wrap}
+.arch-box{
+  padding:12px 22px;border-radius:3px;font-size:12px;font-weight:600;
+  font-family:var(--font-mono);letter-spacing:.04em;
+}
+.arch-arrow{display:flex;flex-direction:column;align-items:center;padding:2px 0;color:var(--text-3)}
+.arch-arrow .aline{width:1px;height:16px;background:var(--line)}
+.arch-arrow .ahead{width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:6px solid var(--text-3)}
+
+/* ============ TABLES ============ */
+.tbl{
+  margin-top:28px;border:1px solid var(--line);border-radius:4px;overflow:hidden;
+}
+.tbl-head{
+  display:grid;padding:12px 18px;
+  background:var(--surface-2);border-bottom:1px solid var(--line);
+  font-family:var(--font-mono);font-size:10px;letter-spacing:.12em;
+  color:var(--accent);font-weight:600;
+}
+.tbl-row{
+  display:grid;padding:12px 18px;border-bottom:1px solid var(--line-soft);
+  font-size:.92rem;color:var(--text-2);font-weight:300;
+  transition:background .2s;
+}
+.tbl-row:last-child{border-bottom:0}
+.tbl-row:hover{background:rgba(207,244,77,.03)}
+.tbl-row b{color:var(--text);font-weight:500}
+.tbl-row .badge{
+  display:inline-block;font-family:var(--font-mono);font-size:9px;
+  letter-spacing:.06em;padding:3px 8px;border-radius:3px;font-weight:600;
+}
+.badge-admin{background:rgba(207,244,77,.12);color:var(--accent)}
+.badge-all{background:rgba(255,255,255,.06);color:var(--text-2)}
+.badge-new{border:1px solid var(--accent);color:var(--accent);background:transparent}
+.method{
+  font-family:var(--font-mono);font-size:10px;letter-spacing:.06em;
+  padding:2px 8px;border-radius:3px;font-weight:600;
+}
+.m-get{background:rgba(207,244,77,.12);color:var(--accent)}
+.m-post{background:rgba(255,255,255,.06);color:var(--text)}
+.m-put{background:rgba(217,146,110,.12);color:var(--loss)}
+.m-del{background:rgba(255,23,68,.1);color:#ff5252}
+
+/* ============ CODE BLOCKS ============ */
+.code-block{
+  margin-top:24px;background:var(--surface);border:1px solid var(--line);
+  border-radius:4px;overflow:hidden;
+}
+.code-head{
+  padding:10px 18px;border-bottom:1px solid var(--line);
+  font-family:var(--font-mono);font-size:10px;letter-spacing:.12em;
+  color:var(--text-3);display:flex;align-items:center;gap:10px;
+}
+.code-head .dot{width:6px;height:6px;border-radius:50%;background:var(--accent)}
+pre{
+  padding:18px 22px;overflow-x:auto;font-family:var(--font-mono);
+  font-size:13px;line-height:1.65;color:var(--text-2);
+}
+pre .c{color:var(--text-3)}
+pre .k{color:#c792ea}pre .s{color:#c3e88d}pre .p{color:#82aaff}
+pre .v{color:#f78c6c}pre .u{color:#89ddff}
+
+/* ============ TABS ============ */
+.tabs{margin-top:28px}
+.tab-bar{display:flex;border-bottom:1px solid var(--line);gap:0}
+.tab-btn{
+  padding:12px 22px;background:none;border:none;cursor:pointer;
+  font-family:var(--font-mono);font-size:11px;letter-spacing:.1em;
+  color:var(--text-3);border-bottom:2px solid transparent;
+  margin-bottom:-1px;transition:.25s var(--ease);
+}
+.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
+.tab-btn:hover{color:var(--text-2)}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+
+/* ============ METRICS ============ */
+.metrics{
+  display:grid;grid-template-columns:repeat(3,1fr);
+  border:1px solid var(--line);margin-top:34px;
+}
+.metric{
+  padding:26px 22px;border-right:1px solid var(--line-soft);border-bottom:1px solid var(--line-soft);
+}
+.metric:nth-child(3n){border-right:0}
+.metric:nth-child(n+4){border-bottom:0}
+.metric .num{
+  font-family:var(--font-display);font-weight:800;
+  font-size:clamp(2rem,4vw,3rem);line-height:1;letter-spacing:-.02em;
+  color:var(--accent);
+}
+.metric .num sup{font-size:.4em;vertical-align:super}
+.metric .ml{
+  font-family:var(--font-mono);font-size:11px;letter-spacing:.1em;
+  color:var(--text-2);margin-top:10px;
+}
+
+/* ============ ABILITIES GRID ============ */
+.abilities{
+  display:grid;grid-template-columns:1fr 1fr;gap:0;margin-top:30px;
+  border:1px solid var(--line);
+}
+.ab{
+  display:grid;grid-template-columns:auto 1fr;gap:16px;
+  padding:16px 20px;border-bottom:1px solid var(--line-soft);
+}
+.ab:nth-child(odd){border-right:1px solid var(--line-soft)}
+.ab:nth-last-child(-n+2){border-bottom:0}
+.ab .abn{
+  font-family:var(--font-mono);font-size:13px;font-weight:600;
+  color:var(--accent);padding-top:2px;
+}
+.ab .abt b{
+  font-family:var(--font-display);font-weight:700;font-size:1rem;
+  display:block;margin-bottom:3px;
+}
+.ab .abt span{
+  font-family:var(--font-mono);font-size:10.5px;letter-spacing:.03em;
+  color:var(--text-2);line-height:1.5;
+}
+
+/* ============ SPEC TABLE (direction style) ============ */
+.spec{margin-top:24px;border-top:1px solid var(--line)}
+.srow{
+  display:grid;grid-template-columns:120px 1fr;gap:24px;
+  padding:14px 0;border-bottom:1px solid var(--line-soft);align-items:baseline;
+}
+.srow dt{
+  font-family:var(--font-mono);font-size:11px;letter-spacing:.1em;
+  color:var(--accent);
+}
+.srow dd{font-size:.95rem;color:var(--text-2);line-height:1.6;font-weight:300}
+.srow dd b{color:var(--text);font-weight:500}
+.srow.key dd b{color:var(--accent)}
+
+/* ============ INLINE CODE ============ */
+code{
+  font-family:var(--font-mono);background:rgba(207,244,77,.08);
+  padding:2px 7px;border-radius:3px;font-size:.88em;color:var(--accent-deep);
+}
+
+/* ============ FAQ ACCORDION ============ */
+.faq{display:flex;flex-direction:column;gap:2px;margin-top:30px;border:1px solid var(--line)}
+.faq-item{border-bottom:1px solid var(--line-soft)}
+.faq-item:last-child{border-bottom:0}
+.faq-q{
+  padding:18px 22px;cursor:pointer;display:flex;align-items:center;gap:14px;
+  font-family:var(--font-display);font-weight:700;font-size:1.02rem;
+  color:var(--text);transition:color .2s;
+}
+.faq-q:hover{color:var(--accent)}
+.faq-q .qn{
+  font-family:var(--font-mono);font-size:11px;color:var(--accent);
+  font-weight:600;letter-spacing:.1em;flex-shrink:0;
+}
+.faq-a{
+  max-height:0;overflow:hidden;transition:max-height .4s var(--ease);
+}
+.faq-a-inner{
+  padding:0 22px 18px 48px;font-size:.95rem;color:var(--text-2);
+  line-height:1.65;font-weight:300;
+}
+.faq-a-inner b{color:var(--text);font-weight:500}
+.faq-a-inner code{color:var(--accent-deep)}
+.faq-item.open .faq-a{max-height:300px}
+.faq-item.open .faq-q{color:var(--accent)}
+
+/* ============ FOOTER ============ */
+.footer{
+  padding:40px clamp(28px,6vw,90px);border-top:1px solid var(--line);
+  position:relative;z-index:1;
+}
+.footer .inner{max-width:1100px;margin:0 auto;text-align:center}
+.footer p{font-family:var(--font-mono);font-size:11px;letter-spacing:.1em;color:var(--text-3)}
+.footer b{color:var(--accent-deep);font-weight:500}
+
+/* ============ REVEAL ANIMATION ============ */
+[data-reveal]{
+  opacity:0;transform:translateY(18px);
+  transition:opacity .6s var(--ease),transform .6s var(--ease);
+}
+[data-reveal].revealed{opacity:1;transform:none}
+
+/* ============ RESPONSIVE ============ */
+@media(max-width:880px){
+  .cards{grid-template-columns:1fr}
+  .metrics{grid-template-columns:repeat(2,1fr)}
+  .metric:nth-child(3n){border-right:1px solid var(--line-soft)}
+  .metric:nth-child(2n){border-right:0}
+  .abilities{grid-template-columns:1fr}
+  .ab:nth-child(odd){border-right:0}
+  .topbar-nav{display:none}
+}
+@media(max-width:600px){
+  .hero h1{font-size:clamp(2rem,10vw,3.5rem)}
+  .section{padding:48px 20px}
+}
+@media print{
+  .bg-grid,.bg-glow,.bg-grain,.topbar{display:none}
+  body{background:#fff;color:#111}
+  .section{page-break-inside:avoid;border-top-color:#ddd}
+}
+</style>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+<div class="bg-glow"></div>
+<div class="bg-grain"></div>
+
+<!-- ============ TOPBAR ============ -->
+<header class="topbar">
+  <div class="brand">
+    <span class="mark"><i></i><i></i><i></i><i></i></span>
+    AIHUB · MANUAL
+  </div>
+  <nav class="topbar-nav">
+    <a href="#overview">概述</a>
+    <a href="#quickstart">快速上手</a>
+    <a href="#model-market">模型广场</a>
+    <a href="#tokens">令牌</a>
+    <a href="#api">API</a>
+    <a href="#admin">管理</a>
+    <a href="#faq">FAQ</a>
+  </nav>
+</header>
+
+<div class="page">
+
+<!-- ============================================================ -->
+<!-- HERO / COVER                                                  -->
+<!-- ============================================================ -->
+<section class="hero" id="top">
+  <div class="inner">
+    <div class="kicker" data-reveal>AIHub 使用手册 <em>· v1.0</em></div>
+    <h1 data-reveal>
+      一套平台<br/>
+      <span class="ul">38+</span> 供应商<br/>
+      双协议<span class="accent-text">兼容</span>
+    </h1>
+    <p class="lead" data-reveal>
+      AIHub 是企业级 AI 模型统一管理平台。只需替换 API 地址，即可通过
+      <b>OpenAI</b> 或 <b>Anthropic</b> 协议接入 38+ 供应商。
+    </p>
+    <div class="hero-tags" data-reveal>
+      <div class="ct"><b>38+</b><span>供应商</span></div>
+      <div class="ct"><b>双协议</b><span>OpenAI &amp; Anthropic</span></div>
+      <div class="ct"><b>4 级</b><span>角色权限</span></div>
+      <div class="ct"><b>实时</b><span>并发 &amp; 配额监控</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- OVERVIEW                                                      -->
+<!-- ============================================================ -->
+<section class="section" id="overview">
+  <div class="inner">
+    <div class="section-kicker" data-reveal>// 平台概述</div>
+    <h2 data-reveal>六项核心能力，<b>覆盖全链路</b></h2>
+
+    <div class="cards">
+      <div class="card" data-reveal>
+        <div class="tab">PROXY</div>
+        <h3>38+ 供应商代理</h3>
+        <p>OpenAI、Anthropic、Gemini、AWS、Azure、百度、阿里、讯飞等 <b>全覆盖</b>。</p>
+      </div>
+      <div class="card" data-reveal>
+        <div class="tab">AUTH</div>
+        <h3>Token 鉴权</h3>
+        <p><b>4 级角色</b>体系 (Root / Admin / Common / Guest)，精细的令牌与权限控制。</p>
+      </div>
+      <div class="card" data-reveal>
+        <div class="tab">ROUTING</div>
+        <h3>智能渠道路由</h3>
+        <p>加权随机 + 亲和性 + <b>故障自动转移</b> + 负载均衡。</p>
+      </div>
+      <div class="card" data-reveal>
+        <div class="tab">MONITOR</div>
+        <h3>实时监控</h3>
+        <p>并发追踪、配额监控、渠道健康检查、<b>用量报表</b>。</p>
+      </div>
+      <div class="card" data-reveal>
+        <div class="tab">MARKET</div>
+        <h3>模型广场</h3>
+        <p>一目了然查看可用模型、渠道状态、<b>实时并发</b>、配额余量。</p>
+      </div>
+      <div class="card" data-reveal>
+        <div class="tab">BILLING</div>
+        <h3>用量计费</h3>
+        <p>Token 级别精确计费，按模型分比率，<b>充值与兑换码</b>。</p>
+      </div>
+    </div>
+
+    <div class="callout" data-reveal>
+      关键优势 — 你的现有代码 <span>无需修改</span>，只需把 <code>api.openai.com</code> 或 <code>api.anthropic.com</code> 替换为 AIHub 地址。
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- ROLE PERMISSIONS                                              -->
+<!-- ============================================================ -->
+<section class="section" id="roles">
+  <div class="inner">
+    <div class="section-kicker" data-reveal>// 角色与权限</div>
+    <h2 data-reveal>4 级角色，<b>精确控制</b></h2>
+
+    <div class="abilities" data-reveal>
+      <div class="ab">
+        <div class="abn">ROOT</div>
+        <div class="abt"><b>超级管理员</b><span>全部功能：渠道、用户、设置、全局日志、路由策略</span></div>
+      </div>
+      <div class="ab">
+        <div class="abn">ADMIN</div>
+        <div class="abt"><b>管理员</b><span>渠道管理、用户管理、全局日志查看</span></div>
+      </div>
+      <div class="ab">
+        <div class="abn">COMMON</div>
+        <div class="abt"><b>普通用户</b><span>令牌管理、模型广场、用量报表、个人日志</span></div>
+      </div>
+      <div class="ab">
+        <div class="abn">GUEST</div>
+        <div class="abt"><b>访客</b><span>仅公开页面（首页、登录、注册）</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- ARCHITECTURE                                                  -->
+<!-- ============================================================ -->
+<section class="section" id="architecture">
+  <div class="inner">
+    <div class="section-kicker" data-reveal>// 系统架构</div>
+    <h2 data-reveal>请求处理 <b>全链路</b></h2>
+
+    <div class="arch" data-reveal>
+      <div class="arch-row">
+        <div class="arch-box" style="background:var(--surface-2);color:var(--text);border:1px solid var(--line)">
+          <strong>&#128187; 客户端</strong><br><small>curl / SDK / 应用</small>
+        </div>
+      </div>
+      <div class="arch-arrow"><div class="aline"></div><div class="ahead"></div></div>
+      <div class="arch-row">
+        <div class="arch-box" style="background:var(--accent);color:var(--bg)">
+          <strong>Gin Router</strong><br><small>/v1/* · /api/*</small>
+        </div>
+      </div>
+      <div class="arch-arrow"><div class="aline"></div><div class="ahead"></div></div>
+      <div class="arch-row">
+        <div class="arch-box" style="background:var(--surface-2);color:var(--text);border:1px solid var(--line)">
+          <strong>&#128274; Auth</strong><small> Token 校验 · 角色鉴权</small>
+        </div>
+      </div>
+      <div class="arch-arrow"><div class="aline"></div><div class="ahead"></div></div>
+      <div class="arch-row">
+        <div class="arch-box" style="background:var(--surface-2);color:var(--loss);border:1px solid rgba(217,146,110,.3)">
+          <strong>&#9878; Distributor</strong><small> 加权 · 亲和性 · 故障转移</small>
+        </div>
+      </div>
+      <div class="arch-arrow"><div class="aline"></div><div class="ahead"></div></div>
+      <div class="arch-row">
+        <div class="arch-box" style="background:var(--surface-2);color:var(--accent);border:1px solid rgba(207,244,77,.3)">
+          <strong>&#9889; Relay Adaptor</strong><small> 38 供应商协议适配</small>
+        </div>
+      </div>
+      <div class="arch-arrow"><div class="aline"></div><div class="ahead"></div></div>
+      <div class="arch-row" style="gap:10px">
+        <div class="arch-box" style="background:#10a37f;color:#fff"><small>OpenAI</small></div>
+        <div class="arch-box" style="background:#d97706;color:#fff"><small>Anthropic</small></div>
+        <div class="arch-box" style="background:#4285f4;color:#fff"><small>Gemini</small></div>
+        <div class="arch-box" style="background:#ff9900;color:#fff"><small>AWS</small></div>
+        <div class="arch-box" style="background:#0078d4;color:#fff"><small>Azure</small></div>
+        <div class="arch-box" style="background:#e53935;color:#fff"><small>百度</small></div>
+        <div class="arch-box" style="background:#6a1b9a;color:#fff"><small>阿里</small></div>
+        <div class="arch-box" style="background:#333;color:var(--text-2)"><small>...</small></div>
+      </div>
+    </div>
+
+    <div class="spec" data-reveal>
+      <div class="srow"><dt>Auth</dt><dd><code>middleware/auth.go</code> — Token 校验，4 级角色权限控制</dd></div>
+      <div class="srow"><dt>Distributor</dt><dd><code>middleware/distributor.go</code> — 加权随机选择渠道，支持亲和性和故障转移</dd></div>
+      <div class="srow"><dt>Relay</dt><dd><code>relay/adaptor/</code> — 38 个供应商协议适配，支持 Streaming</dd></div>
+      <div class="srow"><dt>Concurrency</dt><dd><code>monitor/concurrency.go</code> — Redis 实时计数，REST API 查询</dd></div>
+      <div class="srow key"><dt>Quota</dt><dd><code>model/quota.go</code> — 6 供应商配额适配 + Redis 缓存</dd></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- QUICK START                                                   -->
+<!-- ============================================================ -->
+<section class="section" id="quickstart">
+  <div class="inner">
+    <div class="section-kicker" data-reveal>// 快速上手</div>
+    <h2 data-reveal>3 分钟，<b>从注册到调用</b></h2>
+
+    <div class="steps">
+      <div class="step" data-reveal>
+        <div class="sn">01</div>
+        <div class="st"><b>注册账号</b><span>访问 AIHub 首页，点击「注册」，填写用户名、密码和邮箱。</span></div>
+      </div>
+      <div class="step" data-reveal>
+        <div class="sn">02</div>
+        <div class="st"><b>创建令牌</b><span>进入「令牌」页面 → 新建令牌 → 填写名称、设置额度 → 保存并复制 <code>sk-xxx</code>。</span></div>
+      </div>
+      <div class="step" data-reveal>
+        <div class="sn">03</div>
+        <div class="st"><b>配置客户端</b><span>将 API 地址替换为 AIHub 地址，使用生成的令牌作为 API Key。</span></div>
+      </div>
+      <div class="step" data-reveal>
+        <div class="sn">04</div>
+        <div class="st"><b>开始调用</b><span>发送第一个请求到 <code>/v1/chat/completions</code>，在日志页面查看记录。</span></div>
+      </div>
+    </div>
+
+    <div class="tabs" data-reveal>
+      <div class="tab-bar">
+        <button class="tab-btn active" onclick="switchTab(this,'t-curl')">cURL</button>
+        <button class="tab-btn" onclick="switchTab(this,'t-py')">Python</button>
+        <button class="tab-btn" onclick="switchTab(this,'t-node')">Node.js</button>
+      </div>
+      <div class="tab-panel active" id="t-curl">
+        <div class="code-block">
+          <div class="code-head"><span class="dot"></span>bash</div>
+          <pre><span class="c"># OpenAI 兼容协议 — 只需替换 base_url</span>
+curl https://<span class="s">your-aihub-host</span>/v1/chat/completions \
+  -H <span class="s">"Authorization: Bearer sk-your-token"</span> \
+  -H <span class="s">"Content-Type: application/json"</span> \
+  -d <span class="s">'{
+    "model": "gpt-4o",
+    "messages": [{"role": "user", "content": "Hello!"}]
+  }'</span></pre>
+        </div>
+      </div>
+      <div class="tab-panel" id="t-py">
+        <div class="code-block">
+          <div class="code-head"><span class="dot"></span>python</div>
+          <pre><span class="k">from</span> openai <span class="k">import</span> OpenAI
+
+client = OpenAI(
+    api_key=<span class="s">"sk-your-token"</span>,
+    base_url=<span class="s">"https://your-aihub-host/v1"</span>
+)
+
+response = client.chat.completions.create(
+    model=<span class="s">"gpt-4o"</span>,
+    messages=[{<span class="s">"role"</span>: <span class="s">"user"</span>, <span class="s">"content"</span>: <span class="s">"Hello!"</span>}]
+)
+<span class="k">print</span>(response.choices[0].message.content)</pre>
+        </div>
+      </div>
+      <div class="tab-panel" id="t-node">
+        <div class="code-block">
+          <div class="code-head"><span class="dot"></span>javascript</div>
+          <pre><span class="k">import</span> OpenAI <span class="k">from</span> <span class="s">'openai'</span>;
+
+<span class="k">const</span> client = <span class="k">new</span> OpenAI({
+  apiKey: <span class="s">'sk-your-token'</span>,
+  baseURL: <span class="s">'https://your-aihub-host/v1'</span>
+});
+
+<span class="k">const</span> res = <span class="k">await</span> client.chat.completions.create({
+  model: <span class="s">'gpt-4o'</span>,
+  messages: [{ role: <span class="s">'user'</span>, content: <span class="s">'Hello!'</span> }]
+});
+console.log(res.choices[0].message.content);</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- MODEL MARKET                                                  -->
+<!-- ============================================================ -->
+<section class="section" id="model-market">
+  <div class="inner">
+    <div class="section-kicker" data-reveal>// 模型广场 <em>· MODEL MARKET</em></div>
+    <h2 data-reveal>浏览可用模型，<b>实时状态一目了然</b></h2>
+    <p class="lead">模型广场是用户最常用的页面，展示当前账户可用的所有 AI 模型及渠道详情。</p>
+
+    <div class="abilities" data-reveal>
+      <div class="ab">
+        <div class="abn">01</div>
+        <div class="abt"><b>模型搜索</b><span>按名称搜索 · 供应商类型过滤</span></div>
+      </div>
+      <div class="ab">
+        <div class="abn">02</div>
+        <div class="abt"><b>渠道状态</b><span>每模型下渠道 · 实时并发 (低/中/高)</span></div>
+      </div>
+      <div class="ab">
+        <div class="abn">03</div>
+        <div class="abt"><b>配额进度</b><span>渠道配额使用进度条 · 剩余时间</span></div>
+      </div>
+      <div class="ab">
+        <div class="abn">04</div>
+        <div class="abt"><b>复制令牌</b><span>一键复制 <code>sk-{token}-{channelId}</code></span></div>
+      </div>
+      <div class="ab">
+        <div class="abn">05</div>
+        <div class="abt"><b>CC Switch 导入</b><span>一键导入渠道配置到 CC Switch</span></div>
+      </div>
+      <div class="ab">
+        <div class="abn">06</div>
+        <div class="abt"><b>自动刷新</b><span>每 30 秒刷新并发数据</span></div>
+      </div>
+    </div>
+
+    <div class="flow" data-reveal>
+      <div class="flow-node surface">&#128269; 选择模型</div>
+      <span class="flow-arrow">&#8594;</span>
+      <div class="flow-node primary">&#128065; 查看渠道</div>
+      <span class="flow-arrow">&#8594;</span>
+      <div class="flow-node outline">&#128203; 复制令牌</div>
+      <span class="flow-arrow">&#8594;</span>
+      <div class="flow-node dim">&#128187; 调用 API</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- TOKEN MANAGEMENT                                              -->
+<!-- ============================================================ -->
+<section class="section" id="tokens">
+  <div class="inner">
+    <div class="section-kicker" data-reveal>// 令牌管理</div>
+    <h2 data-reveal>创建 API 密钥，<b>精细控制访问</b></h2>
+    <p class="lead">令牌 (Token) 是调用 API 的密钥凭证，以 <code>sk-</code> 开头，可独立设置额度和模型范围。</p>
+
+    <div class="steps">
+      <div class="step" data-reveal>
+        <div class="sn">01</div>
+        <div class="st"><b>进入令牌页面</b><span>侧边栏点击「令牌」→ 令牌管理页面</span></div>
+      </div>
+      <div class="step" data-reveal>
+        <div class="sn">02</div>
+        <div class="st"><b>新建令牌</b><span>点击「新建令牌」按钮，填写配置信息</span></div>
+      </div>
+      <div class="step" data-reveal>
+        <div class="sn">03</div>
+        <div class="st"><b>配置参数</b><span>设置名称、额度上限、过期时间、可用模型（均可选）</span></div>
+      </div>
+      <div class="step" data-reveal>
+        <div class="sn">04</div>
+        <div class="st"><b>保存并复制</b><span>创建成功后 <b>立即复制</b>，令牌只在创建时完整显示一次</span></div>
+      </div>
+    </div>
+
+    <div class="spec" data-reveal>
+      <div class="srow"><dt>名称</dt><dd><b>必填</b> — 令牌标识名称，方便管理</dd></div>
+      <div class="srow"><dt>额度</dt><dd>可选 — 不填则不限制，单位为美元等价</dd></div>
+      <div class="srow"><dt>过期</dt><dd>可选 — 不填则永不过期</dd></div>
+      <div class="srow"><dt>模型</dt><dd>可选 — 限制可访问的模型列表</dd></div>
+      <div class="srow key"><dt>子网</dt><dd>可选 — 限制允许访问的 IP / CIDR 网段</dd></div>
+    </div>
+
+    <div class="callout" data-reveal>
+      使用方式 — <span>OpenAI 协议</span>：替换 <code>api.openai.com</code>，路径 <code>/v1/chat/completions</code>
+      <br><span>Anthropic 协议</span>：替换 <code>api.anthropic.com</code>，路径 <code>/v1/messages</code>
+      <br>指定渠道 — 使用 <code>sk-{token}-{channelId}</code> 格式可固定路由到特定渠道
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- DASHBOARD                                                     -->
+<!-- ============================================================ -->
+<section class="section" id="dashboard">
+  <div class="inner">
+    <div class="section-kicker" data-reveal>// 数据总览 <em>· DASHBOARD</em></div>
+    <h2 data-reveal>今日数据，<b>一屏掌握</b></h2>
+
+    <div class="metrics" data-reveal>
+      <div class="metric">
+        <div class="num">N/A</div>
+        <div class="ml">今日请求量</div>
+      </div>
+      <div class="metric">
+        <div class="num">N/A</div>
+        <div class="ml">今日消费 (USD)</div>
+      </div>
+      <div class="metric">
+        <div class="num">N/A</div>
+        <div class="ml">今日 Token 数</div>
+      </div>
+    </div>
+
+    <div class="cards2" data-reveal>
+      <div class="card">
+        <div class="tab">TREND</div>
+        <h3>消费趋势图</h3>
+        <p>按模型分类显示近期消费趋势。默认 <b>最近 7 天</b>，支持自定义日期范围。选择单日时自动切换为小时粒度。</p>
+      </div>
+      <div class="card">
+        <div class="tab">ACCOUNT</div>
+        <h3>账户概览</h3>
+        <p>显示账户 <b>余额</b>、已使用额度、累计调用次数等关键信息。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- REPORTS                                                       -->
+<!-- ============================================================ -->
+<section class="section" id="reports">
+  <div class="inner">
+    <div class="section-kicker" data-reveal>// 用量报表 <em>· REPORT</em></div>
+    <h2 data-reveal>四维度分析，<b>深入洞察</b></h2>
+
+    <div class="cards" data-reveal>
+      <div class="card">
+        <div class="tab">SUMMARY</div>
+        <h3>汇总卡片</h3>
+        <p>请求总量、消费总额、Token 总量的 <b>聚合统计</b></p>
+      </div>
+      <div class="card">
+        <div class="tab">TREND</div>
+        <h3>趋势图</h3>
+        <p>按时间展示用量变化趋势，管理员 <b>按用户分组</b></p>
+      </div>
+      <div class="card">
+        <div class="tab">TOKEN</div>
+        <h3>令牌用量</h3>
+        <p>按令牌维度的 <b>消费明细表</b></p>
+      </div>
+    </div>
+
+    <div class="spec" data-reveal>
+      <div class="srow"><dt>用户名</dt><dd>按用户筛选 — <b>管理员可用</b></dd></div>
+      <div class="srow"><dt>令牌名</dt><dd>按令牌名称筛选</dd></div>
+      <div class="srow"><dt>日期</dt><dd>自定义起止日期，默认近 7 天</dd></div>
+      <div class="srow key"><dt>粒度</dt><dd>单日 = <b>小时粒度</b>，多日 = 日粒度</dd></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- LOGS                                                          -->
+<!-- ============================================================ -->
+<section class="section" id="logs">
+  <div class="inner">
+    <div class="section-kicker" data-reveal>// 请求日志</div>
+    <h2 data-reveal>追踪每一次 <b>API 调用</b></h2>
+    <p class="lead">每次 API 调用自动记录模型、令牌、渠道、耗时、Token 用量、费用等详细信息。</p>
+
+    <div class="abilities" data-reveal>
+      <div class="ab">
+        <div class="abn">用户</div>
+        <div class="abt"><b>按调用用户筛选</b><span>管理员可用</span></div>
+      </div>
+      <div class="ab">
+        <div class="abn">令牌</div>
+        <div class="abt"><b>按使用的令牌筛选</b><span>全部用户</span></div>
+      </div>
+      <div class="ab">
+        <div class="abn">模型</div>
+        <div class="abt"><b>按调用的模型筛选</b><span>全部用户</span></div>
+      </div>
+      <div class="ab">
+        <div class="abn">渠道</div>
+        <div class="abt"><b>按命中渠道筛选</b><span>全部用户</span></div>
+      </div>
+      <div class="ab">
+        <div class="abn">时间</div>
+        <div class="abt"><b>起止时间过滤</b><span>全部用户</span></div>
+      </div>
+      <div class="ab">
+        <div class="abn">类型</div>
+        <div class="abt"><b>按类型分类</b><span>充值 / 系统 / 调用等</span></div>
+      </div>
+    </div>
+
+    <div class="callout" data-reveal>
+      权限 — 管理员查看 <span>全局日志</span>，普通用户仅看 <span>自己的记录</span>。
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- CHANNEL MANAGEMENT                                            -->
+<!-- ============================================================ -->
+<section class="section" id="channels">
+  <div class="inner">
+    <div class="section-kicker" data-reveal>// 渠道管理 <em>· ADMIN</em></div>
+    <h2 data-reveal>配置上游供应商，<b>智能路由</b></h2>
+    <p class="lead">每个「渠道」代表一个上游 AI 供应商的 API 连接。配置多个渠道可实现负载均衡和高可用。</p>
+
+    <div class="spec" data-reveal>
+      <div class="srow"><dt>类型</dt><dd>供应商类型：OpenAI / Anthropic / Gemini / AWS / Azure / 百度 / 阿里 等 <b>38 种</b></dd></div>
+      <div class="srow"><dt>密钥</dt><dd>供应商的 <b>API Key</b></dd></div>
+      <div class="srow"><dt>模型</dt><dd>该渠道支持的 <b>模型列表</b></dd></div>
+      <div class="srow"><dt>优先级</dt><dd>数值越大 <b>优先级越高</b>，优先被选中</dd></div>
+      <div class="srow"><dt>权重</dt><dd>同优先级渠道按权重比例 <b>随机分配</b></dd></div>
+      <div class="srow key"><dt>状态</dt><dd>启用 / 禁用 / <b>自动禁用</b>（出错后系统自动关闭）</dd></div>
+    </div>
+
+    <div class="flow" data-reveal>
+      <div class="flow-node surface">请求到达</div>
+      <span class="flow-arrow">&#8594;</span>
+      <div class="flow-node primary">匹配渠道</div>
+      <span class="flow-arrow">&#8594;</span>
+      <div class="flow-node outline">按优先级排序</div>
+      <span class="flow-arrow">&#8594;</span>
+      <div class="flow-node primary">加权随机</div>
+      <span class="flow-arrow">&#8594;</span>
+      <div class="flow-node dim">转发请求</div>
+    </div>
+
+    <div class="cards" data-reveal>
+      <div class="card">
+        <div class="tab">TEST</div>
+        <h3>测试渠道</h3>
+        <p>一键测试所有已启用渠道的 <b>响应时间</b></p>
+      </div>
+      <div class="card">
+        <div class="tab">QUOTA</div>
+        <h3>刷新配额</h3>
+        <p>从供应商 API 获取 <b>最新配额余额</b></p>
+      </div>
+      <div class="card">
+        <div class="tab">BUDGET</div>
+        <h3>预算管理</h3>
+        <p>为渠道设置预算上限，超预算 <b>自动禁用</b></p>
+      </div>
+    </div>
+
+    <div class="callout" data-reveal>
+      自动故障转移 — 选中的渠道请求失败时，系统会自动尝试同优先级的其他渠道，保证 <span>服务可用性</span>。
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- USER & SETTINGS                                               -->
+<!-- ============================================================ -->
+<section class="section" id="admin">
+  <div class="inner">
+    <div class="section-kicker" data-reveal>// 管理功能 <em>· ADMIN</em></div>
+    <h2 data-reveal>用户管理 &amp; <b>系统设置</b></h2>
+
+    <div class="cards2" data-reveal>
+      <div class="card">
+        <div class="tab">USER MANAGEMENT</div>
+        <h3>用户管理</h3>
+        <p>
+          创建用户、编辑信息、调整角色、启/禁用账户、额度充值。
+          支持 <b>Root &gt; Admin &gt; Common</b> 角色升降级。
+        </p>
+      </div>
+      <div class="card">
+        <div class="tab">SYSTEM SETTINGS</div>
+        <h3>系统设置</h3>
+        <p>
+          三个 Tab：运营设置（额度/监控/比率）、系统设置（OAuth/SMTP/安全）、其他。
+          仅 <b>Root</b> 角色可访问。
+        </p>
+      </div>
+    </div>
+
+    <div class="spec" data-reveal>
+      <div class="srow"><dt>运营</dt><dd>充值链接、日志开关、监控阈值、新用户额度、<b>模型/补全/分组比率</b></dd></div>
+      <div class="srow"><dt>登录</dt><dd>密码登录/注册开关、邮箱验证、GitHub / 飞书 / OIDC / 微信 OAuth</dd></div>
+      <div class="srow"><dt>邮件</dt><dd>SMTP 配置、<b>邮箱域名白名单</b></dd></div>
+      <div class="srow key"><dt>安全</dt><dd>Turnstile 验证码、子网限制、API Key 管理</dd></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- API GUIDE                                                     -->
+<!-- ============================================================ -->
+<section class="section" id="api">
+  <div class="inner">
+    <div class="section-kicker" data-reveal>// API 调用指南</div>
+    <h2 data-reveal>两种协议，<b>一套系统</b></h2>
+    <p class="lead">AIHub 同时兼容 OpenAI 和 Anthropic 协议。替换地址即可，无需改代码。</p>
+
+    <div class="cards2" data-reveal>
+      <div class="card">
+        <div class="tab">OPENAI PROTOCOL</div>
+        <h3>OpenAI 兼容端点</h3>
+        <p>
+          <code>/v1/chat/completions</code> — Chat 对话<br>
+          <code>/v1/completions</code> — 文本补全<br>
+          <code>/v1/embeddings</code> — 向量化<br>
+          <code>/v1/images/generations</code> — 图片生成<br>
+          <code>/v1/audio/transcriptions</code> — 语音转文字<br>
+          <code>/v1/audio/speech</code> — 文字转语音<br>
+          <code>/v1/models</code> — 列出模型<br>
+          <code>/v1/moderations</code> — 内容审核
+        </p>
+      </div>
+      <div class="card">
+        <div class="tab">ANTHROPIC PROTOCOL</div>
+        <h3>Anthropic 兼容端点</h3>
+        <p>
+          <code>/v1/messages</code> — Messages API<br>
+          <code>/anthropic/v1/messages</code> — 带前缀路径
+        </p>
+        <p style="margin-top:14px">
+          请求时设置 <code>x-api-key</code> Header 为 AIHub 令牌，<code>anthropic-version</code> Header 保持不变。
+        </p>
+      </div>
+    </div>
+
+    <h3 style="margin-top:36px;font-size:1.1rem" data-reveal>管理 API 参考</h3>
+
+    <!-- Auth API -->
+    <div class="tbl" style="margin-top:16px" data-reveal>
+      <div class="tbl-head" style="grid-template-columns:80px 1fr 1fr 100px">
+        <span>方法</span><span>端点</span><span>说明</span><span>认证</span>
+      </div>
+      <div class="tbl-row" style="grid-template-columns:80px 1fr 1fr 100px">
+        <span><span class="method m-post">POST</span></span>
+        <span><code>/api/user/register</code></span><span>用户注册</span><span>-</span>
+      </div>
+      <div class="tbl-row" style="grid-template-columns:80px 1fr 1fr 100px">
+        <span><span class="method m-post">POST</span></span>
+        <span><code>/api/user/login</code></span><span>用户登录</span><span>-</span>
+      </div>
+      <div class="tbl-row" style="grid-template-columns:80px 1fr 1fr 100px">
+        <span><span class="method m-get">GET</span></span>
+        <span><code>/api/user/logout</code></span><span>退出登录</span><span>Cookie</span>
+      </div>
+    </div>
+
+    <!-- Token API -->
+    <div class="tbl" style="margin-top:12px" data-reveal>
+      <div class="tbl-head" style="grid-template-columns:80px 1fr 1fr">
+        <span>方法</span><span>端点</span><span>说明</span>
+      </div>
+      <div class="tbl-row" style="grid-template-columns:80px 1fr 1fr">
+        <span><span class="method m-get">GET</span></span>
+        <span><code>/api/token/?p=0</code></span><span>令牌列表（分页）</span>
+      </div>
+      <div class="tbl-row" style="grid-template-columns:80px 1fr 1fr">
+        <span><span class="method m-get">GET</span></span>
+        <span><code>/api/token/search?keyword=</code></span><span>搜索令牌</span>
+      </div>
+      <div class="tbl-row" style="grid-template-columns:80px 1fr 1fr">
+        <span><span class="method m-post">POST</span></span>
+        <span><code>/api/token/</code></span><span>创建令牌</span>
+      </div>
+      <div class="tbl-row" style="grid-template-columns:80px 1fr 1fr">
+        <span><span class="method m-put">PUT</span></span>
+        <span><code>/api/token/</code></span><span>更新令牌</span>
+      </div>
+      <div class="tbl-row" style="grid-template-columns:80px 1fr 1fr">
+        <span><span class="method m-del">DELETE</span></span>
+        <span><code>/api/token/:id</code></span><span>删除令牌</span>
+      </div>
+    </div>
+
+    <!-- Data API -->
+    <div class="tbl" style="margin-top:12px" data-reveal>
+      <div class="tbl-head" style="grid-template-columns:80px 1fr 1fr">
+        <span>方法</span><span>端点</span><span>说明</span>
+      </div>
+      <div class="tbl-row" style="grid-template-columns:80px 1fr 1fr">
+        <span><span class="method m-get">GET</span></span>
+        <span><code>/api/user/dashboard</code></span><span>总览数据</span>
+      </div>
+      <div class="tbl-row" style="grid-template-columns:80px 1fr 1fr">
+        <span><span class="method m-get">GET</span></span>
+        <span><code>/api/user/report</code></span><span>用量报表</span>
+      </div>
+      <div class="tbl-row" style="grid-template-columns:80px 1fr 1fr">
+        <span><span class="method m-get">GET</span></span>
+        <span><code>/api/user/available_models</code></span><span>可用模型列表</span>
+      </div>
+      <div class="tbl-row" style="grid-template-columns:80px 1fr 1fr">
+        <span><span class="method m-get">GET</span></span>
+        <span><code>/api/user/model_concurrency</code></span><span>实时并发</span>
+      </div>
+      <div class="tbl-row" style="grid-template-columns:80px 1fr 1fr">
+        <span><span class="method m-get">GET</span></span>
+        <span><code>/api/user/channel_quotas</code></span><span>渠道配额</span>
+      </div>
+      <div class="tbl-row" style="grid-template-columns:80px 1fr 1fr">
+        <span><span class="method m-get">GET</span></span>
+        <span><code>/api/log/self/</code></span><span>自己的日志</span>
+      </div>
+      <div class="tbl-row" style="grid-template-columns:80px 1fr 1fr">
+        <span><span class="method m-get">GET</span></span>
+        <span><code>/api/log/</code></span><span>全部日志 <span class="badge badge-admin">ADMIN</span></span>
+      </div>
+    </div>
+
+    <!-- Channel API -->
+    <div class="tbl" style="margin-top:12px" data-reveal>
+      <div class="tbl-head" style="grid-template-columns:80px 1fr 1fr">
+        <span>方法</span><span>端点</span><span>说明</span>
+      </div>
+      <div class="tbl-row" style="grid-template-columns:80px 1fr 1fr">
+        <span><span class="method m-post">POST</span></span>
+        <span><code>/api/channel/</code></span><span>创建渠道 <span class="badge badge-admin">ADMIN</span></span>
+      </div>
+      <div class="tbl-row" style="grid-template-columns:80px 1fr 1fr">
+        <span><span class="method m-get">GET</span></span>
+        <span><code>/api/channel/test/:id</code></span><span>测试单个渠道</span>
+      </div>
+      <div class="tbl-row" style="grid-template-columns:80px 1fr 1fr">
+        <span><span class="method m-get">GET</span></span>
+        <span><code>/api/channel/test</code></span><span>测试所有启用渠道</span>
+      </div>
+      <div class="tbl-row" style="grid-template-columns:80px 1fr 1fr">
+        <span><span class="method m-get">GET</span></span>
+        <span><code>/api/channel/concurrency</code></span><span>实时并发数据</span>
+      </div>
+    </div>
+
+    <div class="callout" data-reveal>
+      通用响应 — <code>{ success: true, message: "描述", data: ... }</code>
+      <br>分页 — <code>?p=页码&amp;page_size=每页条数</code>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- FAQ                                                           -->
+<!-- ============================================================ -->
+<section class="section" id="faq">
+  <div class="inner">
+    <div class="section-kicker" data-reveal>// 常见问题</div>
+    <h2 data-reveal>FAQ &amp; <b>故障排查</b></h2>
+
+    <div class="faq" data-reveal>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)"><span class="qn">Q1</span>支持哪些 AI 模型？</div>
+        <div class="faq-a"><div class="faq-a-inner">
+          支持 38 个供应商的所有主流模型，包括 OpenAI (GPT-4o, GPT-4, GPT-3.5)、Anthropic (Claude 系列)、
+          Google Gemini、AWS Bedrock Claude、Azure OpenAI、百度文心、阿里通义、讯飞星火、Moonshot、
+          Zhipu、Mistral 等。具体可用模型取决于管理员配置的渠道。
+        </div></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)"><span class="qn">Q2</span>令牌创建后无法复制？</div>
+        <div class="faq-a"><div class="faq-a-inner">
+          令牌密钥仅在创建时完整展示一次。请务必在创建后 <b>立即复制保存</b>。如果丢失，需要删除旧令牌并创建新令牌。
+        </div></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)"><span class="qn">Q3</span>如何指定使用某个渠道？</div>
+        <div class="faq-a"><div class="faq-a-inner">
+          在模型广场中展开模型详情，点击对应渠道的「复制」按钮，会自动复制 <code>sk-{token}-{channelId}</code> 格式的令牌。
+          使用此令牌调用 API 时将固定路由到该渠道。
+        </div></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)"><span class="qn">Q4</span>请求返回 401 / 403？</div>
+        <div class="faq-a"><div class="faq-a-inner">
+          检查令牌是否正确、是否已过期、是否有该模型的访问权限。在令牌管理页面确认令牌状态和配置。
+        </div></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)"><span class="qn">Q5</span>请求返回 "no available channel"？</div>
+        <div class="faq-a"><div class="faq-a-inner">
+          说明当前没有可用渠道处理该模型。可能原因：渠道被禁用、渠道余额不足、所有渠道故障。联系管理员检查渠道状态。
+        </div></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)"><span class="qn">Q6</span>如何查看费用明细？</div>
+        <div class="faq-a"><div class="faq-a-inner">
+          在「日志」页面查看每次调用的费用，在「用量报表」页面查看按令牌和渠道维度的汇总统计。
+        </div></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)"><span class="qn">Q7</span>CC Switch 是什么？</div>
+        <div class="faq-a"><div class="faq-a-inner">
+          <b>CC Switch</b> 是一款 AI API 客户端管理工具。在模型广场点击「CC Switch 导入」按钮，可一键将渠道配置导入客户端。
+          下载地址：<a href="https://ccswitch.io" style="color:var(--accent)">ccswitch.io</a>
+        </div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- FOOTER                                                        -->
+<!-- ============================================================ -->
+<footer class="footer">
+  <div class="inner">
+    <p>AIHub 使用手册 v1.0 — 基于 <b>one-api</b> 深度二开 · 生成于 2026-05-21</p>
+  </div>
+</footer>
+
+</div><!-- .page -->
+
+<!-- ============ JAVASCRIPT ============ -->
+<script>
+// Tab switching
+function switchTab(btn, id) {
+  var tabs = btn.closest('.tabs');
+  tabs.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.remove('active') });
+  tabs.querySelectorAll('.tab-panel').forEach(function(p){ p.classList.remove('active') });
+  btn.classList.add('active');
+  document.getElementById(id).classList.add('active');
+}
+
+// FAQ accordion
+function toggleFaq(el) {
+  var item = el.closest('.faq-item');
+  var wasOpen = item.classList.contains('open');
+  // close all
+  document.querySelectorAll('.faq-item').forEach(function(i){ i.classList.remove('open') });
+  if (!wasOpen) item.classList.add('open');
+}
+
+// Scroll reveal
+(function(){
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting){
+        var el = e.target;
+        var delay = el.dataset.delay || 0;
+        setTimeout(function(){ el.classList.add('revealed') }, delay);
+        io.unobserve(el);
+      }
+    });
+  }, {threshold:0.15});
+
+  document.querySelectorAll('[data-reveal]').forEach(function(el, i){
+    // stagger within parent
+    var siblings = el.parentElement.querySelectorAll('[data-reveal]');
+    var idx = Array.prototype.indexOf.call(siblings, el);
+    el.dataset.delay = idx * 70;
+    io.observe(el);
+  });
+})();
+</script>
+
+</body>
+</html>

@@ -96,12 +96,12 @@ func main() {
 	if os.Getenv("HEALTH_CHECK_ENABLED") != "false" {
 		monitor.StartHealthChecker()
 	}
+	openai.InitTokenEncoders()
+	client.Init()
 	// Start smart load balancer metrics collector
 	monitor.StartMetricsCollector()
 	// Start quota refresher for periodic provider quota refresh
 	monitor.StartQuotaRefresher()
-	openai.InitTokenEncoders()
-	client.Init()
 
 	// Initialize i18n
 	if err := i18n.Init(); err != nil {

@@ -1,0 +1,20 @@
+version: '3.4'
+
+services:
+  aihub:
+    image: aihub:latest
+    container_name: aihub
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      # PostgreSQL — 改成你实际的连接信息
+      - SQL_DSN=postgres://oneapi:your_password@your-pg-host:5432/oneapi?sslmode=disable
+      # Redis — 改成你实际的连接信息
+      - REDIS_CONN_STRING=redis://your-redis-host:6379
+      # 如果 Redis 有密码: redis://:password@your-redis-host:6379
+      # session 加密密钥，务必改成随机字符串
+      - SESSION_SECRET=change_me_to_random_string
+      - TZ=Asia/Shanghai
+      # berry 主题（默认前端）
+      - THEME=berry
