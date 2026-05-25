@@ -55,7 +55,16 @@ func Distribute() func(c *gin.Context) {
 			}
 		}
 		logger.Debugf(ctx, "user id %d, user group: %s, request model: %s, using channel #%d", userId, userGroup, requestModel, channel.Id)
+		// Check for model downgrade based on provider quota
+		originalModel := requestModel
+		if downgradedModel := monitor.CheckDowngradeForProvider(channel.Type); downgradedModel != "" {
+			logger.Debugf(ctx, "downgrade: provider %d, replacing model %s -> %s", channel.Type, requestModel, downgradedModel)
+			requestModel = downgradedModel
+			c.Set(ctxkey.RequestModel, requestModel)
+		}
 		SetupContextForSelectedChannel(c, channel, requestModel)
+		// Store the original model (before downgrade) for logging
+		c.Set(ctxkey.OriginalModel, originalModel)
 		// Record affinity mapping for conversation_id if present
 		if err := RecordAffinityMapping(c, channel.Id); err != nil {
 			logger.Errorf(ctx, "affinity: failed to record mapping: %s", err.Error())
