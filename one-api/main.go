@@ -102,6 +102,8 @@ func main() {
 	monitor.StartMetricsCollector()
 	// Start quota refresher for periodic provider quota refresh
 	monitor.StartQuotaRefresher()
+	// Start exhaustion poller for accelerated quota recovery detection
+	monitor.StartExhaustionPoller()
 
 	// Initialize i18n
 	if err := i18n.Init(); err != nil {

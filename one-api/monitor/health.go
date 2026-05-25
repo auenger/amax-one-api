@@ -35,6 +35,7 @@ type ChannelHealth struct {
 	ConsecutiveSuccess  int          `json:"consecutive_success"`
 	TotalChecks         int          `json:"total_checks"`
 	TotalFailures       int          `json:"total_failures"`
+	Reason              string       `json:"reason,omitempty"` // reason for current status (e.g. "quota exhausted")
 }
 
 const (
@@ -157,8 +158,8 @@ func RecordHealthCheck(channelId int, success bool, latencyMs int) (oldStatus, n
 	if getErr != nil {
 		// Initialize new health record
 		health = &ChannelHealth{
-			Status:     HealthStatusHealthy,
-			LastCheck:  time.Now().UTC().Format(time.RFC3339),
+			Status:    HealthStatusHealthy,
+			LastCheck: time.Now().UTC().Format(time.RFC3339),
 		}
 	}
 
@@ -217,8 +218,8 @@ func MarkChannelDegraded(channelId int, reason string) {
 	health, err := GetChannelHealth(channelId)
 	if err != nil {
 		health = &ChannelHealth{
-			Status:     HealthStatusHealthy,
-			LastCheck:  time.Now().UTC().Format(time.RFC3339),
+			Status:    HealthStatusHealthy,
+			LastCheck: time.Now().UTC().Format(time.RFC3339),
 		}
 	}
 
@@ -232,6 +233,121 @@ func MarkChannelDegraded(channelId int, reason string) {
 		_ = SetChannelHealth(channelId, health)
 		logger.SysLog(fmt.Sprintf("health: channel #%d marked degraded: %s (was %s)", channelId, reason, oldStatus))
 	}
+}
+
+// ────────────────────────────────────────────────────────────
+// Quota Exhaustion Marking
+// ────────────────────────────────────────────────────────────
+
+const (
+	// Redis key prefix for quota exhaustion markers.
+	quotaExhaustedKeyPrefix = "channel:quota:exhausted:"
+	// Default TTL for exhaustion markers: 24 hours (auto-expire if not recovered).
+	quotaExhaustedDefaultTTL = 24 * time.Hour
+)
+
+// quotaExhaustedKey returns the Redis key for a channel's quota exhaustion marker.
+func quotaExhaustedKey(channelId int) string {
+	return fmt.Sprintf("%s%d", quotaExhaustedKeyPrefix, channelId)
+}
+
+// MarkChannelQuotaExhausted marks a channel as unhealthy due to quota exhaustion.
+// It sets the channel to Unhealthy status with a reason indicating quota exhaustion,
+// and stores a Redis marker key for fast lookups.
+// ttl is the time-to-live for the Redis marker; if 0, a default is used.
+func MarkChannelQuotaExhausted(channelId int, reason string, ttl time.Duration) {
+	if ttl <= 0 {
+		ttl = quotaExhaustedDefaultTTL
+	}
+
+	// Set Redis exhaustion marker
+	if common.RedisEnabled {
+		if err := common.RedisSet(quotaExhaustedKey(channelId), reason, ttl); err != nil {
+			logger.SysError(fmt.Sprintf("health: failed to set quota exhausted marker for channel #%d: %s", channelId, err.Error()))
+			// Fallback: still mark degraded if Redis is unavailable
+			MarkChannelDegraded(channelId, "quota exhausted (Redis unavailable)")
+			return
+		}
+	} else {
+		// Without Redis, just mark degraded
+		MarkChannelDegraded(channelId, "quota exhausted (Redis unavailable)")
+		return
+	}
+
+	// Set channel health to unhealthy with reason
+	health, err := GetChannelHealth(channelId)
+	if err != nil {
+		health = &ChannelHealth{
+			Status:    HealthStatusHealthy,
+			LastCheck: time.Now().UTC().Format(time.RFC3339),
+		}
+	}
+
+	oldStatus := health.Status
+	health.Status = HealthStatusUnhealthy
+	health.Reason = "quota exhausted: " + reason
+	health.LastCheck = time.Now().UTC().Format(time.RFC3339)
+	health.ConsecutiveFailures++
+	health.TotalChecks++
+	health.TotalFailures++
+
+	if err := SetChannelHealth(channelId, health); err != nil {
+		logger.SysError(fmt.Sprintf("health: failed to update health for exhausted channel #%d: %s", channelId, err.Error()))
+		return
+	}
+
+	if oldStatus != HealthStatusUnhealthy {
+		logger.SysLog(fmt.Sprintf("health: channel #%d QUOTA EXHAUSTED → unhealthy: %s (was %s)", channelId, reason, oldStatus))
+	}
+}
+
+// MarkChannelQuotaRecovered marks a channel as healthy after quota recovery.
+// It clears the Redis exhaustion marker and resets the health status.
+func MarkChannelQuotaRecovered(channelId int) {
+	// Remove Redis exhaustion marker
+	if common.RedisEnabled {
+		if err := common.RedisDel(quotaExhaustedKey(channelId)); err != nil {
+			logger.SysError(fmt.Sprintf("health: failed to clear quota exhausted marker for channel #%d: %s", channelId, err.Error()))
+		}
+	}
+
+	// Reset channel health to healthy
+	health, err := GetChannelHealth(channelId)
+	if err != nil {
+		// No health data, nothing to recover
+		return
+	}
+
+	oldStatus := health.Status
+	health.Status = HealthStatusHealthy
+	health.Reason = ""
+	health.ConsecutiveFailures = 0
+	health.ConsecutiveSuccess = 0
+	health.TotalChecks = 0
+	health.TotalFailures = 0
+	health.ErrorRate = 0
+	health.LastCheck = time.Now().UTC().Format(time.RFC3339)
+
+	if err := SetChannelHealth(channelId, health); err != nil {
+		logger.SysError(fmt.Sprintf("health: failed to update health for recovered channel #%d: %s", channelId, err.Error()))
+		return
+	}
+
+	if oldStatus != HealthStatusHealthy {
+		logger.SysLog(fmt.Sprintf("health: channel #%d QUOTA RECOVERED → healthy (was %s)", channelId, oldStatus))
+	}
+}
+
+// IsQuotaExhausted checks if a channel is marked as quota-exhausted in Redis.
+func IsQuotaExhausted(channelId int) bool {
+	if !common.RedisEnabled {
+		return false
+	}
+	data, err := common.RedisGet(quotaExhaustedKey(channelId))
+	if err != nil {
+		return false
+	}
+	return data != ""
 }
 
 // --- Health Check Scheduler ---

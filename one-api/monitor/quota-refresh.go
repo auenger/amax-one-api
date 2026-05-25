@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -26,6 +27,12 @@ const (
 	defaultQuotaQuerySleepMax = 2
 	// Low quota alert threshold (percentage).
 	defaultLowQuotaThreshold = 90.0
+	// Quota exhaustion threshold (percentage): above this, channel is disabled.
+	defaultQuotaExhaustionThreshold = 100.0
+	// Quota recovery threshold (percentage): below this, channel can recover.
+	defaultQuotaRecoveryThreshold = 95.0
+	// Exhaustion poll interval: how often to re-query exhausted channels.
+	defaultExhaustionPollInterval = 60
 )
 
 var (
@@ -64,6 +71,61 @@ func getLowQuotaThreshold() float64 {
 		}
 	}
 	return threshold
+}
+
+// getQuotaExhaustionThreshold reads the exhaustion threshold from env.
+// Channels with any window UsedPercent >= this value are marked as exhausted.
+func getQuotaExhaustionThreshold() float64 {
+	threshold := defaultQuotaExhaustionThreshold
+	if envThresh := os.Getenv("QUOTA_EXHAUSTION_THRESHOLD"); envThresh != "" {
+		if parsed, err := strconv.ParseFloat(envThresh, 64); err == nil && parsed > 0 && parsed <= 100 {
+			threshold = parsed
+		}
+	}
+	return threshold
+}
+
+// getQuotaRecoveryThreshold reads the recovery threshold from env.
+// Exhausted channels recover when ALL windows have UsedPercent < this value.
+func getQuotaRecoveryThreshold() float64 {
+	threshold := defaultQuotaRecoveryThreshold
+	if envThresh := os.Getenv("QUOTA_RECOVERY_THRESHOLD"); envThresh != "" {
+		if parsed, err := strconv.ParseFloat(envThresh, 64); err == nil && parsed > 0 && parsed <= 100 {
+			threshold = parsed
+		}
+	}
+	return threshold
+}
+
+// getExhaustionPollInterval reads the accelerated poll interval from env (in seconds).
+func getExhaustionPollInterval() time.Duration {
+	interval := defaultExhaustionPollInterval
+	if envInterval := os.Getenv("QUOTA_EXHAUSTION_POLL_INTERVAL"); envInterval != "" {
+		if parsed, err := strconv.Atoi(envInterval); err == nil && parsed > 0 {
+			interval = parsed
+		}
+	}
+	return time.Duration(interval) * time.Second
+}
+
+// ────────────────────────────────────────────────────────────
+// Exhausted Channel Tracking (thread-safe)
+// ────────────────────────────────────────────────────────────
+
+var (
+	// exhaustedChannels tracks channel IDs that are quota-exhausted and need accelerated polling.
+	// Protected by exhaustedMu for concurrent access from refresh goroutine and poller goroutine.
+	exhaustedChannels       = make(map[int]exhaustionInfo)
+	exhaustedMu             sync.RWMutex
+	exhaustionPollerRunning bool
+	exhaustionPollerMu      sync.Mutex
+)
+
+// exhaustionInfo holds metadata about an exhausted channel for the accelerated poller.
+type exhaustionInfo struct {
+	AddedAt   time.Time // when the channel was first detected as exhausted
+	Reason    string    // why it was marked exhausted
+	LastCheck time.Time // last time the poller checked this channel
 }
 
 // ────────────────────────────────────────────────────────────
@@ -172,6 +234,7 @@ func getEnabledChannels() []*model.Channel {
 func refreshChannelQuotas(channels []*model.Channel) int {
 	maxConcurrent := getQuotaRefreshConcurrency()
 	threshold := getLowQuotaThreshold()
+	exhaustionThreshold := getQuotaExhaustionThreshold()
 
 	// Use a semaphore pattern for concurrency control
 	sem := make(chan struct{}, maxConcurrent)
@@ -198,8 +261,12 @@ func refreshChannelQuotas(channels []*model.Channel) int {
 				refreshed++
 				mu.Unlock()
 
-				// Check for low quota alerts
-				checkLowQuotaAlert(channel, quota, threshold)
+				// Check for quota exhaustion (highest priority: marks unhealthy)
+				checkQuotaExhaustion(channel, quota, exhaustionThreshold)
+				// Check for low quota alerts (only if not already exhausted)
+				if !IsQuotaExhausted(channel.Id) {
+					checkLowQuotaAlert(channel, quota, threshold)
+				}
 			}
 		}(ch)
 	}
@@ -265,6 +332,223 @@ func checkLowQuotaAlert(channel *model.Channel, quota *model.ChannelQuota, thres
 			return // Only mark once per channel
 		}
 	}
+}
+
+// ────────────────────────────────────────────────────────────
+// Quota Exhaustion Detection
+// ────────────────────────────────────────────────────────────
+
+// checkQuotaExhaustion checks if any quota window has reached the exhaustion threshold.
+// If exhausted, marks the channel as unhealthy and adds it to the accelerated polling list.
+// If already exhausted but now recovered, marks it as healthy and removes from the list.
+func checkQuotaExhaustion(channel *model.Channel, quota *model.ChannelQuota, threshold float64) {
+	recoveryThreshold := getQuotaRecoveryThreshold()
+
+	// Check if any window is exhausted
+	isExhausted := false
+	var exhaustedWindows []string
+	for _, w := range quota.Windows {
+		if w.UsedPercent >= threshold {
+			isExhausted = true
+			exhaustedWindows = append(exhaustedWindows, fmt.Sprintf("%s=%.1f%%", w.Label, w.UsedPercent))
+		}
+	}
+
+	if isExhausted {
+		reason := fmt.Sprintf("windows: %s", strings.Join(exhaustedWindows, ", "))
+
+		// Calculate TTL from the nearest ResetAt across exhausted windows
+		var nearestReset int64
+		for _, w := range quota.Windows {
+			if w.UsedPercent >= threshold && w.ResetAt > 0 {
+				if nearestReset == 0 || w.ResetAt < nearestReset {
+					nearestReset = w.ResetAt
+				}
+			}
+		}
+		ttl := time.Duration(0)
+		if nearestReset > 0 {
+			ttl = time.Until(time.UnixMilli(nearestReset))
+			if ttl < time.Minute {
+				ttl = time.Minute // minimum 1 minute TTL
+			}
+		}
+
+		MarkChannelQuotaExhausted(channel.Id, reason, ttl)
+
+		// Add to accelerated polling list
+		exhaustedMu.Lock()
+		exhaustedChannels[channel.Id] = exhaustionInfo{
+			AddedAt:   time.Now(),
+			Reason:    reason,
+			LastCheck: time.Now(),
+		}
+		exhaustedMu.Unlock()
+
+		logger.SysLog(fmt.Sprintf("quota-refresher: channel #%d (%s) QUOTA EXHAUSTED — added to accelerated poll list (%s)",
+			channel.Id, channel.Name, reason))
+	} else {
+		// Check if previously exhausted and now recovered
+		exhaustedMu.RLock()
+		_, wasExhausted := exhaustedChannels[channel.Id]
+		exhaustedMu.RUnlock()
+
+		if wasExhausted {
+			// Verify ALL windows are below recovery threshold before recovering
+			allBelowRecovery := true
+			for _, w := range quota.Windows {
+				if w.UsedPercent >= recoveryThreshold {
+					allBelowRecovery = false
+					break
+				}
+			}
+
+			if allBelowRecovery {
+				MarkChannelQuotaRecovered(channel.Id)
+				exhaustedMu.Lock()
+				delete(exhaustedChannels, channel.Id)
+				exhaustedMu.Unlock()
+				logger.SysLog(fmt.Sprintf("quota-refresher: channel #%d (%s) QUOTA RECOVERED — removed from accelerated poll list",
+					channel.Id, channel.Name))
+			}
+		}
+	}
+}
+
+// ────────────────────────────────────────────────────────────
+// Accelerated Exhaustion Poller
+// ────────────────────────────────────────────────────────────
+
+// StartExhaustionPoller starts a goroutine that polls exhausted channels
+// at a higher frequency (default 1 minute) to detect quota recovery quickly.
+func StartExhaustionPoller() {
+	exhaustionPollerMu.Lock()
+	if exhaustionPollerRunning {
+		exhaustionPollerMu.Unlock()
+		return
+	}
+	exhaustionPollerRunning = true
+	exhaustionPollerMu.Unlock()
+
+	if !common.RedisEnabled {
+		logger.SysLog("exhaustion-poller: Redis not enabled, exhaustion poller disabled")
+		return
+	}
+
+	interval := getExhaustionPollInterval()
+	logger.SysLog(fmt.Sprintf("exhaustion-poller: starting with interval %s", interval))
+
+	go func() {
+		// Wait a bit for the system to settle before first poll
+		time.Sleep(30 * time.Second)
+
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+
+		for range ticker.C {
+			runExhaustionPoll()
+		}
+	}()
+}
+
+// runExhaustionPoll checks all channels in the exhausted list for recovery.
+// It queries only the exhausted channels (not all channels) to minimize API calls.
+func runExhaustionPoll() {
+	exhaustedMu.RLock()
+	if len(exhaustedChannels) == 0 {
+		exhaustedMu.RUnlock()
+		return
+	}
+
+	// Copy channel IDs to avoid holding lock during queries
+	channelIds := make([]int, 0, len(exhaustedChannels))
+	for id := range exhaustedChannels {
+		channelIds = append(channelIds, id)
+	}
+	exhaustedMu.RUnlock()
+
+	logger.SysLog(fmt.Sprintf("exhaustion-poller: checking %d exhausted channels", len(channelIds)))
+
+	recoveryThreshold := getQuotaRecoveryThreshold()
+	recovered := 0
+
+	for _, channelId := range channelIds {
+		// Look up the channel from DB
+		channel, err := model.GetChannelById(channelId, true)
+		if err != nil {
+			// Channel may have been deleted, remove from list
+			exhaustedMu.Lock()
+			delete(exhaustedChannels, channelId)
+			exhaustedMu.Unlock()
+			logger.SysLog(fmt.Sprintf("exhaustion-poller: channel #%d not found, removed from list", channelId))
+			continue
+		}
+
+		// Query current quota for this channel
+		quota := queryAndCacheQuota(channel)
+		if quota == nil || quota.QueryError != "" {
+			// Query failed, skip this channel for now
+			logger.SysError(fmt.Sprintf("exhaustion-poller: failed to query quota for channel #%d: %s",
+				channelId, func() string {
+					if quota != nil {
+						return quota.QueryError
+					}
+					return "nil quota"
+				}()))
+			continue
+		}
+
+		// Check if all windows are below recovery threshold
+		allBelowRecovery := true
+		stillExhausted := false
+		for _, w := range quota.Windows {
+			if w.UsedPercent >= getQuotaExhaustionThreshold() {
+				stillExhausted = true
+				break
+			}
+			if w.UsedPercent >= recoveryThreshold {
+				allBelowRecovery = false
+			}
+		}
+
+		if !stillExhausted && allBelowRecovery {
+			// Quota recovered!
+			MarkChannelQuotaRecovered(channelId)
+			exhaustedMu.Lock()
+			delete(exhaustedChannels, channelId)
+			exhaustedMu.Unlock()
+			recovered++
+			logger.SysLog(fmt.Sprintf("exhaustion-poller: channel #%d (%s) QUOTA RECOVERED via accelerated poll",
+				channelId, channel.Name))
+		} else {
+			// Update last check time
+			exhaustedMu.Lock()
+			if info, ok := exhaustedChannels[channelId]; ok {
+				info.LastCheck = time.Now()
+				exhaustedChannels[channelId] = info
+			}
+			exhaustedMu.Unlock()
+		}
+
+		// Sleep between queries to avoid rate limits
+		sleepBetweenQueries()
+	}
+
+	if recovered > 0 {
+		logger.SysLog(fmt.Sprintf("exhaustion-poller: recovered %d/%d channels", recovered, len(channelIds)))
+	}
+}
+
+// GetExhaustedChannels returns a snapshot of currently exhausted channel IDs.
+// Used for monitoring and debugging.
+func GetExhaustedChannels() []int {
+	exhaustedMu.RLock()
+	defer exhaustedMu.RUnlock()
+	ids := make([]int, 0, len(exhaustedChannels))
+	for id := range exhaustedChannels {
+		ids = append(ids, id)
+	}
+	return ids
 }
 
 // ────────────────────────────────────────────────────────────
