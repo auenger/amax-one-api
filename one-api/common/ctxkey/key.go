@@ -22,4 +22,5 @@ const (
 	KeyRequestBody    = "key_request_body"
 	SystemPrompt      = "system_prompt"
 	ConversationId    = "conversation_id"
+	TimingTRequest    = "timing_t_request"
 )

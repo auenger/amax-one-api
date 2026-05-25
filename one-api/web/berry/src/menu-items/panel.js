@@ -10,11 +10,12 @@ import {
   IconUser,
   IconUserScan,
   IconSparkles,
-  IconChartBar
+  IconChartBar,
+  IconClock
 } from '@tabler/icons-react';
 
 // constant
-const icons = { IconDashboard, IconSitemap, IconArticle, IconCoin, IconAdjustments, IconKey, IconGardenCart, IconUser, IconUserScan, IconSparkles, IconChartBar };
+const icons = { IconDashboard, IconSitemap, IconArticle, IconCoin, IconAdjustments, IconKey, IconGardenCart, IconUser, IconUserScan, IconSparkles, IconChartBar, IconClock };
 
 // ==============================|| DASHBOARD MENU ITEMS ||============================== //
 
@@ -63,6 +64,15 @@ const panel = {
       url: '/panel/log',
       icon: icons.IconArticle,
       breadcrumbs: false
+    },
+    {
+      id: 'timing',
+      title: '计时日志',
+      type: 'item',
+      url: '/panel/timing',
+      icon: icons.IconClock,
+      breadcrumbs: false,
+      isAdmin: true
     },
     {
       id: 'report',

@@ -18,6 +18,7 @@ import (
 	dbmodel "github.com/songquanpeng/one-api/model"
 	"github.com/songquanpeng/one-api/monitor"
 	"github.com/songquanpeng/one-api/relay/controller"
+	"github.com/songquanpeng/one-api/relay/meta"
 	"github.com/songquanpeng/one-api/relay/model"
 	"github.com/songquanpeng/one-api/relay/relaymode"
 )
@@ -43,6 +44,80 @@ func relayHelper(c *gin.Context, relayMode int) *model.ErrorWithStatusCode {
 	return err
 }
 
+// recordTiming captures t_response and asynchronously writes the full timing record.
+func recordTiming(c *gin.Context) {
+	tRequest, _ := c.Get(ctxkey.TimingTRequest)
+	tRelay, _ := c.Get(meta.TimingTRelay)
+	tUpstream, _ := c.Get("timing_t_upstream")
+	tResponse := time.Now().UnixMilli()
+
+	tReqMs, _ := tRequest.(int64)
+	tRelayMs, _ := tRelay.(int64)
+	tUpMs, _ := tUpstream.(int64)
+
+	// Only record if we have the initial timestamp
+	if tReqMs == 0 {
+		return
+	}
+
+	channelId := c.GetInt(ctxkey.ChannelId)
+	channelName := c.GetString(ctxkey.ChannelName)
+	userId := c.GetInt(ctxkey.Id)
+	username := c.GetString(ctxkey.Username)
+	tokenName := c.GetString(ctxkey.TokenName)
+	modelName := c.GetString(ctxkey.OriginalModel)
+	requestId := c.GetString(helper.RequestIdKey)
+
+	// Determine is_stream from request body
+	isStream := false
+	if _, err := common.GetRequestBody(c); err == nil {
+		var req struct {
+			Stream bool `json:"stream"`
+		}
+		_ = common.UnmarshalBodyReusable(c, &req)
+		isStream = req.Stream
+	}
+
+	middlewareMs := tRelayMs - tReqMs
+	upstreamMs := tUpMs - tRelayMs
+	responseMs := tResponse - tUpMs
+	totalMs := tResponse - tReqMs
+
+	// Clamp negative values to 0 (can happen if hooks weren't reached)
+	if middlewareMs < 0 {
+		middlewareMs = 0
+	}
+	if upstreamMs < 0 {
+		upstreamMs = 0
+	}
+	if responseMs < 0 {
+		responseMs = 0
+	}
+	if totalMs < 0 {
+		totalMs = 0
+	}
+
+	timing := &dbmodel.RequestTiming{
+		RequestId:    requestId,
+		ChannelId:    channelId,
+		ChannelName:  channelName,
+		UserId:       userId,
+		Username:     username,
+		TokenName:    tokenName,
+		ModelName:    modelName,
+		IsStream:     isStream,
+		TRequest:     tReqMs,
+		TRelay:       tRelayMs,
+		TUpstream:    tUpMs,
+		TResponse:    tResponse,
+		MiddlewareMs: middlewareMs,
+		UpstreamMs:   upstreamMs,
+		ResponseMs:   responseMs,
+		TotalMs:      totalMs,
+	}
+	dbmodel.RecordTimingAsync(c.Request.Context(), timing)
+}
+
 func Relay(c *gin.Context) {
 	ctx := c.Request.Context()
 	relayMode := relaymode.GetByPath(c.Request.URL.Path)
@@ -61,6 +136,8 @@ func Relay(c *gin.Context) {
 	startTime := time.Now()
 	bizErr := relayHelper(c, relayMode)
 	latencyMs := time.Since(startTime).Milliseconds()
+	// Record timing for every relay attempt
+	recordTiming(c)
 	if bizErr == nil {
 		monitor.Emit(channelId, true)
 		// Record metrics for smart load balancing

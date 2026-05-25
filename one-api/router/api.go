@@ -154,5 +154,13 @@ func SetApiRouter(router *gin.Engine) {
 		{
 			groupRoute.GET("/", controller.GetGroups)
 		}
+		// Enterprise: Request timing logs (admin only)
+		timingRoute := apiRouter.Group("/timing")
+		timingRoute.Use(middleware.AdminAuth())
+		{
+			timingRoute.GET("/", controller.GetAllTimings)
+			timingRoute.GET("/stats", controller.GetTimingStats)
+			timingRoute.DELETE("/", controller.DeleteTimings)
+		}
 	}
 }

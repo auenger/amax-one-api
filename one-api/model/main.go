@@ -163,6 +163,9 @@ func migrateDB() error {
 	if err = DB.AutoMigrate(&TokenRequest{}); err != nil {
 		return err
 	}
+	if err = DB.AutoMigrate(&RequestTiming{}); err != nil {
+		return err
+	}
 	return nil
 }
 

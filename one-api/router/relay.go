@@ -13,6 +13,7 @@ func SetRelayRouter(router *gin.Engine) {
 
 	relayMiddleware := func() []gin.HandlerFunc {
 		return []gin.HandlerFunc{
+			middleware.TimingMiddleware(),
 			middleware.RelayPanicRecover(),
 			middleware.TokenAuth(),
 			middleware.Affinity(),
