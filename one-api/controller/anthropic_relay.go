@@ -161,8 +161,6 @@ func RelayAnthropic(c *gin.Context) {
 	startTime := time.Now()
 	bizErr := relayHelper(c, relaymode.ChatCompletions)
 	latencyMs := time.Since(startTime).Milliseconds()
-	// Record timing for every relay attempt
-	recordTiming(c)
 	if bizErr != nil {
 		go processChannelRelayError(ctx, userId, channelId, channelName, *bizErr)
 
@@ -273,6 +271,9 @@ func RelayAnthropic(c *gin.Context) {
 		claudeResp := service.OpenAIResponseToClaude(openaiResp, claudeReq.Model)
 		c.JSON(http.StatusOK, claudeResp)
 	}
+
+	c.Set(ctxkey.TimingTBodyDone, time.Now().UnixMilli())
+	recordTiming(c)
 
 	monitor.Emit(c.GetInt(ctxkey.ChannelId), true)
 	// Record metrics for smart load balancing

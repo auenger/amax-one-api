@@ -179,15 +179,30 @@ const OperationSetting = () => {
   };
 
   const deleteHistoryLogs = async () => {
-    const res = await API.delete(
-      `/api/log/?target_timestamp=${Math.floor(historyTimestamp)}`
-    );
-    const { success, message, data } = res.data;
-    if (success) {
-      showSuccess(`${data} 条日志已清理！`);
-      return;
+    const ts = Math.floor(historyTimestamp);
+    let logResult = 0;
+    let timingResult = 0;
+    let errorMsg = '';
+
+    const logRes = await API.delete(`/api/log/?target_timestamp=${ts}`);
+    if (logRes.data.success) {
+      logResult = logRes.data.data;
+    } else {
+      errorMsg = logRes.data.message;
     }
-    showError("日志清理失败：" + message);
+
+    const timingRes = await API.delete(`/api/timing/?target_timestamp=${ts}`);
+    if (timingRes.data.success) {
+      timingResult = timingRes.data.data;
+    } else {
+      errorMsg = errorMsg ? `${errorMsg}; ${timingRes.data.message}` : timingRes.data.message;
+    }
+
+    if (errorMsg) {
+      showError(`日志清理失败：${errorMsg}`);
+    } else {
+      showSuccess(`${logResult} 条日志 + ${timingResult} 条计时记录已清理！`);
+    }
   };
 
   return (

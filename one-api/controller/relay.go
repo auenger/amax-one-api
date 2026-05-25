@@ -49,11 +49,13 @@ func recordTiming(c *gin.Context) {
 	tRequest, _ := c.Get(ctxkey.TimingTRequest)
 	tRelay, _ := c.Get(meta.TimingTRelay)
 	tUpstream, _ := c.Get("timing_t_upstream")
+	tBodyDone, _ := c.Get(ctxkey.TimingTBodyDone)
 	tResponse := time.Now().UnixMilli()
 
 	tReqMs, _ := tRequest.(int64)
 	tRelayMs, _ := tRelay.(int64)
 	tUpMs, _ := tUpstream.(int64)
+	tBdMs, _ := tBodyDone.(int64)
 
 	// Only record if we have the initial timestamp
 	if tReqMs == 0 {
@@ -64,6 +66,9 @@ func recordTiming(c *gin.Context) {
 	channelName := c.GetString(ctxkey.ChannelName)
 	userId := c.GetInt(ctxkey.Id)
 	username := c.GetString(ctxkey.Username)
+	if username == "" && userId > 0 {
+		username = dbmodel.GetUsernameById(userId)
+	}
 	tokenName := c.GetString(ctxkey.TokenName)
 	modelName := c.GetString(ctxkey.OriginalModel)
 	requestId := c.GetString(helper.RequestIdKey)
@@ -80,7 +85,14 @@ func recordTiming(c *gin.Context) {
 
 	middlewareMs := tRelayMs - tReqMs
 	upstreamMs := tUpMs - tRelayMs
-	responseMs := tResponse - tUpMs
+
+	var streamMs, responseMs int64
+	if tBdMs > 0 {
+		streamMs = tBdMs - tUpMs
+		responseMs = tResponse - tBdMs
+	} else {
+		responseMs = tResponse - tUpMs
+	}
 	totalMs := tResponse - tReqMs
 
 	// Clamp negative values to 0 (can happen if hooks weren't reached)
@@ -89,6 +101,9 @@ func recordTiming(c *gin.Context) {
 	}
 	if upstreamMs < 0 {
 		upstreamMs = 0
+	}
+	if streamMs < 0 {
+		streamMs = 0
 	}
 	if responseMs < 0 {
 		responseMs = 0
@@ -101,7 +116,7 @@ func recordTiming(c *gin.Context) {
 		RequestId:    requestId,
 		ChannelId:    channelId,
 		ChannelName:  channelName,
-		UserId:       userId,
+		UserId:       c.GetInt(ctxkey.Id),
 		Username:     username,
 		TokenName:    tokenName,
 		ModelName:    modelName,
@@ -109,9 +124,11 @@ func recordTiming(c *gin.Context) {
 		TRequest:     tReqMs,
 		TRelay:       tRelayMs,
 		TUpstream:    tUpMs,
+		TBodyDone:    tBdMs,
 		TResponse:    tResponse,
 		MiddlewareMs: middlewareMs,
 		UpstreamMs:   upstreamMs,
+		StreamMs:     streamMs,
 		ResponseMs:   responseMs,
 		TotalMs:      totalMs,
 	}

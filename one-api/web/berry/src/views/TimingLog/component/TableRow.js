@@ -80,6 +80,11 @@ export default function TimingLogTableRow({ item, channelMap, expanded, onToggle
           </Label>
         </TableCell>
         <TableCell>
+          <Label color={msToColor(item.stream_ms)} variant="filled">
+            {item.stream_ms}
+          </Label>
+        </TableCell>
+        <TableCell>
           <Label color={msToColor(item.response_ms)} variant="filled">
             {item.response_ms}
           </Label>
@@ -97,10 +102,11 @@ export default function TimingLogTableRow({ item, channelMap, expanded, onToggle
       </TableRow>
       {expanded && (
         <TableRow>
-          <TableCell colSpan={10} sx={{ py: 1, bgcolor: 'grey.50' }}>
+          <TableCell colSpan={11} sx={{ py: 1, bgcolor: 'grey.50' }}>
             <Box sx={{ px: 2 }}>
               <TimingBar value={item.middleware_ms} total={totalMs} color="info" label="中间件" />
-              <TimingBar value={item.upstream_ms} total={totalMs} color="warning" label="上游" />
+              <TimingBar value={item.upstream_ms} total={totalMs} color="warning" label="上游(TTFB)" />
+              <TimingBar value={item.stream_ms} total={totalMs} color="secondary" label="流式传输" />
               <TimingBar value={item.response_ms} total={totalMs} color="success" label="响应" />
               <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 0.5, fontSize: 11, color: 'text.secondary' }}>
                 令牌: {item.token_name || '-'} | 请求ID: {item.request_id || '-'}

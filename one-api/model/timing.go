@@ -28,11 +28,13 @@ type RequestTiming struct {
 	TRelay    int64 `json:"t_relay" gorm:"default:0"`
 	TUpstream int64 `json:"t_upstream" gorm:"default:0"`
 	TResponse int64 `json:"t_response" gorm:"default:0"`
+	TBodyDone int64 `json:"t_body_done" gorm:"default:0"`
 
 	// Derived durations (milliseconds)
 	MiddlewareMs int64 `json:"middleware_ms" gorm:"default:0"` // t_relay - t_request
 	UpstreamMs  int64 `json:"upstream_ms" gorm:"default:0"`  // t_upstream - t_relay
-	ResponseMs  int64 `json:"response_ms" gorm:"default:0"`  // t_response - t_upstream
+	StreamMs    int64 `json:"stream_ms" gorm:"default:0"`    // t_body_done - t_upstream
+	ResponseMs  int64 `json:"response_ms" gorm:"default:0"`  // t_response - t_body_done
 	TotalMs     int64 `json:"total_ms" gorm:"default:0"`     // t_response - t_request
 
 	CreatedAt int64 `json:"created_at" gorm:"bigint;index"`
@@ -96,6 +98,7 @@ type TimingStats struct {
 	AvgTotalMs  int64  `json:"avg_total_ms" gorm:"column:avg_total_ms"`
 	P50MidMs    int64  `json:"p50_middleware_ms" gorm:"column:p50_middleware_ms"`
 	P50UpMs     int64  `json:"p50_upstream_ms" gorm:"column:p50_upstream_ms"`
+	P50StreamMs int64  `json:"p50_stream_ms" gorm:"column:p50_stream_ms"`
 	P50RespMs   int64  `json:"p50_response_ms" gorm:"column:p50_response_ms"`
 }
 
@@ -144,9 +147,10 @@ func GetTimingStats(groupBy string, filter *TimingFilter) ([]*TimingStats, error
 			"%s(AVG(total_ms), 0) as avg_total_ms, "+
 			"%s(AVG(middleware_ms), 0) as p50_middleware_ms, "+
 			"%s(AVG(upstream_ms), 0) as p50_upstream_ms, "+
+			"%s(AVG(stream_ms), 0) as p50_stream_ms, "+
 			"%s(AVG(response_ms), 0) as p50_response_ms",
 		groupCol, p50Expr, p95Expr, p99Expr,
-		ifnull, ifnull, ifnull, ifnull,
+		ifnull, ifnull, ifnull, ifnull, ifnull,
 	)
 
 	err := tx.Select(selectCols).Group(groupCol).Order("count desc").Scan(&stats).Error

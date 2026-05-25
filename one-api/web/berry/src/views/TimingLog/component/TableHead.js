@@ -10,7 +10,8 @@ const TimingLogTableHead = () => {
         <TableCell>模型</TableCell>
         <TableCell>流式</TableCell>
         <TableCell>中间件(ms)</TableCell>
-        <TableCell>上游(ms)</TableCell>
+        <TableCell>上游(TTFB)(ms)</TableCell>
+        <TableCell>流式(ms)</TableCell>
         <TableCell>响应(ms)</TableCell>
         <TableCell>总耗时(ms)</TableCell>
         <TableCell>详情</TableCell>
