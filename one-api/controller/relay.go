@@ -172,6 +172,14 @@ func Relay(c *gin.Context) {
 			continue
 		}
 		middleware.SetupContextForSelectedChannel(c, channel, originalModel)
+		// Update request model for retry channel (may have different downgrade config)
+		retryRequestModel := originalModel
+		if channel.DowngradeThresholdPct > 0 {
+			if downgradedModel := monitor.CheckDowngradeForChannel(channel.Id); downgradedModel != "" {
+				retryRequestModel = downgradedModel
+			}
+		}
+		c.Set(ctxkey.RequestModel, retryRequestModel)
 		requestBody, err := common.GetRequestBody(c)
 		c.Request.Body = io.NopCloser(bytes.NewBuffer(requestBody))
 		// Track concurrency for retry channel

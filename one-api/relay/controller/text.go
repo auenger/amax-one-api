@@ -33,9 +33,15 @@ func RelayTextHelper(c *gin.Context) *model.ErrorWithStatusCode {
 	}
 	meta.IsStream = textRequest.Stream
 
+	// Save context model (may be downgraded by distributor)
+	contextModel := meta.OriginModelName
 	// map model name
 	meta.OriginModelName = textRequest.Model
 	textRequest.Model, _ = getMappedModelName(textRequest.Model, meta.ModelMapping)
+	// Apply model downgrade from distributor if applicable
+	if contextModel != "" && contextModel != meta.OriginModelName {
+		textRequest.Model = contextModel
+	}
 	meta.ActualModelName = textRequest.Model
 	// set system prompt if not empty
 	systemPromptReset := setSystemPrompt(ctx, textRequest, meta.ForcedSystemPrompt)

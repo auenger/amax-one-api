@@ -123,6 +123,9 @@ func postConsumeQuota(ctx context.Context, usage *relaymodel.Usage, meta *meta.M
 		logger.Error(ctx, "error update user quota cache: "+err.Error())
 	}
 	logContent := fmt.Sprintf("倍率：%.2f × %.2f × %.2f", modelRatio, groupRatio, completionRatio)
+	if meta.OriginModelName != "" && meta.OriginModelName != meta.ActualModelName {
+		logContent += fmt.Sprintf(" | 降级：%s → %s", meta.OriginModelName, meta.ActualModelName)
+	}
 	model.RecordConsumeLog(ctx, &model.Log{
 		UserId:            meta.UserId,
 		ChannelId:         meta.ChannelId,

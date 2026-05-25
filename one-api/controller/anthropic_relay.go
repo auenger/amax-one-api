@@ -161,7 +161,8 @@ func RelayAnthropic(c *gin.Context) {
 	startTime := time.Now()
 	bizErr := relayHelper(c, relaymode.ChatCompletions)
 	latencyMs := time.Since(startTime).Milliseconds()
-
+	// Record timing for every relay attempt
+	recordTiming(c)
 	if bizErr != nil {
 		go processChannelRelayError(ctx, userId, channelId, channelName, *bizErr)
 
@@ -190,6 +191,14 @@ func RelayAnthropic(c *gin.Context) {
 			}
 			logger.Infof(ctx, "using channel #%d to retry (remain %d)", channel.Id, i)
 			middleware.SetupContextForSelectedChannel(c, channel, originalModel)
+			// Update request model for retry channel (may have different downgrade config)
+			retryRequestModel := originalModel
+			if channel.DowngradeThresholdPct > 0 {
+				if downgradedModel := monitor.CheckDowngradeForChannel(channel.Id); downgradedModel != "" {
+					retryRequestModel = downgradedModel
+				}
+			}
+			c.Set(ctxkey.RequestModel, retryRequestModel)
 
 			// Reset body and interceptor for retry
 			cachedBody, _ := common.GetRequestBody(c)
