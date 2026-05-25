@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -266,10 +268,63 @@ func processChannelRelayError(ctx context.Context, userId int, channelId int, ch
 	} else {
 		monitor.Emit(channelId, false)
 	}
-	// Health-aware: mark channel as degraded on rate limit (429)
+	// Health-aware: distinguish quota-exhaustion 429 from transient rate limits
 	if err.StatusCode == http.StatusTooManyRequests {
-		monitor.MarkChannelDegraded(channelId, "rate limited (429)")
+		if isQuotaExhaustedRateLimit(&err.Error) {
+			reason, ttl := parseRateLimitExhaustion(&err.Error)
+			monitor.MarkChannelRateLimitExhausted(channelId, reason, ttl)
+		} else {
+			monitor.MarkChannelDegraded(channelId, "rate limited (429)")
+		}
 	}
+}
+
+// isQuotaExhaustedRateLimit detects whether a 429 error indicates quota exhaustion
+// (long-window limit) vs. a transient per-second/per-minute rate limit.
+func isQuotaExhaustedRateLimit(err *model.Error) bool {
+	msg := err.Message
+	codeStr := fmt.Sprint(err.Code)
+
+	// GLM-specific code 1308 = quota window exhausted
+	if codeStr == "1308" {
+		return true
+	}
+	// Anthropic-format rate_limit_error type indicates quota exhaustion
+	if err.Type == "rate_limit_error" {
+		return true
+	}
+	// Generic: message contains exhaustion keywords
+	if strings.Contains(msg, "使用上限") || strings.Contains(msg, "100%") {
+		return true
+	}
+	return false
+}
+
+var resetTimePattern = regexp.MustCompile(`(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})\s*重置`)
+
+// parseRateLimitExhaustion extracts a reason and TTL from the error message.
+// Falls back to a 30-minute TTL if no reset time can be parsed.
+func parseRateLimitExhaustion(err *model.Error) (string, time.Duration) {
+	msg := err.Message
+	codeStr := fmt.Sprint(err.Code)
+
+	reason := "rate_limit quota exhausted"
+	if codeStr != "" {
+		reason = fmt.Sprintf("rate_limit quota exhausted (code: %s)", codeStr)
+	}
+
+	matches := resetTimePattern.FindStringSubmatch(msg)
+	if len(matches) >= 2 {
+		resetTime, err := time.ParseInLocation("2006-01-02 15:04:05", matches[1], time.Local)
+		if err == nil {
+			ttl := time.Until(resetTime)
+			if ttl > 0 {
+				return reason, ttl
+			}
+		}
+	}
+
+	return reason, 30 * time.Minute
 }
 
 func RelayNotImplemented(c *gin.Context) {

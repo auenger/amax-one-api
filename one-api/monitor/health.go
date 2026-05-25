@@ -338,6 +338,17 @@ func MarkChannelQuotaRecovered(channelId int) {
 	}
 }
 
+// MarkChannelRateLimitExhausted marks a channel as unhealthy due to 429 rate_limit_error
+// with quota exhaustion. Reuses the quota exhaustion infrastructure (Redis marker + Unhealthy status).
+func MarkChannelRateLimitExhausted(channelId int, reason string, ttl time.Duration) {
+	health, err := GetChannelHealth(channelId)
+	if err == nil && health.Status == HealthStatusUnhealthy {
+		// Already unhealthy — skip duplicate marking
+		return
+	}
+	MarkChannelQuotaExhausted(channelId, reason, ttl)
+}
+
 // IsQuotaExhausted checks if a channel is marked as quota-exhausted in Redis.
 func IsQuotaExhausted(channelId int) bool {
 	if !common.RedisEnabled {
