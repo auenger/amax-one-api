@@ -1,6 +1,6 @@
 import PropTypes from 'prop-types';
 import { useTheme } from '@mui/material/styles';
-import { IconUser, IconKey } from '@tabler/icons-react';
+import { IconUser } from '@tabler/icons-react';
 import {
   Autocomplete,
   TextField,
@@ -26,7 +26,6 @@ export default function ReportFilter({
   handleSearch,
   handleReset,
   usernameOptions,
-  tokenNameOptions,
   showUsernameFilter
 }) {
   const theme = useTheme();
@@ -70,36 +69,6 @@ export default function ReportFilter({
               />
             </FormControl>
           )}
-
-          <FormControl sx={{ minWidth: 240 }}>
-            <Autocomplete
-              multiple
-              freeSolo
-              id="report-token-name"
-              options={tokenNameOptions || []}
-              value={filter.token_name ? filter.token_name.split(',').filter(Boolean) : []}
-              onChange={(event, newValue) => {
-                handleFilterChange({ target: { name: 'token_name', value: newValue.join(',') } });
-              }}
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  label="令牌名称"
-                  placeholder="搜索令牌"
-                  InputProps={{
-                    ...params.InputProps,
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <IconKey stroke={1.5} size="20px" color={theme.palette.grey[500]} />
-                      </InputAdornment>
-                    )
-                  }}
-                />
-              )}
-              size="small"
-              limitTags={3}
-            />
-          </FormControl>
 
           <FormControl>
             <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="zh-cn">
@@ -170,6 +139,5 @@ ReportFilter.propTypes = {
   handleSearch: PropTypes.func,
   handleReset: PropTypes.func,
   usernameOptions: PropTypes.array,
-  tokenNameOptions: PropTypes.array,
   showUsernameFilter: PropTypes.bool
 };

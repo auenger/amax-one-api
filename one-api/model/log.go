@@ -230,11 +230,10 @@ type ReportData struct {
 	Summary     ReportSummary `json:"summary"`
 	ByDate      []ReportRow   `json:"by_date"`
 	ByDateUser  []ReportRow   `json:"by_date_user"`
-	ByToken     []ReportRow   `json:"by_token"`
+	ByUser      []ReportRow   `json:"by_user"`
 	ByModel     []ReportRow   `json:"by_model"`
 	ByChannel   []ReportRow   `json:"by_channel"`
 	Usernames   []string      `json:"usernames"`
-	TokenName   []string      `json:"token_names"`
 	ChannelName []string      `json:"channel_names"`
 }
 
@@ -296,13 +295,10 @@ func timeExpr(granularity string) string {
 	return dayExpr()
 }
 
-func buildReportBaseQuery(username string, tokenNames []string, startTimestamp, endTimestamp int64) *gorm.DB {
+func buildReportBaseQuery(username string, startTimestamp, endTimestamp int64) *gorm.DB {
 	tx := LOG_DB.Table("logs").Where("type = ?", LogTypeConsume)
 	if username != "" {
 		tx = tx.Where("username = ?", username)
-	}
-	if len(tokenNames) > 0 {
-		tx = tx.Where("token_name IN ?", tokenNames)
 	}
 	if startTimestamp != 0 {
 		tx = tx.Where("created_at >= ?", startTimestamp)
@@ -313,10 +309,10 @@ func buildReportBaseQuery(username string, tokenNames []string, startTimestamp, 
 	return tx
 }
 
-func GetUsageReport(username string, tokenNames []string, startTimestamp, endTimestamp int64, granularity string) (*ReportData, error) {
+func GetUsageReport(username string, startTimestamp, endTimestamp int64, granularity string) (*ReportData, error) {
 	expr := timeExpr(granularity)
 
-	base := buildReportBaseQuery(username, tokenNames, startTimestamp, endTimestamp)
+	base := buildReportBaseQuery(username, startTimestamp, endTimestamp)
 
 	// Summary
 	var summary ReportSummary
@@ -333,7 +329,7 @@ func GetUsageReport(username string, tokenNames []string, startTimestamp, endTim
 	report := &ReportData{Summary: summary}
 
 	// By date (or hour)
-	dateBase := buildReportBaseQuery(username, tokenNames, startTimestamp, endTimestamp)
+	dateBase := buildReportBaseQuery(username, startTimestamp, endTimestamp)
 	var byDate []ReportRow
 	err = dateBase.Select(
 		expr+" as date",
@@ -348,7 +344,7 @@ func GetUsageReport(username string, tokenNames []string, startTimestamp, endTim
 	report.ByDate = byDate
 
 	// By date + username (for multi-user trend chart)
-	dateUserBase := buildReportBaseQuery(username, tokenNames, startTimestamp, endTimestamp)
+	dateUserBase := buildReportBaseQuery(username, startTimestamp, endTimestamp)
 	var byDateUser []ReportRow
 	err = dateUserBase.Select(
 		expr+" as date",
@@ -376,36 +372,23 @@ func GetUsageReport(username string, tokenNames []string, startTimestamp, endTim
 	}
 	report.Usernames = usernames
 
-	// By token
-	tokenBase := buildReportBaseQuery(username, tokenNames, startTimestamp, endTimestamp)
-	var byToken []ReportRow
-	err = tokenBase.Select(
-		"token_name",
+	// By user
+	userBase := buildReportBaseQuery(username, startTimestamp, endTimestamp)
+	var byUser []ReportRow
+	err = userBase.Select(
+		"username",
 		"COUNT(1) as requests",
 		"COALESCE(SUM(prompt_tokens),0) as prompt_tokens",
 		"COALESCE(SUM(completion_tokens),0) as completion_tokens",
 		"COALESCE(SUM(quota),0) as quota",
-	).Group("token_name").Order("quota DESC").Scan(&byToken).Error
+	).Group("username").Order("quota DESC").Scan(&byUser).Error
 	if err != nil {
 		return nil, err
 	}
-	report.ByToken = byToken
-
-	// Extract distinct token names
-	tokenNameSet := make(map[string]bool)
-	for _, row := range byToken {
-		if row.TokenName != "" {
-			tokenNameSet[row.TokenName] = true
-		}
-	}
-	var tokenNameList []string
-	for t := range tokenNameSet {
-		tokenNameList = append(tokenNameList, t)
-	}
-	report.TokenName = tokenNameList
+	report.ByUser = byUser
 
 	// By model
-	modelBase := buildReportBaseQuery(username, tokenNames, startTimestamp, endTimestamp)
+	modelBase := buildReportBaseQuery(username, startTimestamp, endTimestamp)
 	var byModel []ReportRow
 	err = modelBase.Select(
 		"model_name",
@@ -420,7 +403,7 @@ func GetUsageReport(username string, tokenNames []string, startTimestamp, endTim
 	report.ByModel = byModel
 
 	// By channel
-	channelBase := buildReportBaseQuery(username, tokenNames, startTimestamp, endTimestamp)
+	channelBase := buildReportBaseQuery(username, startTimestamp, endTimestamp)
 	var channelAggs []channelAggRow
 	err = channelBase.Select(
 		"channel_id as channel_id",
