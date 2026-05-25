@@ -316,6 +316,9 @@ func queryProviderQuota(ch *model.Channel) *model.ChannelQuota {
 	if strings.Contains(baseURL, "bigmodel") {
 		providerType = channeltype.Zhipu
 	}
+	if strings.Contains(baseURL, "minimaxi") {
+		providerType = channeltype.Minimax
+	}
 
 	switch providerType {
 	case channeltype.Zhipu:
