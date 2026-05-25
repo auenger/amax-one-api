@@ -6,6 +6,7 @@ import Loadable from 'ui-component/Loadable';
 
 const Channel = Loadable(lazy(() => import('views/Channel')));
 const Log = Loadable(lazy(() => import('views/Log')));
+const TimingLog = Loadable(lazy(() => import('views/TimingLog')));
 const Setting = Loadable(lazy(() => import('views/Setting')));
 const Token = Loadable(lazy(() => import('views/Token')));
 const User = Loadable(lazy(() => import('views/User')));
@@ -38,6 +39,10 @@ const MainRoutes = {
     {
       path: 'log',
       element: <Log />
+    },
+    {
+      path: 'timing',
+      element: <TimingLog />
     },
     {
       path: 'setting',

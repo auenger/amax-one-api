@@ -8,6 +8,7 @@ import (
 	"github.com/songquanpeng/one-api/relay/meta"
 	"io"
 	"net/http"
+	"time"
 )
 
 func SetupCommonRequestHeader(c *gin.Context, req *http.Request, meta *meta.Meta) {
@@ -35,6 +36,8 @@ func DoRequestHelper(a Adaptor, c *gin.Context, meta *meta.Meta, requestBody io.
 	if err != nil {
 		return nil, fmt.Errorf("do request failed: %w", err)
 	}
+	// Record t_upstream (upstream response received) timestamp
+	c.Set("timing_t_upstream", time.Now().UnixMilli())
 	return resp, nil
 }
 

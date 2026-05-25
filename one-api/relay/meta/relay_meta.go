@@ -12,6 +12,8 @@ import (
 	"github.com/songquanpeng/one-api/relay/relaymode"
 )
 
+const TimingTRelay = "timing_t_relay"
+
 type Meta struct {
 	Mode         int
 	ChannelType  int
@@ -54,6 +56,8 @@ func GetByContext(c *gin.Context) *Meta {
 		ForcedSystemPrompt: c.GetString(ctxkey.SystemPrompt),
 		StartTime:          time.Now(),
 	}
+	// Record t_relay (middleware completed) timestamp
+	c.Set(TimingTRelay, time.Now().UnixMilli())
 	cfg, ok := c.Get(ctxkey.Config)
 	if ok {
 		meta.Config = cfg.(model.ChannelConfig)
