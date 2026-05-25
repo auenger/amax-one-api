@@ -6,7 +6,7 @@ import { showError, isAdmin } from 'utils/common';
 import ReportFilter from './component/ReportFilter';
 import SummaryCards from './component/SummaryCards';
 import TrendChart from './component/TrendChart';
-import TokenUsageTable from './component/TokenUsageTable';
+import UserUsageTable from './component/UserUsageTable';
 import ChannelUsageTable from './component/ChannelUsageTable';
 
 const Report = () => {
@@ -28,7 +28,6 @@ const Report = () => {
 
   const [filter, setFilter] = useState({
     username: '',
-    token_name: '',
     ...getDefaultTimeRange()
   });
 
@@ -53,7 +52,6 @@ const Report = () => {
     try {
       const params = {};
       if (filter.username) params.username = filter.username;
-      if (filter.token_name) params.token_name = filter.token_name;
       if (filter.start_timestamp) params.start_timestamp = filter.start_timestamp;
       if (filter.end_timestamp) params.end_timestamp = filter.end_timestamp;
       params.granularity = computeGranularity();
@@ -86,7 +84,6 @@ const Report = () => {
   const handleReset = () => {
     setFilter({
       username: '',
-      token_name: '',
       ...getDefaultTimeRange()
     });
     setReportData(null);
@@ -102,17 +99,6 @@ const Report = () => {
       if (row.username) set.add(row.username);
     });
     return Array.from(set).sort();
-  }, [reportData]);
-
-  const tokenNameOptions = useMemo(() => {
-    if (!reportData) return [];
-    if (reportData.token_names && reportData.token_names.length > 0) {
-      return reportData.token_names;
-    }
-    return (reportData.by_token || [])
-      .map((row) => row.token_name)
-      .filter(Boolean)
-      .sort();
   }, [reportData]);
 
   useEffect(() => {
@@ -131,7 +117,6 @@ const Report = () => {
         handleSearch={handleSearch}
         handleReset={handleReset}
         usernameOptions={usernameOptions}
-        tokenNameOptions={tokenNameOptions}
         showUsernameFilter={userIsAdmin}
       />
       <Grid container spacing={gridSpacing} mt={0}>
@@ -147,7 +132,7 @@ const Report = () => {
           />
         </Grid>
         <Grid item xs={12}>
-          <TokenUsageTable isLoading={isLoading} data={reportData?.by_token || []} />
+          <UserUsageTable isLoading={isLoading} data={reportData?.by_user || []} />
         </Grid>
         <Grid item xs={12}>
           <ChannelUsageTable isLoading={isLoading} data={reportData?.by_channel || []} />
