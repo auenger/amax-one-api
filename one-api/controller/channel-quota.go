@@ -160,7 +160,16 @@ func queryMinimaxQuota(ch *model.Channel) *model.ChannelQuota {
 				RemainingMs: remainingMs,
 				ResetAt:     remain.EndTime,
 			})
+		} else if remain.CurrentIntervalUsage > 0 {
+			// total=0 but usage>0 → treat as fully exhausted
+			quota.Windows = append(quota.Windows, model.QuotaWindow{
+				Label:       "5h",
+				UsedPercent: 100,
+				RemainingMs: remainingMs,
+				ResetAt:     remain.EndTime,
+			})
 		}
+		// total==0 && usage==0 → no quota window limit, skip
 
 		// Weekly window
 		if remain.CurrentWeeklyTotal > 0 {
@@ -171,7 +180,27 @@ func queryMinimaxQuota(ch *model.Channel) *model.ChannelQuota {
 				RemainingMs: remainingMs,
 				ResetAt:     remain.EndTime,
 			})
+		} else if remain.CurrentWeeklyUsage > 0 {
+			// total=0 but usage>0 → treat as fully exhausted
+			quota.Windows = append(quota.Windows, model.QuotaWindow{
+				Label:       "weekly",
+				UsedPercent: 100,
+				RemainingMs: remainingMs,
+				ResetAt:     remain.EndTime,
+			})
 		}
+	}
+
+	// If API returns empty model_remains, likely fully exhausted or no active plan.
+	// Treat as exhausted: false positive (channel disabled, recovered by accelerated polling)
+	// is preferable to false negative (user encounters request failures).
+	if len(resp.ModelRemains) == 0 {
+		quota.Windows = append(quota.Windows, model.QuotaWindow{
+			Label:       "api-empty",
+			UsedPercent: 100,
+			RemainingMs: 0,
+			ResetAt:     0,
+		})
 	}
 
 	return quota
