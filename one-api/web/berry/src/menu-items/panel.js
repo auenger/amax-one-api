@@ -11,11 +11,12 @@ import {
   IconUserScan,
   IconSparkles,
   IconChartBar,
-  IconClock
+  IconClock,
+  IconArrowDown
 } from '@tabler/icons-react';
 
 // constant
-const icons = { IconDashboard, IconSitemap, IconArticle, IconCoin, IconAdjustments, IconKey, IconGardenCart, IconUser, IconUserScan, IconSparkles, IconChartBar, IconClock };
+const icons = { IconDashboard, IconSitemap, IconArticle, IconCoin, IconAdjustments, IconKey, IconGardenCart, IconUser, IconUserScan, IconSparkles, IconChartBar, IconClock, IconArrowDown };
 
 // ==============================|| DASHBOARD MENU ITEMS ||============================== //
 
@@ -71,6 +72,15 @@ const panel = {
       type: 'item',
       url: '/panel/timing',
       icon: icons.IconClock,
+      breadcrumbs: false,
+      isAdmin: true
+    },
+    {
+      id: 'downgrade',
+      title: '降级策略',
+      type: 'item',
+      url: '/panel/downgrade',
+      icon: icons.IconArrowDown,
       breadcrumbs: false,
       isAdmin: true
     },
