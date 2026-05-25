@@ -14,6 +14,7 @@ const ForgetPassword = Loadable(lazy(() => import('views/Authentication/Auth/For
 const ResetPassword = Loadable(lazy(() => import('views/Authentication/Auth/ResetPassword')));
 const Home = Loadable(lazy(() => import('views/Home')));
 const About = Loadable(lazy(() => import('views/About')));
+const Download = Loadable(lazy(() => import('views/Download')));
 const NotFoundView = Loadable(lazy(() => import('views/Error')));
 
 // ==============================|| AUTHENTICATION ROUTING ||============================== //
@@ -29,6 +30,10 @@ const OtherRoutes = {
     {
       path: '/about',
       element: <About />
+    },
+    {
+      path: '/download',
+      element: <Download />
     },
     {
       path: '/login',

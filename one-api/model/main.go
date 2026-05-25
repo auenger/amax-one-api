@@ -132,6 +132,9 @@ func InitDB() {
 		return
 	}
 	logger.SysLog("database migrated")
+
+	// One-time migration: downgrade rules → channel fields
+	MigrateDowngradeRulesToChannels()
 }
 
 func migrateDB() error {

@@ -162,14 +162,10 @@ func SetApiRouter(router *gin.Engine) {
 			timingRoute.GET("/stats", controller.GetTimingStats)
 			timingRoute.DELETE("/", controller.DeleteTimings)
 		}
-		// Enterprise: Model downgrade rules (admin only)
+		// Enterprise: Model downgrade status (admin only)
 		downgradeRoute := apiRouter.Group("/downgrade")
 		downgradeRoute.Use(middleware.AdminAuth())
 		{
-			downgradeRoute.GET("/rules", controller.GetDowngradeRules)
-			downgradeRoute.POST("/rules", controller.CreateDowngradeRule)
-			downgradeRoute.PUT("/rules/:id", controller.UpdateDowngradeRule)
-			downgradeRoute.DELETE("/rules/:id", controller.DeleteDowngradeRule)
 			downgradeRoute.GET("/status", controller.GetDowngradeStatus)
 		}
 	}

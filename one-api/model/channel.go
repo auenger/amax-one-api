@@ -42,6 +42,9 @@ type Channel struct {
 	// Enterprise: Channel budget limits
 	BudgetLimit float64 `json:"budget_limit" gorm:"default:0"` // 0 means no limit
 	BudgetUsed  float64 `json:"budget_used" gorm:"default:0"`
+	// Enterprise: Model downgrade on quota threshold
+	DowngradeThresholdPct int    `json:"downgrade_threshold_pct" gorm:"default:0"`          // 0=disabled, 1-100=trigger threshold
+	DowngradeTargetModel  string `json:"downgrade_target_model" gorm:"type:varchar(128);default:''"`
 }
 
 type ChannelConfig struct {

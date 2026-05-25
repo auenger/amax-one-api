@@ -1,8 +1,292 @@
 meta:
-  last_updated: '2026-05-20'
+  last_updated: '2026-05-25'
   version: 1
-  total_completed: 29
+  total_completed: 35
 records:
+- id: feat-model-downgrade-strategy
+  name: 模型降级策略（配额百分比驱动）
+  completed: '2026-05-25'
+  tag: feat-model-downgrade-strategy-20260525
+  merge_commit: da98b9e
+  merged_to: main
+  branch_deleted: true
+  branch_name: feature/feat-model-downgrade-strategy
+  worktree_deleted: true
+  worktree_path: ../aihub-feat-model-downgrade-strategy
+  keywords:
+  - model
+  - downgrade
+  - strategy
+  - quota
+  - percentage
+  - threshold
+  - provider
+  - channel
+  - redis
+  - marker
+  - distributor
+  - replacement
+  - rule
+  - crud
+  - api
+  - admin
+  - mui
+  - berry
+  - react
+  category: fullstack
+  value_points: 2
+  related_features:
+  - feat-provider-quota-refresh
+  - feat-provider-quota-api
+  - feat-quota-exhaustion-recovery
+  - feat-minimax-limit-display
+  conflicts:
+    had_conflict: false
+    conflict_files: []
+  verification:
+    status: passed
+    scenarios_total: 6
+    scenarios_passed: 6
+  stats:
+    started: '2026-05-25'
+    duration: ~10min
+    commits: 1
+    files_changed: 9
+- id: feat-minimax-quota-exhaustion
+  name: MiniMax 配额耗尽联动自动禁用与恢复
+  completed: '2026-05-25'
+  tag: feat-minimax-quota-exhaustion-20260525
+  merge_commit: 6c57b61
+  merged_to: main
+  branch_deleted: true
+  branch_name: feature/feat-minimax-quota-exhaustion
+  worktree_deleted: true
+  worktree_path: ../aihub-feat-minimax-quota-exhaustion
+  keywords:
+  - minimax
+  - quota
+  - exhaustion
+  - recovery
+  - total-zero
+  - usage
+  - model-remains
+  - edge-case
+  - channel-quota
+  - unhealthy
+  - healthy
+  - accelerated-polling
+  - channel-disable
+  - auto-recovery
+  category: backend
+  value_points: 1
+  related_features:
+  - feat-quota-exhaustion-recovery
+  - feat-minimax-limit-display
+  - feat-provider-quota-refresh
+  - feat-provider-quota-api
+  conflicts:
+    had_conflict: false
+    conflict_files: []
+  verification:
+    status: passed
+    scenarios_total: 5
+    scenarios_passed: 5
+  stats:
+    started: '2026-05-25'
+    duration: ~5min
+    commits: 1
+    files_changed: 1
+- id: feat-request-timing-log
+  name: 请求计时日志
+  completed: '2026-05-25'
+  tag: feat-request-timing-log-20260525
+  merge_commit: 10e31e1
+  merged_to: main
+  branch_deleted: true
+  branch_name: feature/feat-request-timing-log
+  worktree_deleted: true
+  worktree_path: ../aihub-feat-request-timing-log
+  keywords:
+  - request
+  - timing
+  - log
+  - latency
+  - performance
+  - middleware
+  - upstream
+  - response
+  - duration
+  - p50
+  - p95
+  - p99
+  - percentile
+  - stats
+  - admin
+  - timinglog
+  - visualization
+  - bar-chart
+  - mui
+  - berry
+  - react
+  category: fullstack
+  value_points: 2
+  related_features:
+  - feat-monitoring-timing
+  - feat-log-channel-visibility
+  conflicts:
+    had_conflict: true
+    conflict_files:
+    - one-api/web/berry/src/menu-items/panel.js
+    resolved_at: '2026-05-25'
+    re_verified: true
+  verification:
+    status: passed
+    scenarios_total: 5
+    scenarios_passed: 5
+  stats:
+    started: '2026-05-25'
+    duration: ~20min
+    commits: 1
+    files_changed: 16
+- id: feat-minimax-limit-display
+  name: MiniMax Limit 显示逻辑
+  completed: '2026-05-25'
+  tag: feat-minimax-limit-display-20260525
+  merge_commit: dc46999
+  merged_to: main
+  branch_deleted: true
+  branch_name: feature/feat-minimax-limit-display
+  worktree_deleted: true
+  worktree_path: ../aihub-feat-minimax-limit-display
+  keywords:
+  - minimax
+  - limit
+  - display
+  - url
+  - detection
+  - minimaxi
+  - quota
+  - provider
+  - smart-identify
+  - progress-bar
+  - channel-quota
+  category: backend
+  value_points: 2
+  related_features:
+  - feat-provider-quota-api
+  - feat-provider-quota-refresh
+  - feat-provider-quota-ui
+  conflicts:
+    had_conflict: false
+    conflict_files: []
+  verification:
+    status: passed
+    scenarios_total: 4
+    scenarios_passed: 4
+  stats:
+    started: '2026-05-25'
+    duration: ~5min
+    commits: 1
+    files_changed: 1
+
+- id: feat-user-usage-report
+  name: 用户级用量统计
+  completed: '2026-05-25'
+  tag: feat-user-usage-report-20260525
+  merge_commit: ad6eef4
+  merged_to: main
+  branch_deleted: true
+  branch_name: feature/feat-user-usage-report
+  worktree_deleted: true
+  worktree_path: ../aihub-feat-user-usage-report
+  keywords:
+  - user
+  - usage
+  - report
+  - token
+  - username
+  - aggregation
+  - group-by
+  - quota
+  - prompt-tokens
+  - completion-tokens
+  - report-data
+  - by-user
+  - table
+  - pagination
+  - sorting
+  category: fullstack
+  value_points: 1
+  related_features:
+  - feat-usage-report
+  - feat-usage-report-v2
+  - feat-usage-chart-granularity
+  conflicts:
+    had_conflict: false
+    conflict_files: []
+  verification:
+    status: passed
+    scenarios_total: 3
+    scenarios_passed: 3
+  stats:
+    started: '2026-05-25'
+    duration: ~10min
+    commits: 1
+    files_changed: 5
+
+- id: feat-quota-exhaustion-recovery
+  name: 配额耗尽自动禁用与恢复
+  completed: '2026-05-25'
+  tag: feat-quota-exhaustion-recovery-20260525
+  merge_commit: d30bcde
+  merged_to: main
+  branch_deleted: true
+  branch_name: feature/feat-quota-exhaustion-recovery
+  worktree_deleted: true
+  worktree_path: ../aihub-feat-quota-exhaustion-recovery
+  keywords:
+  - quota
+  - exhaustion
+  - recovery
+  - channel
+  - unhealthy
+  - degraded
+  - healthy
+  - redis
+  - marker
+  - accelerated
+  - poller
+  - goroutine
+  - threshold
+  - ttl
+  - reason
+  - distributor
+  - failover
+  - health
+  - monitor
+  - gl
+  - minimax
+  - provider
+  category: backend
+  value_points: 2
+  related_features:
+  - feat-provider-quota-refresh
+  - feat-provider-quota-api
+  - feat-provider-quota-ui
+  - feat-channel-routing
+  conflicts:
+    had_conflict: false
+    conflict_files: []
+  verification:
+    status: passed
+    scenarios_total: 5
+    scenarios_passed: 5
+  stats:
+    started: '2026-05-25'
+    duration: ~20min
+    commits: 1
+    files_changed: 3
+
 - id: feat-monitoring-timing
   name: 监控数据时序优化
   completed: '2026-05-20'

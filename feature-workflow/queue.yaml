@@ -1,12 +1,66 @@
 meta:
-  last_updated: '2026-05-20T15:30:00'
-  total_features: 39
-  started: '2026-05-12'
-  last_completed: feat-ccswitch-import
-pending: []
+  last_updated: '2026-05-25'
+  total_features: 46
 active: []
+pending:
 blocked: []
 completed:
+- id: feat-model-downgrade-strategy
+  name: 模型降级策略（配额百分比驱动）
+  priority: 70
+  size: M
+  depends_on:
+  - feat-provider-quota-refresh
+  - feat-provider-quota-api
+  completed_at: '2026-05-25'
+  archive_path: features/archive/done-feat-model-downgrade-strategy-20260525
+  value_points: 2
+- id: feat-minimax-quota-exhaustion
+  name: MiniMax 配额耗尽联动自动禁用与恢复
+  priority: 75
+  size: S
+  depends_on:
+  - feat-quota-exhaustion-recovery
+  - feat-minimax-limit-display
+  completed_at: '2026-05-25'
+  archive_path: features/archive/done-feat-minimax-quota-exhaustion-20260525
+  value_points: 1
+- id: feat-request-timing-log
+  name: 请求计时日志
+  priority: 80
+  size: M
+  depends_on: []
+  completed_at: '2026-05-25'
+  archive_path: features/archive/done-feat-request-timing-log-20260525
+  value_points: 2
+- id: feat-minimax-limit-display
+  name: MiniMax Limit 显示逻辑
+  priority: 60
+  size: S
+  depends_on:
+  - feat-provider-quota-api
+  - feat-provider-quota-refresh
+  - feat-provider-quota-ui
+  completed_at: '2026-05-25'
+  archive_path: features/archive/done-feat-minimax-limit-display-20260525
+  value_points: 2
+- id: feat-user-usage-report
+  name: 用户级用量统计
+  priority: 70
+  size: S
+  depends_on: []
+  completed_at: '2026-05-25'
+  archive_path: features/archive/done-feat-user-usage-report-20260525
+  value_points: 1
+- id: feat-quota-exhaustion-recovery
+  name: 配额耗尽自动禁用与恢复
+  priority: 75
+  size: M
+  depends_on:
+  - feat-provider-quota-refresh
+  completed_at: '2026-05-25'
+  archive_path: features/archive/done-feat-quota-exhaustion-recovery-20260525
+  value_points: 2
 - id: feat-ccswitch-import
   name: 一键导入 cc-switch
   priority: 60

@@ -619,6 +619,41 @@ const EditModal = ({ open, channelId, onCancel, onOk, quota }) => {
                   <FormHelperText id="helper-tex-channel-system_prompt-label"> {inputPrompt.system_prompt} </FormHelperText>
                 )}
               </FormControl>
+              <Divider sx={{ my: 1 }} />
+              <FormControl fullWidth sx={{ ...theme.typography.otherInput }}>
+                <OutlinedInput
+                  id="channel-downgrade_threshold_pct-label"
+                  type="number"
+                  value={values.downgrade_threshold_pct ?? 0}
+                  name="downgrade_threshold_pct"
+                  onBlur={handleBlur}
+                  onChange={handleChange}
+                  inputProps={{ min: 0, max: 100 }}
+                  startAdornment={<InputLabel sx={{ position: 'relative' }}>降级阈值 (%)</InputLabel>}
+                  aria-describedby="helper-text-channel-downgrade_threshold_pct-label"
+                />
+                <FormHelperText id="helper-text-channel-downgrade_threshold_pct-label">
+                  配额使用率超过此阈值时触发降级，0 表示不启用 (1-100)
+                </FormHelperText>
+              </FormControl>
+              {(values.downgrade_threshold_pct > 0) && (
+                <FormControl fullWidth sx={{ ...theme.typography.otherInput }}>
+                  <OutlinedInput
+                    id="channel-downgrade_target_model-label"
+                    type="text"
+                    value={values.downgrade_target_model ?? ''}
+                    name="downgrade_target_model"
+                    onBlur={handleBlur}
+                    onChange={handleChange}
+                    startAdornment={<InputLabel sx={{ position: 'relative' }}>降级目标模型</InputLabel>}
+                    placeholder="glm-4-flash"
+                    aria-describedby="helper-text-channel-downgrade_target_model-label"
+                  />
+                  <FormHelperText id="helper-text-channel-downgrade_target_model-label">
+                    降级后使用的模型名称
+                  </FormHelperText>
+                </FormControl>
+              )}
               <DialogActions>
                 <Button onClick={onCancel}>取消</Button>
                 <Button disableElevation disabled={isSubmitting} type="submit" variant="contained" color="primary">

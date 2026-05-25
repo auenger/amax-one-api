@@ -560,20 +560,17 @@ func GetExhaustedChannels() []int {
 }
 
 // ────────────────────────────────────────────────────────────
-// Model Downgrade Engine
+// Model Downgrade Engine (per-channel)
 // ────────────────────────────────────────────────────────────
 
-// checkDowngradeRules checks if any enabled downgrade rule is triggered
-// for the channel's provider type, based on current quota usage.
+// checkDowngradeRules checks if a channel has downgrade configured and
+// whether its quota usage exceeds the threshold.
 func checkDowngradeRules(channel *model.Channel, quota *model.ChannelQuota) {
-	rule, err := model.GetDowngradeRuleByProvider(channel.Type)
-	if err != nil {
-		// No rule for this provider, skip
+	if channel.DowngradeThresholdPct <= 0 {
 		return
 	}
 
-	// Check if any quota window exceeds the rule threshold
-	threshold := float64(rule.ThresholdPct)
+	threshold := float64(channel.DowngradeThresholdPct)
 	triggered := false
 	for _, w := range quota.Windows {
 		if w.UsedPercent >= threshold {
@@ -583,69 +580,21 @@ func checkDowngradeRules(channel *model.Channel, quota *model.ChannelQuota) {
 	}
 
 	if triggered {
-		// Set downgrade marker in Redis
-		model.SetDowngradeMarker(channel.Type, rule.TargetModel)
-		logger.SysLog(fmt.Sprintf("downgrade: provider %d (channel #%d) quota %.1f%% >= threshold %d%%, downgrading to model %s",
-			channel.Type, channel.Id, quota.Windows[0].UsedPercent, rule.ThresholdPct, rule.TargetModel))
+		model.SetDowngradeMarker(channel.Id, channel.DowngradeTargetModel)
+		logger.SysLog(fmt.Sprintf("downgrade: channel #%d (%s) quota %.1f%% >= threshold %d%%, downgrading to model %s",
+			channel.Id, channel.Name, quota.Windows[0].UsedPercent, channel.DowngradeThresholdPct, channel.DowngradeTargetModel))
 	}
 }
 
-// downgradeRuleCache caches downgrade rules in memory to avoid DB queries on every request.
-var (
-	downgradeRulesCache     []model.ModelDowngradeRule
-	downgradeRulesCacheTime time.Time
-	downgradeRulesCacheMu   sync.RWMutex
-	downgradeRulesCacheTTL  = 5 * time.Minute
-)
-
-// getCachedDowngradeRules returns cached downgrade rules, refreshing if stale.
-func getCachedDowngradeRules() []model.ModelDowngradeRule {
-	downgradeRulesCacheMu.RLock()
-	if time.Since(downgradeRulesCacheTime) < downgradeRulesCacheTTL && downgradeRulesCache != nil {
-		rules := downgradeRulesCache
-		downgradeRulesCacheMu.RUnlock()
-		return rules
-	}
-	downgradeRulesCacheMu.RUnlock()
-
-	// Refresh cache
-	rules, err := model.GetEnabledDowngradeRules()
-	if err != nil {
-		logger.SysError(fmt.Sprintf("downgrade: failed to load rules: %s", err.Error()))
-		return nil
-	}
-
-	downgradeRulesCacheMu.Lock()
-	downgradeRulesCache = rules
-	downgradeRulesCacheTime = time.Now()
-	downgradeRulesCacheMu.Unlock()
-
-	return rules
-}
-
-// cleanupDowngradeMarkers checks all enabled downgrade rules and removes
-// markers for providers whose quota has recovered below the threshold.
+// cleanupDowngradeMarkers checks all channels with downgrade configured and
+// removes markers for channels whose quota has recovered below the threshold.
 func cleanupDowngradeMarkers(channels []*model.Channel) {
-	rules := getCachedDowngradeRules()
-	if len(rules) == 0 {
-		return
-	}
-
-	// Group channels by provider type and find max used percent per type
-	type providerQuotaInfo struct {
-		maxUsedPercent float64
-		hasChannel     bool
-	}
-	providerMap := make(map[int]*providerQuotaInfo)
 	for _, ch := range channels {
-		if _, ok := providerMap[ch.Type]; !ok {
-			providerMap[ch.Type] = &providerQuotaInfo{}
+		if ch.DowngradeThresholdPct <= 0 {
+			continue
 		}
-		providerMap[ch.Type].hasChannel = true
-	}
 
-	// Read quota data from Redis for each channel to get current usage
-	for _, ch := range channels {
+		// Read quota data from Redis for this channel
 		quotaData, err := common.RedisGet(model.QuotaRedisKey(ch.Id))
 		if err != nil || quotaData == "" {
 			continue
@@ -654,42 +603,32 @@ func cleanupDowngradeMarkers(channels []*model.Channel) {
 		if err := json.Unmarshal([]byte(quotaData), &quota); err != nil {
 			continue
 		}
-		info, ok := providerMap[ch.Type]
-		if !ok {
-			continue
-		}
+
+		// Check if all windows are below threshold
+		threshold := float64(ch.DowngradeThresholdPct)
+		allBelow := true
 		for _, w := range quota.Windows {
-			if w.UsedPercent > info.maxUsedPercent {
-				info.maxUsedPercent = w.UsedPercent
+			if w.UsedPercent >= threshold {
+				allBelow = false
+				break
 			}
 		}
-	}
 
-	// Check each rule: if provider's max usage is below threshold, remove marker
-	for _, rule := range rules {
-		info, ok := providerMap[rule.ProviderType]
-		if !ok || !info.hasChannel {
-			continue
-		}
-
-		threshold := float64(rule.ThresholdPct)
-		if info.maxUsedPercent < threshold {
-			// Check if there's currently a marker
-			currentTarget := model.CheckAndApplyDowngrade(rule.ProviderType)
+		if allBelow {
+			currentTarget := model.CheckAndApplyDowngrade(ch.Id)
 			if currentTarget != "" {
-				model.RemoveDowngradeMarker(rule.ProviderType)
-				logger.SysLog(fmt.Sprintf("downgrade: provider %d quota recovered (%.1f%% < %d%%), removed downgrade marker",
-					rule.ProviderType, info.maxUsedPercent, rule.ThresholdPct))
+				model.RemoveDowngradeMarker(ch.Id)
+				logger.SysLog(fmt.Sprintf("downgrade: channel #%d (%s) quota recovered, removed downgrade marker",
+					ch.Id, ch.Name))
 			}
 		}
 	}
 }
 
-// CheckDowngradeForProvider checks if a provider type has an active downgrade.
-// This is called from the distributor to decide if model replacement is needed.
+// CheckDowngradeForChannel checks if a channel has an active downgrade marker.
 // Returns the target model name if downgrading, empty string otherwise.
-func CheckDowngradeForProvider(providerType int) string {
-	return model.CheckAndApplyDowngrade(providerType)
+func CheckDowngradeForChannel(channelId int) string {
+	return model.CheckAndApplyDowngrade(channelId)
 }
 
 // ────────────────────────────────────────────────────────────

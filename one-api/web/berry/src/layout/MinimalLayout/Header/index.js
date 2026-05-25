@@ -77,6 +77,9 @@ const Header = () => {
             <Button component="a" variant="text" href="/manual.html" target="_blank" rel="noopener" color="inherit">
               操作手册
             </Button>
+            <Button component={Link} variant="text" to="/download" color={pathname === '/download' ? 'primary' : 'inherit'}>
+              下载 CC Switch
+            </Button>
             <ThemeButton />
             {account.user ? (
               <>
@@ -136,6 +139,9 @@ const Header = () => {
 
                     <ListItemButton component="a" href="/manual.html" target="_blank" rel="noopener">
                       <ListItemText primary={<Typography variant="body2">操作手册</Typography>} />
+                    </ListItemButton>
+                    <ListItemButton component={Link} to="/download">
+                      <ListItemText primary={<Typography variant="body2">下载 CC Switch</Typography>} />
                     </ListItemButton>
                     <Divider />
                     {account.user ? (

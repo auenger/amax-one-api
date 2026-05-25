@@ -48,14 +48,23 @@ type ZhipuQuotaLimitData struct {
 	} `json:"limits"`
 }
 
+// MinimaxBaseResp is the base_resp field in MiniMax API response.
+type MinimaxBaseResp struct {
+	StatusCode int    `json:"status_code"`
+	StatusMsg  string `json:"status_msg"`
+}
+
 // MinimaxRemainsResponse is the response from MiniMax coding plan remains API.
 type MinimaxRemainsResponse struct {
+	BaseResp     MinimaxBaseResp `json:"base_resp"`
 	ModelRemains []struct {
-		CurrentIntervalTotal int64 `json:"current_interval_total"`
-		CurrentIntervalUsage int64 `json:"current_interval_usage"`
-		CurrentWeeklyTotal   int64 `json:"current_weekly_total"`
-		CurrentWeeklyUsage   int64 `json:"current_weekly_usage"`
-		EndTime              int64 `json:"end_time"` // Unix milliseconds
+		ModelName                   string `json:"model_name"`
+		CurrentIntervalTotalCount   int64  `json:"current_interval_total_count"`
+		CurrentIntervalUsageCount   int64  `json:"current_interval_usage_count"`
+		CurrentWeeklyTotalCount     int64  `json:"current_weekly_total_count"`
+		CurrentWeeklyUsageCount     int64  `json:"current_weekly_usage_count"`
+		EndTime                     int64  `json:"end_time"`
+		WeeklyEndTime               int64  `json:"weekly_end_time"`
 	} `json:"model_remains"`
 }
 
@@ -143,50 +152,45 @@ func queryMinimaxQuota(ch *model.Channel) *model.ChannelQuota {
 		return quota
 	}
 
+	if resp.BaseResp.StatusCode != 0 {
+		quota.QueryError = fmt.Sprintf("minimax api error (code %d): %s", resp.BaseResp.StatusCode, resp.BaseResp.StatusMsg)
+		return quota
+	}
+
 	nowMs := time.Now().UnixMilli()
 
-	for _, remain := range resp.ModelRemains {
-		remainingMs := remain.EndTime - nowMs
-		if remainingMs < 0 {
-			remainingMs = 0
-		}
+	// Only use the first model (MiniMax-M*, the main coding model).
+	// API returns 10+ models (speech, video, music, etc.) — showing all creates noise.
+	if len(resp.ModelRemains) > 0 {
+		remain := resp.ModelRemains[0]
 
-		// Interval window (5h)
-		if remain.CurrentIntervalTotal > 0 {
-			usedPercent := float64(remain.CurrentIntervalUsage) / float64(remain.CurrentIntervalTotal) * 100
+		// Interval window (5h) — usage_count is remaining, not used
+		if remain.CurrentIntervalTotalCount > 0 {
+			usedPercent := float64(remain.CurrentIntervalTotalCount-remain.CurrentIntervalUsageCount) / float64(remain.CurrentIntervalTotalCount) * 100
+			remainingMs := remain.EndTime - nowMs
+			if remainingMs < 0 {
+				remainingMs = 0
+			}
 			quota.Windows = append(quota.Windows, model.QuotaWindow{
 				Label:       "5h",
 				UsedPercent: usedPercent,
 				RemainingMs: remainingMs,
 				ResetAt:     remain.EndTime,
 			})
-		} else if remain.CurrentIntervalUsage > 0 {
-			// total=0 but usage>0 → treat as fully exhausted
-			quota.Windows = append(quota.Windows, model.QuotaWindow{
-				Label:       "5h",
-				UsedPercent: 100,
-				RemainingMs: remainingMs,
-				ResetAt:     remain.EndTime,
-			})
 		}
-		// total==0 && usage==0 → no quota window limit, skip
 
 		// Weekly window
-		if remain.CurrentWeeklyTotal > 0 {
-			weeklyPercent := float64(remain.CurrentWeeklyUsage) / float64(remain.CurrentWeeklyTotal) * 100
+		if remain.CurrentWeeklyTotalCount > 0 {
+			weeklyPercent := float64(remain.CurrentWeeklyTotalCount-remain.CurrentWeeklyUsageCount) / float64(remain.CurrentWeeklyTotalCount) * 100
+			weeklyRemainingMs := remain.WeeklyEndTime - nowMs
+			if weeklyRemainingMs < 0 {
+				weeklyRemainingMs = 0
+			}
 			quota.Windows = append(quota.Windows, model.QuotaWindow{
 				Label:       "weekly",
 				UsedPercent: weeklyPercent,
-				RemainingMs: remainingMs,
-				ResetAt:     remain.EndTime,
-			})
-		} else if remain.CurrentWeeklyUsage > 0 {
-			// total=0 but usage>0 → treat as fully exhausted
-			quota.Windows = append(quota.Windows, model.QuotaWindow{
-				Label:       "weekly",
-				UsedPercent: 100,
-				RemainingMs: remainingMs,
-				ResetAt:     remain.EndTime,
+				RemainingMs: weeklyRemainingMs,
+				ResetAt:     remain.WeeklyEndTime,
 			})
 		}
 	}

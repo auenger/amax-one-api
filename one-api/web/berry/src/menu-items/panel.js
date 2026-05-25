@@ -12,11 +12,12 @@ import {
   IconSparkles,
   IconChartBar,
   IconClock,
-  IconArrowDown
+  IconArrowDown,
+  IconDownload
 } from '@tabler/icons-react';
 
 // constant
-const icons = { IconDashboard, IconSitemap, IconArticle, IconCoin, IconAdjustments, IconKey, IconGardenCart, IconUser, IconUserScan, IconSparkles, IconChartBar, IconClock, IconArrowDown };
+const icons = { IconDashboard, IconSitemap, IconArticle, IconCoin, IconAdjustments, IconKey, IconGardenCart, IconUser, IconUserScan, IconSparkles, IconChartBar, IconClock, IconArrowDown, IconDownload };
 
 // ==============================|| DASHBOARD MENU ITEMS ||============================== //
 
@@ -59,6 +60,14 @@ const panel = {
       breadcrumbs: false
     },
     {
+      id: 'download',
+      title: '下载 CC Switch',
+      type: 'item',
+      url: '/download',
+      icon: icons.IconDownload,
+      breadcrumbs: false
+    },
+    {
       id: 'log',
       title: '日志',
       type: 'item',
@@ -77,7 +86,7 @@ const panel = {
     },
     {
       id: 'downgrade',
-      title: '降级策略',
+      title: '降级监控',
       type: 'item',
       url: '/panel/downgrade',
       icon: icons.IconArrowDown,

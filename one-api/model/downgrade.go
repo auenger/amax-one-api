@@ -8,12 +8,12 @@ import (
 	"github.com/songquanpeng/one-api/common/logger"
 )
 
-// ModelDowngradeRule defines a rule that triggers model downgrade
-// when a provider's quota usage reaches the configured threshold.
+// ModelDowngradeRule is DEPRECATED — kept only for AutoMigrate compatibility.
+// Downgrade config is now stored directly on Channel (DowngradeThresholdPct, DowngradeTargetModel).
 type ModelDowngradeRule struct {
 	Id           int    `json:"id" gorm:"primaryKey"`
-	ProviderType int    `json:"provider_type" gorm:"uniqueIndex"` // Channel.Type (provider type)
-	ThresholdPct int    `json:"threshold_pct" gorm:"default:90"`  // Trigger threshold (0-100)
+	ProviderType int    `json:"provider_type" gorm:"uniqueIndex"`
+	ThresholdPct int    `json:"threshold_pct" gorm:"default:90"`
 	TargetModel  string `json:"target_model" gorm:"type:varchar(128)"`
 	Enabled      bool   `json:"enabled" gorm:"default:true"`
 	CreatedAt    int64  `json:"created_at" gorm:"autoCreateTime"`
@@ -24,89 +24,24 @@ func (ModelDowngradeRule) TableName() string {
 	return "model_downgrade_rules"
 }
 
-// Redis key patterns for downgrade markers.
+// Redis key patterns for downgrade markers — keyed by channel ID.
 const (
 	DowngradeRedisKeyPrefix = "channel:downgrade:"
 	DowngradeRedisTTL       = 30 * 60 // 30 minutes in seconds
 )
 
-// DowngradeRedisKey returns the Redis key for a provider type's downgrade marker.
-func DowngradeRedisKey(providerType int) string {
-	return fmt.Sprintf("%s%d", DowngradeRedisKeyPrefix, providerType)
+// DowngradeRedisKey returns the Redis key for a channel's downgrade marker.
+func DowngradeRedisKey(channelId int) string {
+	return fmt.Sprintf("%s%d", DowngradeRedisKeyPrefix, channelId)
 }
 
-// GetDowngradeRules returns all downgrade rules.
-func GetDowngradeRules() ([]ModelDowngradeRule, error) {
-	var rules []ModelDowngradeRule
-	err := DB.Order("id asc").Find(&rules).Error
-	return rules, err
-}
-
-// GetEnabledDowngradeRules returns only enabled downgrade rules.
-func GetEnabledDowngradeRules() ([]ModelDowngradeRule, error) {
-	var rules []ModelDowngradeRule
-	err := DB.Where("enabled = ?", true).Find(&rules).Error
-	return rules, err
-}
-
-// GetDowngradeRuleByProvider returns the downgrade rule for a specific provider type.
-func GetDowngradeRuleByProvider(providerType int) (*ModelDowngradeRule, error) {
-	var rule ModelDowngradeRule
-	err := DB.Where("provider_type = ? AND enabled = ?", providerType, true).First(&rule).Error
-	if err != nil {
-		return nil, err
-	}
-	return &rule, nil
-}
-
-// CreateDowngradeRule creates a new downgrade rule.
-func CreateDowngradeRule(rule *ModelDowngradeRule) error {
-	rule.CreatedAt = time.Now().Unix()
-	rule.UpdatedAt = time.Now().Unix()
-	return DB.Create(rule).Error
-}
-
-// UpdateDowngradeRule updates an existing downgrade rule.
-func UpdateDowngradeRule(rule *ModelDowngradeRule) error {
-	rule.UpdatedAt = time.Now().Unix()
-	return DB.Save(rule).Error
-}
-
-// DeleteDowngradeRule deletes a downgrade rule by ID.
-func DeleteDowngradeRule(id int) error {
-	return DB.Delete(&ModelDowngradeRule{}, id).Error
-}
-
-// GetDowngradeStatus returns the current downgrade status for all providers.
-// It reads the Redis markers to determine which providers are currently downgraded.
-func GetDowngradeStatus() (map[int]string, error) {
-	rules, err := GetDowngradeRules()
-	if err != nil {
-		return nil, err
-	}
-
-	status := make(map[int]string)
-	if !common.RedisEnabled {
-		return status, nil
-	}
-
-	for _, rule := range rules {
-		key := DowngradeRedisKey(rule.ProviderType)
-		data, err := common.RedisGet(key)
-		if err == nil && data != "" {
-			status[rule.ProviderType] = data
-		}
-	}
-	return status, nil
-}
-
-// CheckAndApplyDowngrade checks if a provider type has an active downgrade marker in Redis.
+// CheckAndApplyDowngrade checks if a channel has an active downgrade marker in Redis.
 // Returns the target model if downgrade is active, empty string otherwise.
-func CheckAndApplyDowngrade(providerType int) string {
+func CheckAndApplyDowngrade(channelId int) string {
 	if !common.RedisEnabled {
 		return ""
 	}
-	key := DowngradeRedisKey(providerType)
+	key := DowngradeRedisKey(channelId)
 	data, err := common.RedisGet(key)
 	if err != nil || data == "" {
 		return ""
@@ -114,24 +49,107 @@ func CheckAndApplyDowngrade(providerType int) string {
 	return data
 }
 
-// SetDowngradeMarker writes a downgrade marker to Redis for a provider type.
-func SetDowngradeMarker(providerType int, targetModel string) {
+// SetDowngradeMarker writes a downgrade marker to Redis for a channel.
+func SetDowngradeMarker(channelId int, targetModel string) {
 	if !common.RedisEnabled {
 		return
 	}
-	key := DowngradeRedisKey(providerType)
+	key := DowngradeRedisKey(channelId)
 	if err := common.RedisSet(key, targetModel, time.Duration(DowngradeRedisTTL)*time.Second); err != nil {
-		logger.SysError(fmt.Sprintf("downgrade: failed to set marker for provider %d: %s", providerType, err.Error()))
+		logger.SysError(fmt.Sprintf("downgrade: failed to set marker for channel %d: %s", channelId, err.Error()))
 	}
 }
 
-// RemoveDowngradeMarker removes the downgrade marker for a provider type.
-func RemoveDowngradeMarker(providerType int) {
+// RemoveDowngradeMarker removes the downgrade marker for a channel.
+func RemoveDowngradeMarker(channelId int) {
 	if !common.RedisEnabled {
 		return
 	}
-	key := DowngradeRedisKey(providerType)
+	key := DowngradeRedisKey(channelId)
 	if err := common.RedisDel(key); err != nil {
-		logger.SysError(fmt.Sprintf("downgrade: failed to remove marker for provider %d: %s", providerType, err.Error()))
+		logger.SysError(fmt.Sprintf("downgrade: failed to remove marker for channel %d: %s", channelId, err.Error()))
 	}
+}
+
+// DowngradeChannelStatus holds downgrade info for a single channel.
+type DowngradeChannelStatus struct {
+	ChannelId      int    `json:"channel_id"`
+	ChannelName    string `json:"channel_name"`
+	ProviderType   int    `json:"provider_type"`
+	ThresholdPct   int    `json:"threshold_pct"`
+	TargetModel    string `json:"target_model"`
+	IsActive       bool   `json:"is_active"`
+	ActiveModel    string `json:"active_model,omitempty"`
+}
+
+// GetDowngradeStatus returns the downgrade status for all channels with downgrade configured.
+func GetDowngradeStatus() ([]DowngradeChannelStatus, error) {
+	var channels []Channel
+	if err := DB.Where("downgrade_threshold_pct > 0").Find(&channels).Error; err != nil {
+		return nil, err
+	}
+
+	status := make([]DowngradeChannelStatus, 0, len(channels))
+	for _, ch := range channels {
+		s := DowngradeChannelStatus{
+			ChannelId:    ch.Id,
+			ChannelName:  ch.Name,
+			ProviderType: ch.Type,
+			ThresholdPct: ch.DowngradeThresholdPct,
+			TargetModel:  ch.DowngradeTargetModel,
+		}
+		if common.RedisEnabled {
+			if active := CheckAndApplyDowngrade(ch.Id); active != "" {
+				s.IsActive = true
+				s.ActiveModel = active
+			}
+		}
+		status = append(status, s)
+	}
+	return status, nil
+}
+
+// MigrateDowngradeRulesToChannels performs a one-time migration from the deprecated
+// model_downgrade_rules table to per-channel fields. Safe to call on every startup.
+func MigrateDowngradeRulesToChannels() {
+	// Check if old table exists
+	if !DB.Migrator().HasTable(&ModelDowngradeRule{}) {
+		return
+	}
+
+	var rules []ModelDowngradeRule
+	if err := DB.Where("enabled = ?", true).Find(&rules).Error; err != nil {
+		logger.SysError(fmt.Sprintf("downgrade-migration: failed to read old rules: %s", err.Error()))
+		return
+	}
+	if len(rules) == 0 {
+		return
+	}
+
+	for _, rule := range rules {
+		result := DB.Model(&Channel{}).
+			Where("type = ? AND downgrade_threshold_pct = 0", rule.ProviderType).
+			Updates(map[string]interface{}{
+				"downgrade_threshold_pct": rule.ThresholdPct,
+				"downgrade_target_model":  rule.TargetModel,
+			})
+		if result.RowsAffected > 0 {
+			logger.SysLog(fmt.Sprintf("downgrade-migration: migrated rule for provider %d to %d channels",
+				rule.ProviderType, result.RowsAffected))
+		}
+		if result.Error != nil {
+			logger.SysError(fmt.Sprintf("downgrade-migration: failed to migrate provider %d: %s",
+				rule.ProviderType, result.Error.Error()))
+		}
+	}
+
+	// Clean up old markers that use provider-type keys
+	if common.RedisEnabled {
+		for _, rule := range rules {
+			oldKey := fmt.Sprintf("%s%d", DowngradeRedisKeyPrefix, rule.ProviderType)
+			_ = common.RedisDel(oldKey)
+		}
+	}
+
+	logger.SysLog(fmt.Sprintf("downgrade-migration: completed, processed %d rules", len(rules)))
 }
