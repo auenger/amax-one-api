@@ -217,6 +217,9 @@ func RelayAnthropic(c *gin.Context) {
 				if affinityErr := middleware.RecordAffinityMapping(c, channel.Id); affinityErr != nil {
 					logger.Errorf(ctx, "affinity: failed to record mapping after retry: %s", affinityErr.Error())
 				}
+				if affinityErr := middleware.RecordSessionFallbackMapping(c, channel.Id); affinityErr != nil {
+					logger.Errorf(ctx, "affinity: failed to record session mapping after retry: %s", affinityErr.Error())
+				}
 				break
 			}
 			lastFailedChannelId = c.GetInt(ctxkey.ChannelId)
