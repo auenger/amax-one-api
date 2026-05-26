@@ -45,3 +45,29 @@ func parseTimestamp(s string) (int64, error) {
 	_, err := fmt.Sscanf(s, "%d", &ts)
 	return ts, err
 }
+
+func GetDailyHourlyReport(c *gin.Context) {
+	role := c.GetInt("role")
+
+	username := c.Query("username")
+	if role < model.RoleAdminUser {
+		username = c.GetString("username")
+	}
+
+	date := c.Query("date")
+
+	report, err := model.GetDailyHourlyData(username, date)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data":    report,
+	})
+}
