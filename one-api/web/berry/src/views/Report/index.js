@@ -5,6 +5,7 @@ import { API } from 'utils/api';
 import { showError, isAdmin } from 'utils/common';
 import ReportFilter from './component/ReportFilter';
 import SummaryCards from './component/SummaryCards';
+import DailyHourlyChart from './component/DailyHourlyChart';
 import TrendChart from './component/TrendChart';
 import UserUsageTable from './component/UserUsageTable';
 import ChannelUsageTable from './component/ChannelUsageTable';
@@ -122,6 +123,9 @@ const Report = () => {
       <Grid container spacing={gridSpacing} mt={0}>
         <Grid item xs={12}>
           <SummaryCards isLoading={isLoading} summary={reportData?.summary} />
+        </Grid>
+        <Grid item xs={12}>
+          <DailyHourlyChart />
         </Grid>
         <Grid item xs={12}>
           <TrendChart

@@ -3,6 +3,7 @@ package model
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"gorm.io/gorm"
 
@@ -462,6 +463,67 @@ func GetUsageReport(username string, startTimestamp, endTimestamp int64, granula
 	}
 
 	return report, nil
+}
+
+type DailyHourlyReport struct {
+	Hours        []string    `json:"hours"`
+	ByUserHourly []ReportRow `json:"by_user_hourly"`
+	Usernames    []string    `json:"usernames"`
+}
+
+func GetDailyHourlyData(username string, dateStr string) (*DailyHourlyReport, error) {
+	loc := time.Local
+	var t time.Time
+	if dateStr != "" {
+		var err error
+		t, err = time.ParseInLocation("2006-01-02", dateStr, loc)
+		if err != nil {
+			return nil, fmt.Errorf("invalid date format, expected YYYY-MM-DD")
+		}
+	} else {
+		t = time.Now()
+	}
+
+	year, month, day := t.Date()
+	startTs := time.Date(year, month, day, 0, 0, 0, 0, loc).Unix()
+	endTs := time.Date(year, month, day, 23, 59, 59, 0, loc).Unix()
+
+	expr := hourExpr()
+	base := buildReportBaseQuery(username, startTs, endTs)
+	var rows []ReportRow
+	err := base.Select(
+		expr+" as date",
+		"username",
+		"COUNT(1) as requests",
+		"COALESCE(SUM(prompt_tokens),0) as prompt_tokens",
+		"COALESCE(SUM(completion_tokens),0) as completion_tokens",
+		"COALESCE(SUM(quota),0) as quota",
+	).Group(expr + ", username").Order("date ASC, username ASC").Scan(&rows).Error
+	if err != nil {
+		return nil, err
+	}
+
+	usernameSet := make(map[string]bool)
+	for _, row := range rows {
+		if row.Username != "" {
+			usernameSet[row.Username] = true
+		}
+	}
+	var usernames []string
+	for u := range usernameSet {
+		usernames = append(usernames, u)
+	}
+
+	hours := make([]string, 24)
+	for i := 0; i < 24; i++ {
+		hours[i] = fmt.Sprintf("%02d:00", i)
+	}
+
+	return &DailyHourlyReport{
+		Hours:        hours,
+		ByUserHourly: rows,
+		Usernames:    usernames,
+	}, nil
 }
 
 func SearchLogsByDayAndModel(userId, start, end int) (LogStatistics []*LogStatistic, err error) {

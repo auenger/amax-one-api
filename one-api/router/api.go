@@ -53,6 +53,7 @@ func SetApiRouter(router *gin.Engine) {
 				selfRoute.GET("/channel_quotas", controller.GetUserChannelQuotas)
 				selfRoute.GET("/channel_names", controller.GetUserChannelNames)
 				selfRoute.GET("/report", controller.GetUsageReport)
+				selfRoute.GET("/report/daily", controller.GetDailyHourlyReport)
 			}
 
 			adminRoute := userRoute.Group("/")
