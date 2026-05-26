@@ -1,8 +1,44 @@
 meta:
-  last_updated: '2026-05-25'
+  last_updated: '2026-05-26'
   version: 1
-  total_completed: 36
+  total_completed: 37
 records:
+- id: feat-daily-hourly-chart
+  name: 当日24小时用量图表
+  completed: '2026-05-26'
+  tag: feat-daily-hourly-chart-20260526
+  merge_commit: b3347cc
+  merged_to: main
+  branch_deleted: true
+  branch_name: feature/daily-hourly-chart
+  worktree_deleted: true
+  worktree_path: ../aihub-daily-hourly-chart
+  keywords:
+  - daily
+  - hourly
+  - chart
+  - report
+  - 24小时
+  - 折线图
+  category: fullstack
+  value_points: 2
+  related_features:
+  - feat-usage-chart-granularity
+  - feat-usage-report
+  - feat-usage-report-v2
+  - feat-user-usage-report
+  conflicts:
+    had_conflict: false
+    conflict_files: []
+  verification:
+    status: passed
+    scenarios_total: 5
+    scenarios_passed: 5
+  stats:
+    started: '2026-05-26'
+    duration: same-day
+    commits: 1
+    files_changed: 5
 - id: feat-rate-limit-exhaustion
   name: 429 Rate Limit 渠道自动禁用与恢复
   completed: '2026-05-25'

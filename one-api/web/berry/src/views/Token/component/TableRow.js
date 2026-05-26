@@ -36,7 +36,7 @@ function createMenu(menuItems) {
   );
 }
 
-export default function TokensTableRow({ item, manageToken, handleOpenModal, setModalTokenId }) {
+export default function TokensTableRow({ item, manageToken, handleOpenModal, setModalTokenId, selected, onSelect }) {
   const [open, setOpen] = useState(null);
   const [menuItems, setMenuItems] = useState(null);
   const [openDelete, setOpenDelete] = useState(false);
@@ -107,7 +107,7 @@ export default function TokensTableRow({ item, manageToken, handleOpenModal, set
 
   return (
     <>
-      <TableRow tabIndex={item.id}>
+      <TableRow tabIndex={item.id} hover selected={selected} onClick={onSelect} sx={{ cursor: 'pointer' }}>
         <TableCell>{item.name}</TableCell>
 
         <TableCell>
@@ -132,6 +132,7 @@ export default function TokensTableRow({ item, manageToken, handleOpenModal, set
               id={`switch-${item.id}`}
               checked={statusSwitch === 1}
               onChange={handleStatus}
+              onClick={(e) => e.stopPropagation()}
               // disabled={statusSwitch !== 1 && statusSwitch !== 2}
             />
           </Tooltip>
@@ -148,16 +149,16 @@ export default function TokensTableRow({ item, manageToken, handleOpenModal, set
         <TableCell>
           <Stack direction="row" spacing={1}>
             <Tooltip title="复制令牌" placement="top">
-              <IconButton onClick={() => { copy(`sk-${item.key}`); }} sx={{ color: 'rgb(99, 115, 129)' }}>
+              <IconButton onClick={(e) => { e.stopPropagation(); copy(`sk-${item.key}`); }} sx={{ color: 'rgb(99, 115, 129)' }}>
                 <IconCopy size={'20px'} />
               </IconButton>
             </Tooltip>
             <Tooltip title="导入 cc-switch" placement="top">
-              <IconButton onClick={handleCcSwitchImport} sx={{ color: 'rgb(99, 115, 129)' }}>
+              <IconButton onClick={(e) => { e.stopPropagation(); handleCcSwitchImport(); }} sx={{ color: 'rgb(99, 115, 129)' }}>
                 <IconSparkles size={'20px'} />
               </IconButton>
             </Tooltip>
-            <IconButton onClick={(e) => handleOpenMenu(e)} sx={{ color: 'rgb(99, 115, 129)' }}>
+            <IconButton onClick={(e) => { e.stopPropagation(); handleOpenMenu(e); }} sx={{ color: 'rgb(99, 115, 129)' }}>
               <IconDotsVertical />
             </IconButton>
           </Stack>
@@ -196,5 +197,7 @@ TokensTableRow.propTypes = {
   item: PropTypes.object,
   manageToken: PropTypes.func,
   handleOpenModal: PropTypes.func,
-  setModalTokenId: PropTypes.func
+  setModalTokenId: PropTypes.func,
+  selected: PropTypes.bool,
+  onSelect: PropTypes.func
 };

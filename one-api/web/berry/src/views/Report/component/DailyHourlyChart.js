@@ -9,7 +9,10 @@ import { showError } from 'utils/common';
 
 const USER_COLORS = ['#008FFB', '#00E396', '#FEB019', '#FF4560', '#775DD0', '#00D9E9', '#FF66C3', '#9C27B0'];
 
-const getToday = () => new Date().toISOString().split('T')[0];
+const getToday = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
 
 const DailyHourlyChart = () => {
   const theme = useTheme();

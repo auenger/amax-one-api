@@ -1,10 +1,18 @@
 meta:
-  last_updated: '2026-05-25'
-  total_features: 47
+  last_updated: '2026-05-26'
+  total_features: 49
 active: []
 pending: []
 blocked: []
 completed:
+- id: feat-daily-hourly-chart
+  name: 当日24小时用量图表
+  priority: 60
+  size: S
+  depends_on: []
+  completed_at: '2026-05-26'
+  archive_path: features/archive/done-feat-daily-hourly-chart-20260526
+  value_points: 2
 - id: feat-rate-limit-exhaustion
   name: 429 Rate Limit 渠道自动禁用与恢复
   priority: 85

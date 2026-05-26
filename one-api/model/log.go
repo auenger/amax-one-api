@@ -267,24 +267,27 @@ type channelAggRow struct {
 	Quota            int
 }
 
+// cst is UTC+8 (China Standard Time), used for all report date/hour aggregation.
+var cst = time.FixedZone("CST", 8*3600)
+
 func dayExpr() string {
 	if common.UsingPostgreSQL {
-		return "TO_CHAR(date_trunc('day', to_timestamp(created_at)), 'YYYY-MM-DD')"
+		return "TO_CHAR(date_trunc('day', to_timestamp(created_at) AT TIME ZONE 'Asia/Shanghai'), 'YYYY-MM-DD')"
 	}
 	if common.UsingSQLite {
-		return "strftime('%Y-%m-%d', datetime(created_at, 'unixepoch'))"
+		return "strftime('%Y-%m-%d', datetime(created_at, 'unixepoch', '+8 hours'))"
 	}
-	return "DATE_FORMAT(FROM_UNIXTIME(created_at), '%Y-%m-%d')"
+	return "DATE_FORMAT(DATE_ADD(FROM_UNIXTIME(created_at), INTERVAL 8 HOUR), '%Y-%m-%d')"
 }
 
 func hourExpr() string {
 	if common.UsingPostgreSQL {
-		return "TO_CHAR(date_trunc('hour', to_timestamp(created_at)), 'HH24:00')"
+		return "TO_CHAR(date_trunc('hour', to_timestamp(created_at) AT TIME ZONE 'Asia/Shanghai'), 'HH24:00')"
 	}
 	if common.UsingSQLite {
-		return "strftime('%H:00', datetime(created_at, 'unixepoch'))"
+		return "strftime('%H:00', datetime(created_at, 'unixepoch', '+8 hours'))"
 	}
-	return "DATE_FORMAT(FROM_UNIXTIME(created_at), '%H:00')"
+	return "DATE_FORMAT(DATE_ADD(FROM_UNIXTIME(created_at), INTERVAL 8 HOUR), '%H:00')"
 }
 
 // timeExpr returns the appropriate SQL expression for grouping by time,
@@ -472,21 +475,20 @@ type DailyHourlyReport struct {
 }
 
 func GetDailyHourlyData(username string, dateStr string) (*DailyHourlyReport, error) {
-	loc := time.Local
 	var t time.Time
 	if dateStr != "" {
 		var err error
-		t, err = time.ParseInLocation("2006-01-02", dateStr, loc)
+		t, err = time.ParseInLocation("2006-01-02", dateStr, cst)
 		if err != nil {
 			return nil, fmt.Errorf("invalid date format, expected YYYY-MM-DD")
 		}
 	} else {
-		t = time.Now()
+		t = time.Now().In(cst)
 	}
 
 	year, month, day := t.Date()
-	startTs := time.Date(year, month, day, 0, 0, 0, 0, loc).Unix()
-	endTs := time.Date(year, month, day, 23, 59, 59, 0, loc).Unix()
+	startTs := time.Date(year, month, day, 0, 0, 0, 0, cst).Unix()
+	endTs := time.Date(year, month, day, 23, 59, 59, 0, cst).Unix()
 
 	expr := hourExpr()
 	base := buildReportBaseQuery(username, startTs, endTs)
@@ -527,14 +529,14 @@ func GetDailyHourlyData(username string, dateStr string) (*DailyHourlyReport, er
 }
 
 func SearchLogsByDayAndModel(userId, start, end int) (LogStatistics []*LogStatistic, err error) {
-	groupSelect := "DATE_FORMAT(FROM_UNIXTIME(created_at), '%Y-%m-%d') as day"
+	groupSelect := "DATE_FORMAT(DATE_ADD(FROM_UNIXTIME(created_at), INTERVAL 8 HOUR), '%Y-%m-%d') as day"
 
 	if common.UsingPostgreSQL {
-		groupSelect = "TO_CHAR(date_trunc('day', to_timestamp(created_at)), 'YYYY-MM-DD') as day"
+		groupSelect = "TO_CHAR(date_trunc('day', to_timestamp(created_at) AT TIME ZONE 'Asia/Shanghai'), 'YYYY-MM-DD') as day"
 	}
 
 	if common.UsingSQLite {
-		groupSelect = "strftime('%Y-%m-%d', datetime(created_at, 'unixepoch')) as day"
+		groupSelect = "strftime('%Y-%m-%d', datetime(created_at, 'unixepoch', '+8 hours')) as day"
 	}
 
 	err = LOG_DB.Raw(`

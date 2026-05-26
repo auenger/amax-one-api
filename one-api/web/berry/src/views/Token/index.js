@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { showError, showSuccess } from 'utils/common';
+import { useState, useEffect, useMemo } from 'react';
+import { showError, showSuccess, copy } from 'utils/common';
 
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
@@ -11,13 +11,13 @@ import Alert from '@mui/material/Alert';
 import ButtonGroup from '@mui/material/ButtonGroup';
 import Toolbar from '@mui/material/Toolbar';
 
-import { Button, Card, Box, Stack, Container, Typography } from '@mui/material';
+import { Button, Card, Box, Stack, Container, Typography, TextField } from '@mui/material';
 import TokensTableRow from './component/TableRow';
 import TokenTableHead from './component/TableHead';
 import TableToolBar from 'ui-component/TableToolBar';
 import { API } from 'utils/api';
 import { ITEMS_PER_PAGE } from 'constants';
-import { IconRefresh, IconPlus } from '@tabler/icons-react';
+import { IconRefresh, IconPlus, IconCopy, IconFileSettings } from '@tabler/icons-react';
 import EditeModal from './component/EditModal';
 
 
@@ -28,6 +28,28 @@ export default function Token() {
   const [searchKeyword, setSearchKeyword] = useState('');
   const [openModal, setOpenModal] = useState(false);
   const [editTokenId, setEditTokenId] = useState(0);
+  const [selectedToken, setSelectedToken] = useState(null);
+
+  const serverOrigin = window.location.origin;
+
+  const settingsJson = useMemo(() => {
+    if (!selectedToken) return null;
+    const json = {
+      env: {
+        ANTHROPIC_BASE_URL: `${serverOrigin}`,
+        ANTHROPIC_AUTH_TOKEN: `sk-${selectedToken.key}`,
+        ANTHROPIC_MODEL: "glm-5.1",
+        ANTHROPIC_DEFAULT_HAIKU_MODEL: "glm-4.7",
+        ANTHROPIC_DEFAULT_SONNET_MODEL: "glm-5.1",
+        ANTHROPIC_DEFAULT_OPUS_MODEL: "glm-5.1",
+        ANTHROPIC_DEFAULT_HAIKU_MODEL_NAME: "glm-4.7",
+        ANTHROPIC_DEFAULT_SONNET_MODEL_NAME: "glm-5.1",
+        ANTHROPIC_DEFAULT_OPUS_MODEL_NAME: "glm-5.1",
+        API_TIMEOUT_MS: "3000000"
+      }
+    };
+    return JSON.stringify(json, null, 2);
+  }, [selectedToken, serverOrigin]);
 
   const loadTokens = async (startIdx) => {
     setSearching(true);
@@ -190,6 +212,8 @@ export default function Token() {
                     key={row.id}
                     handleOpenModal={handleOpenModal}
                     setModalTokenId={setEditTokenId}
+                    selected={selectedToken?.id === row.id}
+                    onSelect={() => setSelectedToken(row)}
                   />
                 ))}
               </TableBody>
@@ -205,6 +229,48 @@ export default function Token() {
           rowsPerPageOptions={[ITEMS_PER_PAGE]}
         />
       </Card>
+      {settingsJson && (
+        <Card sx={{ mt: 3, p: 2.5 }}>
+          <Stack direction="row" alignItems="center" justifyContent="space-between" mb={1.5}>
+            <Stack direction="row" alignItems="center" spacing={1}>
+              <IconFileSettings size={20} />
+              <Typography variant="h6">Claude Code settings.json 配置</Typography>
+            </Stack>
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<IconCopy size={16} />}
+              onClick={() => { copy(settingsJson); }}
+            >
+              复制
+            </Button>
+          </Stack>
+          <Alert severity="info" sx={{ mb: 2 }}>
+            当 CC Switch 不可用时，可直接将以上内容复制到项目 <b>.claude/settings.json</b> 文件（如不存在则新建），即可配置 Claude Code 连接本平台。
+          </Alert>
+          <TextField
+            multiline
+            fullWidth
+            minRows={10}
+            maxRows={20}
+            value={settingsJson}
+            InputProps={{
+              readOnly: true,
+              sx: { fontFamily: 'monospace', fontSize: '0.85rem' }
+            }}
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                bgcolor: 'action.hover'
+              }
+            }}
+          />
+        </Card>
+      )}
+      {!settingsJson && (
+        <Alert severity="info" variant="outlined" sx={{ mt: 3 }}>
+          点击令牌行可生成对应的 <b>settings.json</b> 配置模板，用于手动配置 Claude Code。
+        </Alert>
+      )}
       <EditeModal open={openModal} onCancel={handleCloseModal} onOk={handleOkModal} tokenId={editTokenId} />
     </>
   );
