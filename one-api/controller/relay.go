@@ -210,6 +210,9 @@ func Relay(c *gin.Context) {
 			if affinityErr := middleware.RecordAffinityMapping(c, channel.Id); affinityErr != nil {
 				logger.Errorf(ctx, "affinity: failed to record mapping after retry: %s", affinityErr.Error())
 			}
+			if affinityErr := middleware.RecordSessionFallbackMapping(c, channel.Id); affinityErr != nil {
+				logger.Errorf(ctx, "affinity: failed to record session mapping after retry: %s", affinityErr.Error())
+			}
 			return
 		}
 		channelId := c.GetInt(ctxkey.ChannelId)
@@ -241,6 +244,11 @@ func shouldRetry(c *gin.Context, statusCode int) bool {
 			c.Set(ctxkey.SpecificChannelId, "") // Clear to allow random selection in retry
 			c.Set(ctxkey.OriginalModel, c.GetString(ctxkey.RequestModel))
 			logger.Infof(c.Request.Context(), "affinity: bound channel failed, clearing mapping and allowing retry")
+		} else if _, hasFallback := c.Get(ctxkey.SessionFallbackId); hasFallback {
+			middleware.ClearAffinityMapping(c)
+			c.Set(ctxkey.SpecificChannelId, "")
+			c.Set(ctxkey.OriginalModel, c.GetString(ctxkey.RequestModel))
+			logger.Infof(c.Request.Context(), "affinity: bound channel failed (session fallback), clearing mapping and allowing retry")
 		} else {
 			return false // Explicit channel selection (e.g., sk-xxx-channelId), no retry
 		}

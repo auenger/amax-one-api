@@ -71,6 +71,10 @@ func Distribute() func(c *gin.Context) {
 		if err := RecordAffinityMapping(c, channel.Id); err != nil {
 			logger.Errorf(ctx, "affinity: failed to record mapping: %s", err.Error())
 		}
+		// Record session fallback mapping if present
+		if err := RecordSessionFallbackMapping(c, channel.Id); err != nil {
+			logger.Errorf(ctx, "affinity: failed to record session mapping: %s", err.Error())
+		}
 		c.Next()
 	}
 }
