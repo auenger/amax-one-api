@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Grid, Typography, Stack } from '@mui/material';
 import { gridSpacing } from 'store/constant';
 import { API } from 'utils/api';
-import { showError, isAdmin } from 'utils/common';
+import { showError } from 'utils/common';
 import ReportFilter from './component/ReportFilter';
 import SummaryCards from './component/SummaryCards';
 import DailyHourlyChart from './component/DailyHourlyChart';
@@ -31,8 +31,6 @@ const Report = () => {
     username: '',
     ...getDefaultTimeRange()
   });
-
-  const userIsAdmin = isAdmin();
 
   const computeGranularity = useCallback(() => {
     if (!filter.start_timestamp || !filter.end_timestamp) return 'day';
@@ -118,7 +116,7 @@ const Report = () => {
         handleSearch={handleSearch}
         handleReset={handleReset}
         usernameOptions={usernameOptions}
-        showUsernameFilter={userIsAdmin}
+        showUsernameFilter={true}
       />
       <Grid container spacing={gridSpacing} mt={0}>
         <Grid item xs={12}>

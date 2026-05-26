@@ -1,11 +1,26 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Grid, Typography, Box, TextField, Stack, useTheme } from '@mui/material';
+import {
+  Grid,
+  Typography,
+  Box,
+  TextField,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TablePagination,
+  TableSortLabel,
+  useTheme
+} from '@mui/material';
 import Chart from 'react-apexcharts';
 import MainCard from 'ui-component/cards/MainCard';
 import { gridSpacing } from 'store/constant';
 import SkeletonTotalGrowthBarChart from 'ui-component/cards/Skeleton/TotalGrowthBarChart';
 import { API } from 'utils/api';
-import { showError } from 'utils/common';
+import { showError, calculateQuota, renderNumber } from 'utils/common';
 
 const USER_COLORS = ['#008FFB', '#00E396', '#FEB019', '#FF4560', '#775DD0', '#00D9E9', '#FF66C3', '#9C27B0'];
 
@@ -19,6 +34,12 @@ const DailyHourlyChart = () => {
   const [date, setDate] = useState(getToday());
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
+
+  // --- table state ---
+  const [tablePage, setTablePage] = useState(0);
+  const [tableRowsPerPage, setTableRowsPerPage] = useState(25);
+  const [tableOrder, setTableOrder] = useState('asc');
+  const [tableOrderBy, setTableOrderBy] = useState('quota');
 
   const loadData = async (selectedDate) => {
     setLoading(true);
@@ -40,6 +61,10 @@ const DailyHourlyChart = () => {
   useEffect(() => {
     loadData(date);
   }, [date]);
+
+  useEffect(() => {
+    setTablePage(0);
+  }, [data]);
 
   const handleDateChange = (e) => {
     setDate(e.target.value);
@@ -107,6 +132,35 @@ const DailyHourlyChart = () => {
     return { tokenSeries: tokenSeriesData, requestSeries: requestSeriesData, chartOptions: baseOptions };
   }, [data, theme.palette.mode]);
 
+  const handleTableSort = (property) => {
+    const isAsc = tableOrderBy === property && tableOrder === 'asc';
+    setTableOrder(isAsc ? 'desc' : 'asc');
+    setTableOrderBy(property);
+  };
+
+  const tableRows = useMemo(() => {
+    if (!data || !data.by_user_hourly) return [];
+    const agg = {};
+    data.by_user_hourly.forEach((row) => {
+      if (!agg[row.username]) {
+        agg[row.username] = { username: row.username, requests: 0, prompt_tokens: 0, completion_tokens: 0, quota: 0 };
+      }
+      agg[row.username].requests += row.requests;
+      agg[row.username].prompt_tokens += row.prompt_tokens;
+      agg[row.username].completion_tokens += row.completion_tokens;
+      agg[row.username].quota += row.quota;
+    });
+    return Object.values(agg);
+  }, [data]);
+
+  const sortedTableRows = useMemo(() => {
+    const comparator =
+      tableOrder === 'desc'
+        ? (a, b) => (b[tableOrderBy] < a[tableOrderBy] ? -1 : b[tableOrderBy] > a[tableOrderBy] ? 1 : 0)
+        : (a, b) => (a[tableOrderBy] < b[tableOrderBy] ? -1 : a[tableOrderBy] > b[tableOrderBy] ? 1 : 0);
+    return [...tableRows].sort(comparator);
+  }, [tableRows, tableOrder, tableOrderBy]);
+
   if (loading) {
     return <SkeletonTotalGrowthBarChart />;
   }
@@ -119,6 +173,16 @@ const DailyHourlyChart = () => {
       </Typography>
     </Box>
   );
+
+  const tableHeadCells = [
+    { id: 'username', label: '用户名', sortable: true },
+    { id: 'requests', label: '请求次数', sortable: true },
+    { id: 'prompt_tokens', label: 'Prompt Tokens', sortable: true },
+    { id: 'completion_tokens', label: 'Completion Tokens', sortable: true },
+    { id: 'quota', label: '费用', sortable: true }
+  ];
+
+  const paginatedTableRows = sortedTableRows.slice(tablePage * tableRowsPerPage, tablePage * tableRowsPerPage + tableRowsPerPage);
 
   return (
     <MainCard>
@@ -136,7 +200,8 @@ const DailyHourlyChart = () => {
             />
           </Stack>
         </Grid>
-        <Grid item xs={12} md={6}>
+        {/* Token 用量图 - 100% 宽度 */}
+        <Grid item xs={12}>
           <Typography variant="h4" sx={{ mb: 1 }}>
             Token 用量
           </Typography>
@@ -161,7 +226,8 @@ const DailyHourlyChart = () => {
             noDataBox
           )}
         </Grid>
-        <Grid item xs={12} md={6}>
+        {/* 请求次数图 - 100% 宽度 */}
+        <Grid item xs={12}>
           <Typography variant="h4" sx={{ mb: 1 }}>
             请求次数
           </Typography>
@@ -182,6 +248,74 @@ const DailyHourlyChart = () => {
               type="line"
               height={350}
             />
+          ) : (
+            noDataBox
+          )}
+        </Grid>
+        {/* 当日24小时用量明细表 */}
+        <Grid item xs={12}>
+          <Typography variant="h4" sx={{ mt: 2, mb: 1 }}>
+            24小时用量明细
+          </Typography>
+          {hasData ? (
+            <TableContainer>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    {tableHeadCells.map((headCell) => (
+                      <TableCell key={headCell.id} sortDirection={tableOrderBy === headCell.id ? tableOrder : false}>
+                        {headCell.sortable ? (
+                          <TableSortLabel
+                            active={tableOrderBy === headCell.id}
+                            direction={tableOrderBy === headCell.id ? tableOrder : 'asc'}
+                            onClick={() => handleTableSort(headCell.id)}
+                          >
+                            {headCell.label}
+                          </TableSortLabel>
+                        ) : (
+                          headCell.label
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {paginatedTableRows.length > 0 ? (
+                    paginatedTableRows.map((row, index) => (
+                      <TableRow hover key={`${row.username}_${index}`}>
+                        <TableCell>{row.username || '-'}</TableCell>
+                        <TableCell>{renderNumber(row.requests)}</TableCell>
+                        <TableCell>{renderNumber(row.prompt_tokens)}</TableCell>
+                        <TableCell>{renderNumber(row.completion_tokens)}</TableCell>
+                        <TableCell>{'$' + calculateQuota(row.quota)}</TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={tableHeadCells.length} align="center">
+                        <Typography variant="body1" color="textSecondary" sx={{ py: 3 }}>
+                          暂无数据
+                        </Typography>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+              <TablePagination
+                component="div"
+                count={tableRows.length}
+                page={tablePage}
+                onPageChange={(_, newPage) => setTablePage(newPage)}
+                rowsPerPage={tableRowsPerPage}
+                onRowsPerPageChange={(e) => {
+                  setTableRowsPerPage(parseInt(e.target.value, 10));
+                  setTablePage(0);
+                }}
+                rowsPerPageOptions={[10, 25, 50]}
+                labelRowsPerPage="每页行数"
+                labelDisplayedRows={({ from, to, count }) => `${from}-${to} / 共 ${count} 条`}
+              />
+            </TableContainer>
           ) : (
             noDataBox
           )}

@@ -9,13 +9,7 @@ import (
 )
 
 func GetUsageReport(c *gin.Context) {
-	role := c.GetInt("role")
-
 	username := c.Query("username")
-	// Non-admin users can only see their own data
-	if role < model.RoleAdminUser {
-		username = c.GetString("username")
-	}
 
 	startTimestamp, _ := parseTimestamp(c.Query("start_timestamp"))
 	endTimestamp, _ := parseTimestamp(c.Query("end_timestamp"))
@@ -47,12 +41,7 @@ func parseTimestamp(s string) (int64, error) {
 }
 
 func GetDailyHourlyReport(c *gin.Context) {
-	role := c.GetInt("role")
-
 	username := c.Query("username")
-	if role < model.RoleAdminUser {
-		username = c.GetString("username")
-	}
 
 	date := c.Query("date")
 
