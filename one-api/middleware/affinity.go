@@ -8,7 +8,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/songquanpeng/one-api/common"
-	"github.com/songquanpeng/one-api/common/config"
 	"github.com/songquanpeng/one-api/common/ctxkey"
 	"github.com/songquanpeng/one-api/common/logger"
 	"github.com/songquanpeng/one-api/model"
@@ -59,16 +58,8 @@ func Affinity() func(c *gin.Context) {
 		ctx := c.Request.Context()
 		conversationId := ExtractConversationId(c)
 		if conversationId == "" {
-			// No conversation_id, proceed with normal distribution
-			if config.DebugEnabled {
-				logger.Debugf(ctx, "affinity probe | no conversation_id found")
-			}
 			c.Next()
 			return
-		}
-
-		if config.DebugEnabled {
-			logger.Debugf(ctx, "affinity probe | conversation_id=%s", conversationId)
 		}
 
 		// Store conversation_id in context for later use (e.g., recording mapping after distribution)
