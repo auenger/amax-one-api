@@ -1,8 +1,45 @@
 meta:
   last_updated: '2026-05-26'
   version: 1
-  total_completed: 38
+  total_completed: 39
 records:
+- id: feat-affinity-fallback
+  name: Fallback 自动亲和（Token+Model 绑定）
+  completed: '2026-05-26'
+  tag: feat-affinity-fallback-20260526
+  merge_commit: a17683c
+  merged_to: main
+  branch_deleted: true
+  branch_name: feature/affinity-fallback
+  worktree_deleted: true
+  worktree_path: ../aihub-affinity-fallback
+  keywords:
+  - affinity
+  - fallback
+  - session
+  - claude-code
+  - session-id
+  - redis
+  - ttl
+  - middleware
+  category: backend
+  value_points: 1
+  related_features:
+  - feat-affinity-debug-probe
+  - feat-affinity-auto-bind
+  - feat-channel-affinity
+  conflicts:
+    had_conflict: false
+    conflict_files: []
+  verification:
+    status: passed
+    scenarios_total: 3
+    scenarios_passed: 3
+  stats:
+    started: '2026-05-26'
+    duration: same-day
+    commits: 1
+    files_changed: 6
 - id: feat-affinity-debug-probe
   name: 请求调试探针
   completed: '2026-05-26'

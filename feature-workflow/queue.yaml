@@ -3,14 +3,24 @@ meta:
   total_features: 51
 active: []
 pending:
+- id: feat-glm-coding-plan
+  name: 智谱 GLM Coding Plan 渠道支持
+  priority: 70
+  size: M
+  depends_on: []
+  added: '2026-05-26'
+  value_points: 2
+blocked: []
+completed:
 - id: feat-affinity-auto-bind
   name: Claude Code 会话亲和增强（自动绑定）
   priority: 80
   size: M
   split: true
-  depends_on: []
-  added: '2026-05-26'
+  completed_at: '2026-05-26'
+  archive_path: features/archive
   value_points: 2
+  note: Split parent — all children completed
   children:
   - feat-affinity-debug-probe
   - feat-affinity-fallback
@@ -21,17 +31,9 @@ pending:
   parent: feat-affinity-auto-bind
   depends_on:
   - feat-affinity-debug-probe
-  added: '2026-05-26'
+  completed_at: '2026-05-26'
+  archive_path: features/archive/done-feat-affinity-fallback-20260526
   value_points: 1
-- id: feat-glm-coding-plan
-  name: 智谱 GLM Coding Plan 渠道支持
-  priority: 70
-  size: M
-  depends_on: []
-  added: '2026-05-26'
-  value_points: 2
-blocked: []
-completed:
 - id: feat-affinity-debug-probe
   name: 请求调试探针
   priority: 80

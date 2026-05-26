@@ -89,6 +89,15 @@ Then 使用显式亲和，不触发 fallback
 ```
 
 ### General Checklist
-- [ ] 不影响现有 conversation_id 亲和
-- [ ] 独立 Redis key prefix
-- [ ] Fallback TTL 可配置
+- [x] 不影响现有 conversation_id 亲和
+- [x] 独立 Redis key prefix
+- [x] Fallback TTL 可配置
+
+## Merge Record
+- **Completed**: 2026-05-26
+- **Branch**: feature/affinity-fallback
+- **Merge Commit**: a17683c
+- **Archive Tag**: feat-affinity-fallback-20260526
+- **Conflicts**: none
+- **Verification**: 12/12 tests passed
+- **Stats**: 6 files changed, 228 insertions, 112 deletions, 1 commit
