@@ -1,10 +1,19 @@
 meta:
   last_updated: '2026-05-25'
-  total_features: 46
+  total_features: 47
 active: []
-pending:
+pending: []
 blocked: []
 completed:
+- id: feat-rate-limit-exhaustion
+  name: 429 Rate Limit 渠道自动禁用与恢复
+  priority: 85
+  size: S
+  depends_on:
+  - feat-quota-exhaustion-recovery
+  completed_at: '2026-05-25'
+  archive_path: features/archive/done-feat-rate-limit-exhaustion-20260525
+  value_points: 2
 - id: feat-model-downgrade-strategy
   name: 模型降级策略（配额百分比驱动）
   priority: 70

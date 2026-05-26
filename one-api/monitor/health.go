@@ -135,6 +135,7 @@ func EvaluateHealth(health *ChannelHealth) HealthStatus {
 }
 
 // EvaluateRecovery determines if a channel should recover to a better state.
+// Channels with active quota exhaustion markers are blocked from recovery.
 func EvaluateRecovery(currentStatus HealthStatus, health *ChannelHealth) HealthStatus {
 	switch currentStatus {
 	case HealthStatusUnhealthy:
@@ -182,23 +183,36 @@ func RecordHealthCheck(channelId int, success bool, latencyMs int) (oldStatus, n
 		health.ErrorRate = float64(health.TotalFailures) / float64(health.TotalChecks)
 	}
 
-	// Apply recovery logic first
+	// Determine proposed status from probe metrics
 	newStatus = EvaluateRecovery(oldStatus, health)
-	if newStatus != oldStatus {
-		health.Status = newStatus
-	} else {
-		// Then apply degradation logic
+	if newStatus == oldStatus {
 		newStatus = EvaluateHealth(health)
-		health.Status = newStatus
 	}
 
-	// Reset counters on recovery
+	// Block ANY status upgrade away from Unhealthy/Degraded if quota is exhausted.
+	// This must run after both evaluation paths to close the bypass where
+	// EvaluateHealth could jump unhealthy → healthy in one step.
+	if oldStatus == HealthStatusUnhealthy && newStatus != HealthStatusUnhealthy {
+		if IsQuotaExhausted(channelId) {
+			newStatus = oldStatus
+		}
+	}
+	if oldStatus == HealthStatusDegraded && newStatus == HealthStatusHealthy {
+		if IsQuotaExhausted(channelId) {
+			newStatus = oldStatus
+		}
+	}
+
+	health.Status = newStatus
+
+	// Reset counters on recovery to healthy
 	if newStatus == HealthStatusHealthy {
 		health.ConsecutiveFailures = 0
 		health.ConsecutiveSuccess = 0
 		health.TotalChecks = 0
 		health.TotalFailures = 0
 		health.ErrorRate = 0
+		health.Reason = ""
 	}
 
 	if err := SetChannelHealth(channelId, health); err != nil {
@@ -341,9 +355,16 @@ func MarkChannelQuotaRecovered(channelId int) {
 // MarkChannelRateLimitExhausted marks a channel as unhealthy due to 429 rate_limit_error
 // with quota exhaustion. Reuses the quota exhaustion infrastructure (Redis marker + Unhealthy status).
 func MarkChannelRateLimitExhausted(channelId int, reason string, ttl time.Duration) {
+	// Always update the Redis marker TTL, even if already unhealthy,
+	// so the reset time stays accurate.
+	if ttl <= 0 {
+		ttl = quotaExhaustedDefaultTTL
+	}
+	if common.RedisEnabled {
+		_ = common.RedisSet(quotaExhaustedKey(channelId), reason, ttl)
+	}
 	health, err := GetChannelHealth(channelId)
 	if err == nil && health.Status == HealthStatusUnhealthy {
-		// Already unhealthy — skip duplicate marking
 		return
 	}
 	MarkChannelQuotaExhausted(channelId, reason, ttl)
@@ -425,8 +446,42 @@ func runHealthChecks() {
 	}
 }
 
-// checkChannelHealth probes a single channel and records the result.
+// getCachedQuotaWindows reads cached quota window data from Redis.
+// Returns nil if no data is available (provider doesn't support windowed quotas
+// or cache has expired).
+func getCachedQuotaWindows(channelId int) []model.QuotaWindow {
+	if !common.RedisEnabled {
+		return nil
+	}
+	data, err := common.RedisGet(model.QuotaRedisKey(channelId))
+	if err != nil || data == "" {
+		return nil
+	}
+	var quota model.ChannelQuota
+	if err := json.Unmarshal([]byte(data), &quota); err != nil {
+		return nil
+	}
+	return quota.Windows
+}
+
+// checkChannelHealth checks a channel's health using quota data first,
+// falling back to HTTP probe for providers without windowed quotas.
 func checkChannelHealth(channel *model.Channel) {
+	// Quota-aware check: if any window shows 100% usage, mark unhealthy
+	// and skip the /v1/models probe (it succeeds even when quota is exhausted).
+	windows := getCachedQuotaWindows(channel.Id)
+	if windows != nil {
+		for _, w := range windows {
+			if w.UsedPercent >= 100.0 {
+				MarkChannelQuotaExhausted(channel.Id,
+					fmt.Sprintf("health-check: %s=%.1f%%", w.Label, w.UsedPercent),
+					0)
+				return
+			}
+		}
+	}
+
+	// HTTP probe for connectivity / providers without quota APIs
 	start := time.Now()
 	success := probeChannel(channel)
 	latencyMs := int(time.Since(start).Milliseconds())

@@ -1,8 +1,53 @@
 meta:
   last_updated: '2026-05-25'
   version: 1
-  total_completed: 35
+  total_completed: 36
 records:
+- id: feat-rate-limit-exhaustion
+  name: 429 Rate Limit 渠道自动禁用与恢复
+  completed: '2026-05-25'
+  tag: feat-rate-limit-exhaustion-20260525
+  merge_commit: fc1fc47
+  merged_to: main
+  branch_deleted: true
+  branch_name: feature/rate-limit-exhaustion
+  worktree_deleted: true
+  worktree_path: ../aihub-rate-limit-exhaustion
+  keywords:
+  - rate-limit
+  - 429
+  - quota
+  - exhaustion
+  - channel
+  - unhealthy
+  - degraded
+  - glm
+  - 1308
+  - rate_limit_error
+  - ttl
+  - auto-recovery
+  - health
+  - monitor
+  - relay
+  - idempotent
+  category: backend
+  value_points: 2
+  related_features:
+  - feat-quota-exhaustion-recovery
+  - feat-model-downgrade-strategy
+  - feat-channel-failover
+  conflicts:
+    had_conflict: false
+    conflict_files: []
+  verification:
+    status: passed
+    scenarios_total: 4
+    scenarios_passed: 4
+  stats:
+    started: '2026-05-25'
+    duration: ~5min
+    commits: 1
+    files_changed: 2
 - id: feat-model-downgrade-strategy
   name: 模型降级策略（配额百分比驱动）
   completed: '2026-05-25'
