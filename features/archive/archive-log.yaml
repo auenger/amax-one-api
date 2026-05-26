@@ -1,8 +1,20 @@
 meta:
   last_updated: '2026-05-26'
   version: 1
-  total_completed: 37
+  total_completed: 38
 records:
+- id: feat-affinity-debug-probe
+  name: 请求调试探针
+  completed: '2026-05-26'
+  tag: feat-affinity-debug-probe-20260526
+  merged_to: main
+  branch_deleted: true
+  keywords:
+  - debug
+  - probe
+  - relay
+  - affinity
+  - headers
 - id: feat-daily-hourly-chart
   name: 当日24小时用量图表
   completed: '2026-05-26'

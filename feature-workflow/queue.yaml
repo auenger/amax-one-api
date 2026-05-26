@@ -1,10 +1,46 @@
 meta:
   last_updated: '2026-05-26'
-  total_features: 49
+  total_features: 51
 active: []
-pending: []
+pending:
+- id: feat-affinity-auto-bind
+  name: Claude Code 会话亲和增强（自动绑定）
+  priority: 80
+  size: M
+  split: true
+  depends_on: []
+  added: '2026-05-26'
+  value_points: 2
+  children:
+  - feat-affinity-debug-probe
+  - feat-affinity-fallback
+- id: feat-affinity-fallback
+  name: Fallback 自动亲和（Token+Model 绑定）
+  priority: 75
+  size: S
+  parent: feat-affinity-auto-bind
+  depends_on:
+  - feat-affinity-debug-probe
+  added: '2026-05-26'
+  value_points: 1
+- id: feat-glm-coding-plan
+  name: 智谱 GLM Coding Plan 渠道支持
+  priority: 70
+  size: M
+  depends_on: []
+  added: '2026-05-26'
+  value_points: 2
 blocked: []
 completed:
+- id: feat-affinity-debug-probe
+  name: 请求调试探针
+  priority: 80
+  size: S
+  parent: feat-affinity-auto-bind
+  depends_on: []
+  completed_at: '2026-05-26'
+  archive_path: features/archive/done-feat-affinity-debug-probe-20260526
+  value_points: 1
 - id: feat-daily-hourly-chart
   name: 当日24小时用量图表
   priority: 60

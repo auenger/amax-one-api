@@ -141,8 +141,38 @@ func Relay(c *gin.Context) {
 	ctx := c.Request.Context()
 	relayMode := relaymode.GetByPath(c.Request.URL.Path)
 	if config.DebugEnabled {
-		requestBody, _ := common.GetRequestBody(c)
-		logger.Debugf(ctx, "request body: %s", string(requestBody))
+		_, _ = common.GetRequestBody(c)
+		logger.Debugf(ctx, "relay probe | method=%s path=%s", c.Request.Method, c.Request.URL.Path)
+		// Headers
+		for k, vs := range c.Request.Header {
+			if strings.EqualFold(k, "Authorization") {
+				for _, v := range vs {
+					masked := v
+					if len(v) > 8 {
+						masked = v[:8] + "..."
+					}
+					logger.Debugf(ctx, "relay probe | header: %s=%s", k, masked)
+				}
+			} else {
+				for _, v := range vs {
+					logger.Debugf(ctx, "relay probe | header: %s=%s", k, v)
+				}
+			}
+		}
+		// Body key fields
+		var probeReq struct {
+			User           interface{} `json:"user"`
+			Metadata       interface{} `json:"metadata"`
+			ConversationID string      `json:"conversation_id"`
+			Model          string      `json:"model"`
+		}
+		_ = common.UnmarshalBodyReusable(c, &probeReq)
+		logger.Debugf(ctx, "relay probe | body: model=%s user=%v metadata=%v conversation_id=%s",
+			probeReq.Model, probeReq.User, probeReq.Metadata, probeReq.ConversationID)
+		// Affinity state
+		conversationId := c.GetString(ctxkey.ConversationId)
+		specificChannelId := c.GetString(ctxkey.SpecificChannelId)
+		logger.Debugf(ctx, "relay probe | affinity: conversation_id=%s specific_channel_id=%s", conversationId, specificChannelId)
 	}
 	channelId := c.GetInt(ctxkey.ChannelId)
 	userId := c.GetInt(ctxkey.Id)
