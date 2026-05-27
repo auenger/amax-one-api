@@ -1,8 +1,58 @@
 meta:
-  last_updated: '2026-05-26'
-  total_features: 51
+  last_updated: '2026-05-28'
+  total_features: 64
 active: []
 pending:
+- id: feat-skill-marketplace-v2
+  name: Skill Marketplace V2 重构
+  priority: 65
+  size: L
+  split: true
+  depends_on: []
+  added: '2026-05-27'
+  value_points: 4
+  children:
+  - feat-skill-project-org
+  - feat-skill-multi-format
+- id: feat-mcp-proxy
+  name: MCP 代理平台
+  priority: 75
+  size: L
+  split: true
+  depends_on:
+  - feat-glm-coding-plan
+  added: '2026-05-27'
+  value_points: 3
+  children:
+  - feat-mcp-server
+  - feat-mcp-upstream-proxy
+  - feat-mcp-management
+- id: feat-mcp-server
+  name: MCP Server 协议端点
+  priority: 75
+  size: S
+  parent: feat-mcp-proxy
+  depends_on: []
+  added: '2026-05-27'
+  value_points: 1
+- id: feat-mcp-upstream-proxy
+  name: 上游 MCP 代理中转
+  priority: 75
+  size: S
+  parent: feat-mcp-proxy
+  depends_on:
+  - feat-mcp-server
+  added: '2026-05-27'
+  value_points: 1
+- id: feat-mcp-management
+  name: MCP 供应商管理界面
+  priority: 75
+  size: S
+  parent: feat-mcp-proxy
+  depends_on:
+  - feat-mcp-upstream-proxy
+  added: '2026-05-27'
+  value_points: 1
 - id: feat-glm-coding-plan
   name: 智谱 GLM Coding Plan 渠道支持
   priority: 70
@@ -12,6 +62,41 @@ pending:
   value_points: 2
 blocked: []
 completed:
+- id: feat-skill-multi-format
+  name: 多格式 Skill 与智能上传
+  priority: 65
+  size: M
+  parent: feat-skill-marketplace-v2
+  depends_on:
+  - feat-skill-project-org
+  completed_at: '2026-05-28'
+  archive_path: features/archive/done-feat-skill-multi-format-20260528
+  value_points: 2
+- id: feat-skill-project-org
+  name: 项目组织与协作权限
+  priority: 65
+  size: M
+  parent: feat-skill-marketplace-v2
+  depends_on: []
+  completed_at: '2026-05-28'
+  archive_path: features/archive/done-feat-skill-project-org-20260528
+  value_points: 2
+- id: feat-skill-marketplace
+  name: Skill Marketplace
+  priority: 50
+  size: M
+  depends_on: []
+  completed_at: '2026-05-27'
+  archive_path: features/archive/done-feat-skill-marketplace-20260527
+  value_points: 4
+- id: feat-fallback-model
+  name: 兜底模型（全局降级路由）
+  priority: 80
+  size: M
+  depends_on: []
+  completed_at: '2026-05-27'
+  archive_path: features/archive/done-feat-fallback-model-20260527
+  value_points: 2
 - id: feat-affinity-auto-bind
   name: Claude Code 会话亲和增强（自动绑定）
   priority: 80

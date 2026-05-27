@@ -1,8 +1,159 @@
 meta:
-  last_updated: '2026-05-26'
+  last_updated: '2026-05-28'
   version: 1
-  total_completed: 39
+  total_completed: 44
 records:
+- id: feat-downgrade-limit-window
+  name: 降级阈值基于限速窗口（5h）
+  completed: '2026-05-28'
+  tag: feat-downgrade-limit-window-20260528
+  merged_to: main
+  branch_deleted: true
+  branch_name: feature/downgrade-limit-window
+  worktree_deleted: true
+  worktree_path: ../aihub-downgrade-limit-window
+  keywords:
+  - downgrade
+  - limit-window
+  - 5h
+  - quota
+  - threshold
+  - label-filter
+  - cleanup
+  category: backend
+  value_points: 1
+  related_features:
+  - feat-model-downgrade-strategy
+  - feat-fallback-model
+  conflicts:
+    had_conflict: false
+    conflict_files: []
+  verification:
+    status: passed
+    scenarios_total: 5
+    scenarios_passed: 5
+  stats:
+    started: '2026-05-28'
+    duration: same-day
+    commits: 1
+    files_changed: 1
+- id: feat-skill-multi-format
+  name: 多格式 Skill 与智能上传
+  completed: '2026-05-28'
+  tag: feat-skill-multi-format-20260528
+  merge_commit: ca85962
+  merged_to: main
+  branch_deleted: true
+  branch_name: feature/skill-multi-format
+  worktree_deleted: true
+  worktree_path: ../aihub-skill-multi-format
+  keywords: [skill, multi-format, zip, markdown, upload, jszip, folder, webkitdirectory, multipart, skill.md, archive, simple, complex, skilltype, path-traversal, size-limit, progress, packaging]
+  category: fullstack
+  value_points: 2
+  related_features: [feat-skill-project-org, feat-skill-marketplace, feat-skill-marketplace-v2]
+  conflicts:
+    had_conflict: false
+    conflict_files: []
+  verification:
+    status: passed
+    scenarios_total: 7
+    scenarios_passed: 7
+  stats:
+    started: '2026-05-28'
+    duration: same-day
+    commits: 1
+    files_changed: 4
+- id: feat-skill-project-org
+  name: 项目组织与协作权限
+  completed: '2026-05-28'
+  tag: feat-skill-project-org-20260528
+  merge_commit: ab2e893
+  merged_to: main
+  branch_deleted: true
+  branch_name: feature/skill-project-org
+  worktree_deleted: true
+  worktree_path: ../aihub-skill-project-org
+  keywords: [skill, project, organization, permission, collaboration, skillproject, projectid, two-level, browse, admin, owner, crud]
+  category: fullstack
+  value_points: 2
+  related_features: [feat-skill-marketplace, feat-skill-multi-format, feat-skill-marketplace-v2]
+  conflicts:
+    had_conflict: false
+    conflict_files: []
+  verification:
+    status: passed
+    scenarios_total: 7
+    scenarios_passed: 7
+  stats:
+    started: '2026-05-28'
+    duration: same-day
+    commits: 1
+    files_changed: 7
+- id: feat-skill-marketplace
+  name: Skill Marketplace
+  completed: '2026-05-27'
+  tag: feat-skill-marketplace-20260527
+  merge_commit: 326535e
+  merged_to: main
+  branch_deleted: true
+  branch_name: feature/skill-marketplace
+  worktree_deleted: true
+  worktree_path: ../aihub-skill-marketplace
+  keywords: [skill, marketplace, claude-code, yaml, markdown, upload, download, install, curl]
+  category: fullstack
+  value_points: 4
+  related_features: [feat-model-marketplace, feat-marketplace-card-enhance, feat-marketplace-flat-layout]
+  conflicts:
+    had_conflict: false
+    conflict_files: []
+  verification:
+    status: passed
+    scenarios_total: 10
+    scenarios_passed: 10
+  stats:
+    started: '2026-05-27'
+    duration: same-day
+    commits: 1
+    files_changed: 7
+- id: feat-fallback-model
+  name: 兜底模型（全局降级路由）
+  completed: '2026-05-27'
+  tag: feat-fallback-model-20260527
+  merge_commit: dafbaaf
+  merged_to: main
+  branch_deleted: true
+  branch_name: feature/fallback-model
+  worktree_deleted: true
+  worktree_path: ../aihub-fallback-model
+  keywords:
+  - fallback
+  - model
+  - degradation
+  - routing
+  - affinity
+  - redis
+  - distributor
+  -兜底
+  - 降级
+  category: fullstack
+  value_points: 2
+  related_features:
+  - feat-affinity-fallback
+  - feat-model-downgrade-strategy
+  - feat-channel-failover
+  - feat-channel-routing
+  conflicts:
+    had_conflict: false
+    conflict_files: []
+  verification:
+    status: passed
+    scenarios_total: 6
+    scenarios_passed: 6
+  stats:
+    started: '2026-05-27'
+    duration: same-day
+    commits: 1
+    files_changed: 6
 - id: feat-affinity-fallback
   name: Fallback 自动亲和（Token+Model 绑定）
   completed: '2026-05-26'
