@@ -169,5 +169,20 @@ func SetApiRouter(router *gin.Engine) {
 		{
 			downgradeRoute.GET("/status", controller.GetDowngradeStatus)
 		}
+		// Skill Marketplace
+		skillRoute := apiRouter.Group("/skill")
+		skillRoute.Use(middleware.UserAuth())
+		{
+			skillRoute.GET("/", controller.GetAllSkills)
+			skillRoute.GET("/search", controller.SearchSkills)
+			skillRoute.GET("/self", controller.GetUserSkills)
+			skillRoute.GET("/categories", controller.GetSkillCategories)
+			skillRoute.GET("/:id", controller.GetSkill)
+			skillRoute.POST("/", controller.CreateSkill)
+			skillRoute.PUT("/", controller.UpdateSkill)
+			skillRoute.DELETE("/:id", controller.DeleteSkill)
+			skillRoute.GET("/:id/download", controller.DownloadSkill)
+			skillRoute.GET("/:id/install", controller.GetInstallCommand)
+		}
 	}
 }

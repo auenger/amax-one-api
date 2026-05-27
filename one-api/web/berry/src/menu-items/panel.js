@@ -13,11 +13,12 @@ import {
   IconChartBar,
   IconClock,
   IconArrowDown,
-  IconDownload
+  IconDownload,
+  IconBook
 } from '@tabler/icons-react';
 
 // constant
-const icons = { IconDashboard, IconSitemap, IconArticle, IconCoin, IconAdjustments, IconKey, IconGardenCart, IconUser, IconUserScan, IconSparkles, IconChartBar, IconClock, IconArrowDown, IconDownload };
+const icons = { IconDashboard, IconSitemap, IconArticle, IconCoin, IconAdjustments, IconKey, IconGardenCart, IconUser, IconUserScan, IconSparkles, IconChartBar, IconClock, IconArrowDown, IconDownload, IconBook };
 
 // ==============================|| DASHBOARD MENU ITEMS ||============================== //
 
@@ -40,6 +41,14 @@ const panel = {
       type: 'item',
       url: '/panel/models',
       icon: icons.IconSparkles,
+      breadcrumbs: false
+    },
+    {
+      id: 'skills',
+      title: 'Skill 市场',
+      type: 'item',
+      url: '/panel/skills',
+      icon: icons.IconBook,
       breadcrumbs: false
     },
     {

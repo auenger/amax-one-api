@@ -14,6 +14,7 @@ const Profile = Loadable(lazy(() => import('views/Profile')));
 const ModelMarket = Loadable(lazy(() => import('views/ModelMarket')));
 const Report = Loadable(lazy(() => import('views/Report')));
 const DowngradeRules = Loadable(lazy(() => import('views/DowngradeRules')));
+const SkillMarket = Loadable(lazy(() => import('views/SkillMarket')));
 const NotFoundView = Loadable(lazy(() => import('views/Error')));
 
 // dashboard routing
@@ -64,6 +65,10 @@ const MainRoutes = {
     {
       path: 'report',
       element: <Report />
+    },
+    {
+      path: 'skills',
+      element: <SkillMarket />
     },
     {
       path: 'profile',
