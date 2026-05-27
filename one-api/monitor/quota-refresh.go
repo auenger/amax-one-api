@@ -573,6 +573,9 @@ func checkDowngradeRules(channel *model.Channel, quota *model.ChannelQuota) {
 	threshold := float64(channel.DowngradeThresholdPct)
 	triggered := false
 	for _, w := range quota.Windows {
+		if w.Label != "5h" {
+			continue
+		}
 		if w.UsedPercent >= threshold {
 			triggered = true
 			break
@@ -581,7 +584,7 @@ func checkDowngradeRules(channel *model.Channel, quota *model.ChannelQuota) {
 
 	if triggered {
 		model.SetDowngradeMarker(channel.Id, channel.DowngradeTargetModel)
-		logger.SysLog(fmt.Sprintf("downgrade: channel #%d (%s) quota %.1f%% >= threshold %d%%, downgrading to model %s",
+		logger.SysLog(fmt.Sprintf("downgrade: channel #%d (%s) 5h-window quota %.1f%% >= threshold %d%%, downgrading to model %s",
 			channel.Id, channel.Name, quota.Windows[0].UsedPercent, channel.DowngradeThresholdPct, channel.DowngradeTargetModel))
 	}
 }
@@ -604,10 +607,13 @@ func cleanupDowngradeMarkers(channels []*model.Channel) {
 			continue
 		}
 
-		// Check if all windows are below threshold
+		// Check if the 5h window is below threshold
 		threshold := float64(ch.DowngradeThresholdPct)
 		allBelow := true
 		for _, w := range quota.Windows {
+			if w.Label != "5h" {
+				continue
+			}
 			if w.UsedPercent >= threshold {
 				allBelow = false
 				break
