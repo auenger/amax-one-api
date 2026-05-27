@@ -164,3 +164,7 @@ var UserContentRequestTimeout = env.Int("USER_CONTENT_REQUEST_TIMEOUT", 30)
 
 var EnforceIncludeUsage = env.Bool("ENFORCE_INCLUDE_USAGE", false)
 var TestPrompt = env.String("TEST_PROMPT", "Output only your specific model name with no additional text.")
+
+var FallbackEnabled = false
+var FallbackChannelId int64 = 0
+var FallbackModel = ""

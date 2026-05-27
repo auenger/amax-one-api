@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/songquanpeng/one-api/common"
+	"github.com/songquanpeng/one-api/common/config"
 	"github.com/songquanpeng/one-api/common/ctxkey"
 	"github.com/songquanpeng/one-api/common/logger"
 	"github.com/songquanpeng/one-api/model"
@@ -15,28 +17,21 @@ import (
 )
 
 const (
-	// AffinityHeader is the HTTP header used to specify conversation affinity.
-	AffinityHeader = "X-Conversation-Id"
-	// AffinityQueryParam is the query parameter used to specify conversation affinity.
-	AffinityQueryParam = "conversation_id"
-	// AffinityRedisKeyPrefix is the Redis key prefix for conversation affinity mappings.
-	AffinityRedisKeyPrefix = "affinity:"
-	// DefaultAffinityTTLOneHour is the default TTL for conversation affinity mappings (1 hour).
-	DefaultAffinityTTLOneHour = 3600
-	// SessionFallbackHeader is the HTTP header for Claude Code session-based fallback affinity.
-	SessionFallbackHeader = "X-Claude-Code-Session-Id"
-	// AffinitySessionKeyPrefix is the Redis key prefix for session fallback affinity mappings.
-	AffinitySessionKeyPrefix = "affinity:session:"
-	// DefaultAffinityFallbackTTL is the default TTL for session fallback mappings (30 minutes).
-	DefaultAffinityFallbackTTL = 1800
+	AffinityHeader              = "X-Conversation-Id"
+	AffinityQueryParam          = "conversation_id"
+	AffinityRedisKeyPrefix      = "affinity:"
+	DefaultAffinityTTLOneHour   = 3600
+	SessionFallbackHeader       = "X-Claude-Code-Session-Id"
+	AffinitySessionKeyPrefix    = "affinity:session:"
+	DefaultAffinityFallbackTTL  = 1800
+	FallbackAffinityKeyPrefix   = "fallback-affinity:"
+	FallbackAffinitySessionKeyPrefix = "fallback-affinity:session:"
 )
 
-// conversationIdRequest is used to extract conversation_id from request body.
 type conversationIdRequest struct {
 	ConversationID string `json:"conversation_id"`
 }
 
-// getAffinityTTL returns the TTL duration for conversation affinity mappings.
 func getAffinityTTL() time.Duration {
 	ttlSeconds := DefaultAffinityTTLOneHour
 	if envTTL := os.Getenv("AFFINITY_TTL_SECONDS"); envTTL != "" {
@@ -47,7 +42,6 @@ func getAffinityTTL() time.Duration {
 	return time.Duration(ttlSeconds) * time.Second
 }
 
-// getAffinityFallbackTTL returns the TTL duration for session fallback affinity mappings.
 func getAffinityFallbackTTL() time.Duration {
 	ttlSeconds := DefaultAffinityFallbackTTL
 	if envTTL := os.Getenv("AFFINITY_FALLBACK_TTL_SECONDS"); envTTL != "" {
@@ -59,9 +53,14 @@ func getAffinityFallbackTTL() time.Duration {
 }
 
 // Affinity returns a Gin middleware that implements session-affinity routing.
-// Priority: explicit conversation_id (header/query/body) > session fallback (X-Claude-Code-Session-Id) > normal routing.
+// Priority: fallback affinity (sticky) > conversation affinity > session fallback > normal routing.
 func Affinity() func(c *gin.Context) {
 	return func(c *gin.Context) {
+		// Check fallback affinity first (sticky fallback model binding)
+		if lookupFallbackAffinity(c) {
+			return
+		}
+
 		conversationId := ExtractConversationId(c)
 		if conversationId != "" {
 			c.Set(ctxkey.ConversationId, conversationId)
@@ -69,7 +68,6 @@ func Affinity() func(c *gin.Context) {
 			return
 		}
 
-		// Fallback: try session-based affinity for clients without conversation_id (e.g., Claude Code)
 		sessionId := extractSessionFallbackId(c)
 		if sessionId != "" {
 			c.Set(ctxkey.SessionFallbackId, sessionId)
@@ -79,6 +77,90 @@ func Affinity() func(c *gin.Context) {
 
 		c.Next()
 	}
+}
+
+// lookupFallbackAffinity checks if this conversation/session has a sticky fallback model binding.
+// Returns true if fallback affinity was found and applied (channel bound).
+func lookupFallbackAffinity(c *gin.Context) bool {
+	ctx := c.Request.Context()
+
+	if !config.FallbackEnabled || !common.RedisEnabled {
+		return false
+	}
+
+	if _, ok := c.Get(ctxkey.SpecificChannelId); ok {
+		return false
+	}
+
+	// Try conversation-based fallback affinity first
+	var affinityKey string
+	conversationId := ExtractConversationId(c)
+	if conversationId != "" {
+		affinityKey = FallbackAffinityKeyPrefix + conversationId
+		c.Set(ctxkey.ConversationId, conversationId)
+	} else {
+		sessionId := extractSessionFallbackId(c)
+		if sessionId != "" {
+			affinityKey = FallbackAffinitySessionKeyPrefix + sessionId
+			c.Set(ctxkey.SessionFallbackId, sessionId)
+		}
+	}
+
+	if affinityKey == "" {
+		return false
+	}
+
+	value, err := common.RedisGet(affinityKey)
+	if err != nil {
+		return false
+	}
+
+	// Value format: "{channelId}:{model}"
+	parts := strings.SplitN(value, ":", 2)
+	if len(parts) != 2 {
+		_ = common.RedisDel(affinityKey)
+		logger.Errorf(ctx, "fallback-affinity: invalid mapping value '%s' for %s, clearing", value, affinityKey)
+		return false
+	}
+
+	channelId, err := strconv.Atoi(parts[0])
+	if err != nil {
+		_ = common.RedisDel(affinityKey)
+		logger.Errorf(ctx, "fallback-affinity: invalid channel ID '%s' for %s, clearing", parts[0], affinityKey)
+		return false
+	}
+	fallbackModel := parts[1]
+
+	// Validate fallback channel
+	channel, err := model.GetChannelById(channelId, true)
+	if err != nil || channel.Status != model.ChannelStatusEnabled {
+		_ = common.RedisDel(affinityKey)
+		logger.Infof(ctx, "fallback-affinity: channel %d unavailable for %s, clearing mapping", channelId, affinityKey)
+		return false
+	}
+
+	// Check health
+	if common.RedisEnabled {
+		healthStatus := monitor.GetChannelHealthStatus(channelId)
+		if healthStatus == monitor.HealthStatusUnhealthy {
+			_ = common.RedisDel(affinityKey)
+			logger.Infof(ctx, "fallback-affinity: channel %d unhealthy for %s, clearing mapping", channelId, affinityKey)
+			return false
+		}
+	}
+
+	// Check fallback channel still supports the fallback model
+	if !model.ChannelSupportsModel(channel, fallbackModel) {
+		_ = common.RedisDel(affinityKey)
+		logger.Infof(ctx, "fallback-affinity: channel %d does not support model %s, clearing mapping", channelId, fallbackModel)
+		return false
+	}
+
+	c.Set(ctxkey.SpecificChannelId, strconv.Itoa(channelId))
+	c.Set(ctxkey.FallbackModelOverride, fallbackModel)
+	logger.Infof(ctx, "fallback-affinity: %s → channel %d, model %s", affinityKey, channelId, fallbackModel)
+	c.Next()
+	return true
 }
 
 // lookupAffinityMapping looks up an affinity mapping in Redis and validates the bound channel.
@@ -152,7 +234,6 @@ func lookupAffinityMapping(c *gin.Context, keyPrefix, affinityId string) {
 }
 
 // ExtractConversationId extracts the conversation_id from the request.
-// Priority: X-Conversation-Id header > conversation_id query param > body field
 func ExtractConversationId(c *gin.Context) string {
 	if id := c.Request.Header.Get(AffinityHeader); id != "" {
 		return id
@@ -168,7 +249,6 @@ func ExtractConversationId(c *gin.Context) string {
 	return ""
 }
 
-// extractSessionFallbackId extracts the session ID from X-Claude-Code-Session-Id header.
 func extractSessionFallbackId(c *gin.Context) string {
 	return c.Request.Header.Get(SessionFallbackHeader)
 }
@@ -209,16 +289,49 @@ func RecordSessionFallbackMapping(c *gin.Context, channelId int) error {
 	return nil
 }
 
-// ClearAffinityMapping removes all affinity mappings (conversation + session fallback) from Redis.
+// RecordFallbackAffinity records a conversation/session → fallback channel+model mapping in Redis.
+func RecordFallbackAffinity(c *gin.Context, channelId int, fallbackModel string) error {
+	if !config.FallbackEnabled {
+		return nil
+	}
+
+	value := fmt.Sprintf("%d:%s", channelId, fallbackModel)
+	ttl := getAffinityTTL()
+
+	if conversationId, exists := c.Get(ctxkey.ConversationId); exists {
+		convIdStr := conversationId.(string)
+		err := common.RedisSet(FallbackAffinityKeyPrefix+convIdStr, value, ttl)
+		if err != nil {
+			return fmt.Errorf("failed to record fallback affinity: %w", err)
+		}
+		logger.Debugf(c.Request.Context(), "fallback-affinity: recorded %s → %s (TTL: %ds)", convIdStr, value, int(ttl.Seconds()))
+	}
+
+	if sessionId, exists := c.Get(ctxkey.SessionFallbackId); exists {
+		sessionIdStr := sessionId.(string)
+		sessionTTL := getAffinityFallbackTTL()
+		err := common.RedisSet(FallbackAffinitySessionKeyPrefix+sessionIdStr, value, sessionTTL)
+		if err != nil {
+			return fmt.Errorf("failed to record fallback affinity session: %w", err)
+		}
+		logger.Debugf(c.Request.Context(), "fallback-affinity: recorded session %s → %s (TTL: %ds)", sessionIdStr, value, int(sessionTTL.Seconds()))
+	}
+
+	return nil
+}
+
+// ClearAffinityMapping removes all affinity mappings (conversation + session fallback + fallback affinity) from Redis.
 func ClearAffinityMapping(c *gin.Context) {
 	if conversationId, exists := c.Get(ctxkey.ConversationId); exists {
 		convIdStr := conversationId.(string)
 		_ = common.RedisDel(AffinityRedisKeyPrefix + convIdStr)
+		_ = common.RedisDel(FallbackAffinityKeyPrefix + convIdStr)
 		logger.Infof(c.Request.Context(), "affinity: cleared mapping for conversation %s", convIdStr)
 	}
 	if sessionId, exists := c.Get(ctxkey.SessionFallbackId); exists {
 		sessionIdStr := sessionId.(string)
 		_ = common.RedisDel(AffinitySessionKeyPrefix + sessionIdStr)
+		_ = common.RedisDel(FallbackAffinitySessionKeyPrefix + sessionIdStr)
 		logger.Infof(c.Request.Context(), "affinity: cleared session mapping for %s", sessionIdStr)
 	}
 }

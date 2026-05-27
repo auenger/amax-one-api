@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
-import { showError } from 'utils/common';
+import { showError, showSuccess } from 'utils/common';
 import { API } from 'utils/api';
 import AdminContainer from 'ui-component/AdminContainer';
 import {
   Card,
+  CardContent,
   Table,
   TableBody,
   TableCell,
@@ -15,9 +16,13 @@ import {
   Chip,
   Stack,
   Alert,
-  Box
+  Box,
+  Switch,
+  TextField,
+  FormControlLabel,
+  Divider
 } from '@mui/material';
-import { IconRefresh, IconArrowDown } from '@tabler/icons-react';
+import { IconRefresh, IconArrowDown, IconDeviceFloppy } from '@tabler/icons-react';
 import { CHANNEL_OPTIONS } from 'constants/ChannelConstants';
 
 const getProviderName = (type) => {
@@ -27,6 +32,12 @@ const getProviderName = (type) => {
 export default function DowngradeRules() {
   const [channels, setChannels] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [fallback, setFallback] = useState({
+    FallbackEnabled: 'false',
+    FallbackChannelId: '',
+    FallbackModel: ''
+  });
+  const [fallbackLoading, setFallbackLoading] = useState(false);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -44,21 +55,149 @@ export default function DowngradeRules() {
     setLoading(false);
   }, []);
 
+  const loadFallbackOptions = useCallback(async () => {
+    try {
+      const res = await API.get('/api/option/');
+      const { success, data, message } = res.data;
+      if (success) {
+        const opts = {};
+        data.forEach((item) => {
+          if (['FallbackEnabled', 'FallbackChannelId', 'FallbackModel'].includes(item.key)) {
+            opts[item.key] = item.value;
+          }
+        });
+        setFallback((prev) => ({ ...prev, ...opts }));
+      } else {
+        showError(message);
+      }
+    } catch (e) {
+      showError(e.message);
+    }
+  }, []);
+
   useEffect(() => {
     loadData();
-  }, [loadData]);
+    loadFallbackOptions();
+  }, [loadData, loadFallbackOptions]);
 
   const activeCount = channels.filter((c) => c.is_active).length;
+  const fallbackEnabled = fallback.FallbackEnabled === 'true';
+
+  const handleFallbackChange = (field, value) => {
+    setFallback((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleFallbackToggle = async () => {
+    const newValue = fallbackEnabled ? 'false' : 'true';
+    setFallbackLoading(true);
+    try {
+      const res = await API.put('/api/option/', { key: 'FallbackEnabled', value: newValue });
+      const { success, message } = res.data;
+      if (success) {
+        setFallback((prev) => ({ ...prev, FallbackEnabled: newValue }));
+        showSuccess(newValue === 'true' ? '兜底模型已启用' : '兜底模型已禁用');
+      } else {
+        showError(message);
+      }
+    } catch (e) {
+      showError(e.message);
+    }
+    setFallbackLoading(false);
+  };
+
+  const handleFallbackSave = async () => {
+    if (fallbackEnabled) {
+      if (!fallback.FallbackChannelId || fallback.FallbackChannelId === '0') {
+        showError('启用状态下渠道 ID 不能为空');
+        return;
+      }
+      if (!fallback.FallbackModel) {
+        showError('启用状态下兜底模型名称不能为空');
+        return;
+      }
+    }
+    setFallbackLoading(true);
+    try {
+      const updates = [
+        API.put('/api/option/', { key: 'FallbackChannelId', value: fallback.FallbackChannelId || '0' }),
+        API.put('/api/option/', { key: 'FallbackModel', value: fallback.FallbackModel || '' })
+      ];
+      await Promise.all(updates);
+      showSuccess('兜底模型配置已保存');
+    } catch (e) {
+      showError(e.message);
+    }
+    setFallbackLoading(false);
+  };
 
   return (
     <>
       <AdminContainer>
         <Stack direction="row" alignItems="center" justifyContent="space-between" mb={2}>
           <Typography variant="h4">降级监控</Typography>
-          <Button variant="outlined" startIcon={<IconRefresh />} onClick={loadData} disabled={loading}>
+          <Button variant="outlined" startIcon={<IconRefresh />} onClick={() => { loadData(); loadFallbackOptions(); }} disabled={loading}>
             刷新
           </Button>
         </Stack>
+
+        {/* Fallback Model Config Card */}
+        <Card sx={{ mb: 2 }}>
+          <CardContent>
+            <Stack direction="row" alignItems="center" justifyContent="space-between" mb={1}>
+              <Typography variant="h6">兜底模型</Typography>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={fallbackEnabled}
+                    onChange={handleFallbackToggle}
+                    disabled={fallbackLoading}
+                    color="primary"
+                  />
+                }
+                label={fallbackEnabled ? '已启用' : '未启用'}
+              />
+            </Stack>
+            <Typography variant="body2" color="textSecondary" mb={2}>
+              当目标模型的渠道不可用时，自动将请求路由到兜底渠道的兜底模型，保证服务可用性。
+            </Typography>
+            <Divider sx={{ mb: 2 }} />
+            <Stack direction="row" spacing={2} alignItems="center" mb={2}>
+              <TextField
+                label="兜底渠道 ID"
+                type="number"
+                size="small"
+                value={fallback.FallbackChannelId === '0' ? '' : fallback.FallbackChannelId}
+                onChange={(e) => handleFallbackChange('FallbackChannelId', e.target.value)}
+                disabled={!fallbackEnabled || fallbackLoading}
+                placeholder="例如: 5"
+                sx={{ width: 180 }}
+              />
+              <TextField
+                label="兜底模型名称"
+                size="small"
+                value={fallback.FallbackModel}
+                onChange={(e) => handleFallbackChange('FallbackModel', e.target.value)}
+                disabled={!fallbackEnabled || fallbackLoading}
+                placeholder="例如: gpt-4o-mini"
+                sx={{ width: 300 }}
+              />
+              <Button
+                variant="contained"
+                startIcon={<IconDeviceFloppy />}
+                onClick={handleFallbackSave}
+                disabled={!fallbackEnabled || fallbackLoading}
+                size="small"
+              >
+                保存
+              </Button>
+            </Stack>
+            {fallbackEnabled && fallback.FallbackChannelId && fallback.FallbackModel && (
+              <Alert severity="info" sx={{ mt: 1 }}>
+                兜底配置：渠道 #{fallback.FallbackChannelId} → {fallback.FallbackModel}
+              </Alert>
+            )}
+          </CardContent>
+        </Card>
 
         {activeCount > 0 && (
           <Alert severity="warning" sx={{ mb: 2 }} icon={<IconArrowDown size={20} />}>
