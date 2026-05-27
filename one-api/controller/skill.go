@@ -20,7 +20,8 @@ func GetAllSkills(c *gin.Context) {
 		p = 0
 	}
 	category := c.Query("category")
-	skills, err := model.GetAllSkills(p*config.ItemsPerPage, config.ItemsPerPage, category)
+	projectId, _ := strconv.Atoi(c.Query("project_id"))
+	skills, err := model.GetAllSkills(p*config.ItemsPerPage, config.ItemsPerPage, category, projectId)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
@@ -59,7 +60,8 @@ func GetUserSkills(c *gin.Context) {
 	if p < 0 {
 		p = 0
 	}
-	skills, err := model.GetUserSkills(userId, p*config.ItemsPerPage, config.ItemsPerPage)
+	projectId, _ := strconv.Atoi(c.Query("project_id"))
+	skills, err := model.GetUserSkills(userId, p*config.ItemsPerPage, config.ItemsPerPage, projectId)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
@@ -108,6 +110,23 @@ func CreateSkill(c *gin.Context) {
 		})
 		return
 	}
+	// Validate project_id
+	if skill.ProjectId <= 0 {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "请选择所属项目",
+		})
+		return
+	}
+	// Verify project exists
+	_, err := model.GetSkillProjectById(skill.ProjectId)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "项目不存在",
+		})
+		return
+	}
 	// validate file type
 	ext := strings.ToLower(filepath.Ext(skill.FileName))
 	if ext != ".yaml" && ext != ".yml" && ext != ".md" {
@@ -142,6 +161,8 @@ func CreateSkill(c *gin.Context) {
 
 func UpdateSkill(c *gin.Context) {
 	userId := c.GetInt(ctxkey.Id)
+	role := c.GetInt(ctxkey.Role)
+	isAdmin := role >= model.RoleAdminUser
 	skill := model.Skill{}
 	if err := c.ShouldBindJSON(&skill); err != nil {
 		c.JSON(http.StatusOK, gin.H{
@@ -158,7 +179,7 @@ func UpdateSkill(c *gin.Context) {
 		})
 		return
 	}
-	if existing.UserId != userId {
+	if !isAdmin && existing.UserId != userId {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
 			"message": "无权限修改此 Skill",
@@ -171,6 +192,9 @@ func UpdateSkill(c *gin.Context) {
 	existing.Content = skill.Content
 	existing.FileName = skill.FileName
 	existing.Version = skill.Version
+	if skill.ProjectId > 0 {
+		existing.ProjectId = skill.ProjectId
+	}
 	existing.UpdatedTime = helper.GetTimestamp()
 	if err := existing.Update(); err != nil {
 		c.JSON(http.StatusOK, gin.H{

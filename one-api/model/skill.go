@@ -15,7 +15,9 @@ type Skill struct {
 	Id          int    `json:"id"`
 	UserId      int    `json:"user_id" gorm:"index"`
 	UserName    string `json:"user_name" gorm:"-"`
-	Name        string `json:"name" gorm:"index"`
+	ProjectId   int    `json:"project_id" gorm:"index;not null"`
+	ProjectName string `json:"project_name" gorm:"-"`
+	Name        string `json:"name" gorm:"uniqueIndex:idx_project_name;size:128"`
 	Description string `json:"description" gorm:"type:text"`
 	Category    string `json:"category" gorm:"size:64;index"`
 	Content     string `json:"content" gorm:"type:longtext"`
@@ -33,7 +35,7 @@ func (s *Skill) Insert() error {
 }
 
 func (s *Skill) Update() error {
-	return DB.Model(s).Select("name", "description", "category", "content", "file_name", "file_type", "version", "status", "updated_time").Updates(s).Error
+	return DB.Model(s).Select("name", "description", "category", "content", "file_name", "file_type", "version", "status", "project_id", "updated_time").Updates(s).Error
 }
 
 func (s *Skill) Delete() error {
@@ -57,14 +59,22 @@ func GetSkillById(id int) (*Skill, error) {
 			skill.UserName = user.Username
 		}
 	}
+	// fill project name
+	var project SkillProject
+	if err := DB.Select("name").First(&project, "id = ?", skill.ProjectId).Error; err == nil {
+		skill.ProjectName = project.Name
+	}
 	return &skill, nil
 }
 
-func GetAllSkills(startIdx int, num int, category string) ([]*Skill, error) {
+func GetAllSkills(startIdx int, num int, category string, projectId int) ([]*Skill, error) {
 	var skills []*Skill
 	query := DB.Where("status = ?", SkillStatusEnabled)
 	if category != "" {
 		query = query.Where("category = ?", category)
+	}
+	if projectId > 0 {
+		query = query.Where("project_id = ?", projectId)
 	}
 	err := query.Order("id desc").Limit(num).Offset(startIdx).Find(&skills).Error
 	if err != nil {
@@ -91,9 +101,13 @@ func SearchSkills(keyword string, category string) ([]*Skill, error) {
 	return skills, nil
 }
 
-func GetUserSkills(userId int, startIdx int, num int) ([]*Skill, error) {
+func GetUserSkills(userId int, startIdx int, num int, projectId int) ([]*Skill, error) {
 	var skills []*Skill
-	err := DB.Where("user_id = ?", userId).Order("id desc").Limit(num).Offset(startIdx).Find(&skills).Error
+	query := DB.Where("user_id = ?", userId)
+	if projectId > 0 {
+		query = query.Where("project_id = ?", projectId)
+	}
+	err := query.Order("id desc").Limit(num).Offset(startIdx).Find(&skills).Error
 	if err != nil {
 		return nil, err
 	}

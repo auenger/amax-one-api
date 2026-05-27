@@ -175,6 +175,11 @@ func migrateDB() error {
 	if err = DB.AutoMigrate(&Skill{}); err != nil {
 		return err
 	}
+	if err = DB.AutoMigrate(&SkillProject{}); err != nil {
+		return err
+	}
+	// Migrate existing Skills: assign to default project if project_id is 0
+	MigrateSkillsToProjects()
 	return nil
 }
 
