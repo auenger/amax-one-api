@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   Box,
   Card,
@@ -21,8 +21,7 @@ import {
   DialogActions,
   Button,
   TextareaAutosize,
-  Breadcrumbs,
-  Link
+  LinearProgress
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { API } from 'utils/api';
@@ -42,10 +41,15 @@ import {
   IconChevronRight,
   IconArrowLeft,
   IconEdit,
-  IconPencil
+  IconPencil,
+  IconFileZip,
+  IconFolderUp
 } from '@tabler/icons-react';
+import JSZip from 'jszip';
 
 const SKILL_CATEGORIES = ['编码', '调试', '测试', '部署', '文档', '工具', '其他'];
+
+const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 
 const ProjectCard = ({ project, user, theme, onClick, onDelete, onEdit }) => {
   const isOwner = user && project.user_id === user.id;
@@ -108,9 +112,10 @@ const ProjectCard = ({ project, user, theme, onClick, onDelete, onEdit }) => {
   );
 };
 
-const SkillCard = ({ skill, user, theme, onDownload, onInstall, onDelete }) => {
+const SkillCard = ({ skill, user, theme, onDownload, onInstall, onDelete, onDetail }) => {
   const isOwner = user && skill.user_id === user.id;
   const isAdmin = user && user.role >= 10;
+  const isComplex = skill.skill_type === 'complex';
 
   return (
     <Card
@@ -127,13 +132,23 @@ const SkillCard = ({ skill, user, theme, onDownload, onInstall, onDelete }) => {
     >
       <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 1 }}>
-          <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Box sx={{ flex: 1, minWidth: 0, cursor: 'pointer' }} onClick={() => onDetail(skill)}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-              <IconFileText size={18} color={theme.palette.primary.main} />
+              {isComplex ? (
+                <IconFileZip size={18} color={theme.palette.warning.main} />
+              ) : (
+                <IconFileText size={18} color={theme.palette.primary.main} />
+              )}
               <Typography variant="subtitle2" sx={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {skill.name}
               </Typography>
-              <Chip label={skill.file_type?.toUpperCase()} size="small" variant="outlined" sx={{ fontSize: '0.6rem', height: 18, '& .MuiChip-label': { px: 0.5 } }} />
+              <Chip
+                label={isComplex ? 'ZIP' : skill.file_type?.toUpperCase()}
+                size="small"
+                variant="outlined"
+                color={isComplex ? 'warning' : 'default'}
+                sx={{ fontSize: '0.6rem', height: 18, '& .MuiChip-label': { px: 0.5 } }}
+              />
               {skill.category && (
                 <Chip label={skill.category} size="small" color="primary" variant="filled" sx={{ fontSize: '0.6rem', height: 18, '& .MuiChip-label': { px: 0.5 } }} />
               )}
@@ -162,7 +177,7 @@ const SkillCard = ({ skill, user, theme, onDownload, onInstall, onDelete }) => {
                 <IconTerminal size={18} />
               </IconButton>
             </Tooltip>
-            <Tooltip title="下载" arrow>
+            <Tooltip title={isComplex ? '下载 ZIP' : '下载'} arrow>
               <IconButton size="small" onClick={() => onDownload(skill)} sx={{ color: theme.palette.text.secondary }}>
                 <IconDownload size={18} />
               </IconButton>
@@ -291,24 +306,189 @@ const EditProjectDialog = ({ open, project, onClose, onUpdated, theme }) => {
 };
 
 const UploadDialog = ({ open, onClose, onCreated, theme, projectId }) => {
-  const [form, setForm] = useState({ name: '', description: '', category: '工具', fileName: '', content: '', version: '1.0' });
+  const [form, setForm] = useState({ name: '', description: '', category: '工具', version: '1.0' });
   const [loading, setLoading] = useState(false);
+  const [uploadMode, setUploadMode] = useState('file'); // 'file' | 'folder'
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [folderZip, setFolderZip] = useState(null);
+  const [folderFiles, setFolderFiles] = useState([]);
+  const [hasSkillMd, setHasSkillMd] = useState(null); // null = not checked yet
+  const [skillMdPreview, setSkillMdPreview] = useState('');
+  const [packagingProgress, setPackagingProgress] = useState(0);
+  const [isPackaging, setIsPackaging] = useState(false);
+  const fileInputRef = useRef(null);
+  const folderInputRef = useRef(null);
 
-  const handleSubmit = async () => {
-    if (!form.name || !form.fileName || !form.content) {
-      showError('请填写名称、文件名和内容');
+  const resetState = useCallback(() => {
+    setForm({ name: '', description: '', category: '工具', version: '1.0' });
+    setSelectedFile(null);
+    setFolderZip(null);
+    setFolderFiles([]);
+    setHasSkillMd(null);
+    setSkillMdPreview('');
+    setPackagingProgress(0);
+    setIsPackaging(false);
+  }, []);
+
+  const handleClose = () => {
+    resetState();
+    onClose();
+  };
+
+  // Handle file selection (.md or .zip)
+  const handleFileSelect = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+    if (ext !== '.md' && ext !== '.zip') {
+      showError('仅支持 .md 和 .zip 文件');
       return;
     }
+    if (file.size > MAX_FILE_SIZE) {
+      showError('文件大小超过 20MB 限制');
+      return;
+    }
+
+    setSelectedFile(file);
+    setFolderZip(null);
+    setHasSkillMd(null);
+
+    // Auto-fill name from filename
+    if (!form.name) {
+      setForm((f) => ({ ...f, name: file.name.replace(/\.[^.]+$/, '') }));
+    }
+
+    // For .md files, preview content
+    if (ext === '.md') {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        setSkillMdPreview(ev.target.result);
+      };
+      reader.readAsText(file);
+    } else {
+      // For .zip, try to read skill.md
+      const reader = new FileReader();
+      reader.onload = async (ev) => {
+        try {
+          const zip = await JSZip.loadAsync(ev.target.result);
+          const files = Object.keys(zip.files);
+          const skillMdFile = files.find((f) => f.toLowerCase().endsWith('skill.md') && !zip.files[f].dir);
+          if (skillMdFile) {
+            const content = await zip.file(skillMdFile).async('string');
+            setHasSkillMd(true);
+            setSkillMdPreview(content);
+          } else {
+            setHasSkillMd(false);
+            setSkillMdPreview('');
+          }
+        } catch {
+          setHasSkillMd(false);
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+  };
+
+  // Handle folder selection
+  const handleFolderSelect = async (e) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setIsPackaging(true);
+    setPackagingProgress(10);
+    setHasSkillMd(null);
+
+    const fileList = Array.from(files);
+    setFolderFiles(fileList);
+
+    // Check for skill.md
+    const skillMdEntry = fileList.find((f) => f.name.toLowerCase() === 'skill.md' || f.webkitRelativePath.toLowerCase().endsWith('skill.md'));
+    const detectedSkillMd = !!skillMdEntry;
+    setHasSkillMd(detectedSkillMd);
+
+    // Read skill.md content if present
+    if (detectedSkillMd) {
+      const content = await skillMdEntry.text();
+      setSkillMdPreview(content);
+    } else {
+      setSkillMdPreview('');
+    }
+
+    setPackagingProgress(30);
+
+    // Package with JSZip
+    try {
+      const zip = new JSZip();
+      const rootFolder = fileList[0].webkitRelativePath.split('/')[0] || 'skill';
+
+      for (const file of fileList) {
+        const path = file.webkitRelativePath || file.name;
+        if (!file.dir) {
+          const data = await file.arrayBuffer();
+          zip.file(path, data);
+        }
+      }
+
+      setPackagingProgress(70);
+
+      const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
+
+      setPackagingProgress(100);
+
+      if (blob.size > MAX_FILE_SIZE) {
+        showError('打包后文件大小超过 20MB 限制');
+        setIsPackaging(false);
+        return;
+      }
+
+      const zipFile = new File([blob], `${rootFolder}.zip`, { type: 'application/zip' });
+      setFolderZip(zipFile);
+      setSelectedFile(null);
+
+      // Auto-fill name from folder name
+      if (!form.name) {
+        setForm((f) => ({ ...f, name: rootFolder }));
+      }
+    } catch (err) {
+      showError('文件夹打包失败: ' + err.message);
+    }
+    setIsPackaging(false);
+  };
+
+  const handleSubmit = async () => {
+    const fileToUpload = selectedFile || folderZip;
+    if (!fileToUpload) {
+      showError('请选择文件或文件夹');
+      return;
+    }
+
+    // For ZIP without skill.md, require description
+    const ext = fileToUpload.name.substring(fileToUpload.name.lastIndexOf('.')).toLowerCase();
+    if (ext === '.zip' && !hasSkillMd && !form.description) {
+      showError('未找到 skill.md，请填写描述信息');
+      return;
+    }
+
     setLoading(true);
     try {
-      const payload = { ...form, project_id: projectId };
-      const res = await API.post('/api/skill/', payload);
+      const formData = new FormData();
+      formData.append('file', fileToUpload);
+      formData.append('project_id', projectId);
+      formData.append('name', form.name || fileToUpload.name.replace(/\.[^.]+$/, ''));
+      formData.append('description', form.description);
+      formData.append('category', form.category);
+      formData.append('version', form.version);
+
+      const res = await API.post('/api/skill/', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
       const { success, message } = res.data;
       if (success) {
         showSuccess('Skill 创建成功');
-        setForm({ name: '', description: '', category: '工具', fileName: '', content: '', version: '1.0' });
+        resetState();
         onCreated();
-        onClose();
+        handleClose();
       } else {
         showError(message);
       }
@@ -318,34 +498,101 @@ const UploadDialog = ({ open, onClose, onCreated, theme, projectId }) => {
     setLoading(false);
   };
 
-  const handleFileUpload = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
-    if (ext !== '.yaml' && ext !== '.yml' && ext !== '.md') {
-      showError('仅支持 YAML 和 Markdown 文件');
-      return;
-    }
-    setForm((f) => ({ ...f, fileName: file.name }));
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      setForm((f) => ({ ...f, content: ev.target.result }));
-    };
-    reader.readAsText(file);
-  };
+  const currentFile = selectedFile || folderZip;
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
       <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         上传 Skill
-        <IconButton size="small" onClick={onClose}>
+        <IconButton size="small" onClick={handleClose}>
           <IconX size={18} />
         </IconButton>
       </DialogTitle>
       <DialogContent dividers>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
+          {/* Upload mode tabs */}
+          <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
+            <Button
+              variant={uploadMode === 'file' ? 'contained' : 'outlined'}
+              size="small"
+              onClick={() => { setUploadMode('file'); resetState(); }}
+              startIcon={<IconFileText size={16} />}
+            >
+              文件上传
+            </Button>
+            <Button
+              variant={uploadMode === 'folder' ? 'contained' : 'outlined'}
+              size="small"
+              onClick={() => { setUploadMode('folder'); resetState(); }}
+              startIcon={<IconFolderUp size={16} />}
+            >
+              文件夹上传
+            </Button>
+          </Box>
+
+          {/* File select button */}
+          {uploadMode === 'file' ? (
+            <Box>
+              <Button variant="outlined" component="label" size="small" startIcon={<IconUpload size={14} />}>
+                选择文件 (.md / .zip)
+                <input ref={fileInputRef} type="file" hidden accept=".md,.zip" onChange={handleFileSelect} />
+              </Button>
+              {currentFile && (
+                <Typography variant="caption" sx={{ ml: 1, color: theme.palette.text.secondary }}>
+                  {currentFile.name} ({(currentFile.size / 1024).toFixed(1)} KB)
+                </Typography>
+              )}
+            </Box>
+          ) : (
+            <Box>
+              <Button variant="outlined" component="label" size="small" startIcon={<IconFolder size={14} />}>
+                选择文件夹
+                <input ref={folderInputRef} type="file" hidden webkitdirectory="" directory="" onChange={handleFolderSelect} />
+              </Button>
+              {folderZip && (
+                <Typography variant="caption" sx={{ ml: 1, color: theme.palette.text.secondary }}>
+                  {folderZip.name} ({(folderZip.size / 1024).toFixed(1)} KB, {folderFiles.length} 个文件)
+                </Typography>
+              )}
+              {isPackaging && (
+                <Box sx={{ mt: 1 }}>
+                  <LinearProgress variant="determinate" value={packagingProgress} />
+                  <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>
+                    打包中... {packagingProgress}%
+                  </Typography>
+                </Box>
+              )}
+            </Box>
+          )}
+
+          {/* skill.md detection result */}
+          {hasSkillMd === true && (
+            <Box sx={{ p: 1, borderRadius: 1, bgcolor: theme.palette.mode === 'dark' ? 'rgba(76,175,80,0.1)' : 'rgba(76,175,80,0.08)', border: `1px solid ${theme.palette.success.main}` }}>
+              <Typography variant="caption" sx={{ color: theme.palette.success.main }}>
+                已检测到 skill.md
+              </Typography>
+            </Box>
+          )}
+          {hasSkillMd === false && (
+            <Box sx={{ p: 1, borderRadius: 1, bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,152,0,0.1)' : 'rgba(255,152,0,0.08)', border: `1px solid ${theme.palette.warning.main}` }}>
+              <Typography variant="caption" sx={{ color: theme.palette.warning.main }}>
+                未找到 skill.md，请在下方填写名称和描述信息
+              </Typography>
+            </Box>
+          )}
+
+          {/* Metadata fields */}
           <TextField label="名称" size="small" fullWidth value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
-          <TextField label="描述" size="small" fullWidth multiline minRows={2} value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} />
+          <TextField
+            label="描述"
+            size="small"
+            fullWidth
+            multiline
+            minRows={2}
+            value={form.description}
+            onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+            required={hasSkillMd === false}
+          />
           <Box sx={{ display: 'flex', gap: 2 }}>
             <FormControl size="small" sx={{ flex: 1 }}>
               <InputLabel>分类</InputLabel>
@@ -357,25 +604,16 @@ const UploadDialog = ({ open, onClose, onCreated, theme, projectId }) => {
             </FormControl>
             <TextField label="版本" size="small" sx={{ flex: 1 }} value={form.version} onChange={(e) => setForm((f) => ({ ...f, version: e.target.value }))} />
           </Box>
-          <Box>
-            <Button variant="outlined" component="label" size="small">
-              选择文件 (.yaml/.md)
-              <input type="file" hidden accept=".yaml,.yml,.md" onChange={handleFileUpload} />
-            </Button>
-            {form.fileName && (
-              <Typography variant="caption" sx={{ ml: 1, color: theme.palette.text.secondary }}>
-                {form.fileName}
-              </Typography>
-            )}
-          </Box>
-          {form.content && (
+
+          {/* Content preview */}
+          {skillMdPreview && (
             <Box>
               <Typography variant="caption" sx={{ color: theme.palette.text.secondary, mb: 0.5, display: 'block' }}>
-                文件内容预览
+                skill.md 预览
               </Typography>
               <TextareaAutosize
                 readOnly
-                value={form.content}
+                value={skillMdPreview.substring(0, 2000)}
                 style={{
                   width: '100%',
                   minHeight: 120,
@@ -396,8 +634,8 @@ const UploadDialog = ({ open, onClose, onCreated, theme, projectId }) => {
         </Box>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>取消</Button>
-        <Button variant="contained" onClick={handleSubmit} disabled={loading}>
+        <Button onClick={handleClose}>取消</Button>
+        <Button variant="contained" onClick={handleSubmit} disabled={loading || isPackaging || !currentFile}>
           {loading ? '上传中...' : '上传'}
         </Button>
       </DialogActions>
@@ -407,7 +645,8 @@ const UploadDialog = ({ open, onClose, onCreated, theme, projectId }) => {
 
 const InstallDialog = ({ open, skill, onClose, theme }) => {
   if (!skill) return null;
-  const command = `mkdir -p .claude/skills && curl -sS -H "Authorization: Bearer sk-YOUR_TOKEN" -o .claude/skills/${skill.file_name} ${window.location.origin}/api/skill/${skill.id}/download`;
+  const fileName = skill.skill_type === 'complex' ? `${skill.name}.zip` : skill.file_name;
+  const command = `mkdir -p .claude/skills && curl -sS -H "Authorization: Bearer sk-YOUR_TOKEN" -o .claude/skills/${fileName} ${window.location.origin}/api/skill/${skill.id}/download`;
 
   const handleCopy = () => {
     copy(command, '安装命令');
@@ -451,7 +690,7 @@ const InstallDialog = ({ open, skill, onClose, theme }) => {
           </Tooltip>
         </Box>
         <Typography variant="caption" sx={{ display: 'block', mt: 1.5, color: theme.palette.text.secondary }}>
-          安装后文件位于 .claude/skills/{skill.file_name}，Claude Code 会自动加载。
+          安装后文件位于 .claude/skills/{fileName}，Claude Code 会自动加载。
         </Typography>
       </DialogContent>
       <DialogActions>
@@ -466,10 +705,14 @@ const InstallDialog = ({ open, skill, onClose, theme }) => {
 
 const DetailDialog = ({ open, skill, onClose, theme }) => {
   if (!skill) return null;
+  const isComplex = skill.skill_type === 'complex';
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        {skill.name}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          {isComplex ? <IconFileZip size={20} color={theme.palette.warning.main} /> : <IconFileText size={20} color={theme.palette.primary.main} />}
+          {skill.name}
+        </Box>
         <IconButton size="small" onClick={onClose}>
           <IconX size={18} />
         </IconButton>
@@ -479,7 +722,12 @@ const DetailDialog = ({ open, skill, onClose, theme }) => {
           <Typography variant="body2" color="text.secondary">{skill.description || '暂无描述'}</Typography>
           <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
             {skill.category && <Chip label={skill.category} size="small" color="primary" />}
-            <Chip label={skill.file_type?.toUpperCase()} size="small" variant="outlined" />
+            <Chip
+              label={isComplex ? 'ZIP (复杂)' : skill.file_type?.toUpperCase()}
+              size="small"
+              variant="outlined"
+              color={isComplex ? 'warning' : 'default'}
+            />
             <Typography variant="caption" sx={{ color: theme.palette.text.secondary, lineHeight: '24px' }}>
               作者: {skill.user_name} · 下载: {skill.downloads}
             </Typography>
@@ -805,6 +1053,7 @@ const SkillMarket = () => {
                   onDownload={handleDownload}
                   onInstall={setInstallSkill}
                   onDelete={handleDeleteSkill}
+                  onDetail={setDetailSkill}
                 />
               </div>
             </Fade>

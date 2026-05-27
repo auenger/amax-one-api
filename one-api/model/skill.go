@@ -9,6 +9,11 @@ import (
 const (
 	SkillStatusEnabled  = 1
 	SkillStatusDisabled = 2
+
+	SkillTypeSimple  = "simple"
+	SkillTypeComplex = "complex"
+
+	MaxArchiveSize = 20 * 1024 * 1024 // 20MB
 )
 
 type Skill struct {
@@ -23,6 +28,9 @@ type Skill struct {
 	Content     string `json:"content" gorm:"type:longtext"`
 	FileName    string `json:"file_name" gorm:"size:256"`
 	FileType    string `json:"file_type" gorm:"size:16"`
+	SkillType   string `json:"skill_type" gorm:"size:16;default:'simple'"`
+	Archive     []byte `json:"-" gorm:"type:longblob"`
+	ArchiveSize int64  `json:"archive_size"`
 	Version     string `json:"version" gorm:"size:32"`
 	Downloads   int    `json:"downloads" gorm:"default:0"`
 	Status      int    `json:"status" gorm:"default:1"`
@@ -35,7 +43,7 @@ func (s *Skill) Insert() error {
 }
 
 func (s *Skill) Update() error {
-	return DB.Model(s).Select("name", "description", "category", "content", "file_name", "file_type", "version", "status", "project_id", "updated_time").Updates(s).Error
+	return DB.Model(s).Select("name", "description", "category", "content", "file_name", "file_type", "skill_type", "archive", "archive_size", "version", "status", "project_id", "updated_time").Updates(s).Error
 }
 
 func (s *Skill) Delete() error {
