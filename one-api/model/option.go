@@ -75,6 +75,9 @@ func InitOptionMap() {
 	config.OptionMap["QuotaPerUnit"] = strconv.FormatFloat(config.QuotaPerUnit, 'f', -1, 64)
 	config.OptionMap["RetryTimes"] = strconv.Itoa(config.RetryTimes)
 	config.OptionMap["Theme"] = config.Theme
+	config.OptionMap["FallbackEnabled"] = strconv.FormatBool(config.FallbackEnabled)
+	config.OptionMap["FallbackChannelId"] = strconv.FormatInt(config.FallbackChannelId, 10)
+	config.OptionMap["FallbackModel"] = config.FallbackModel
 	config.OptionMapRWMutex.Unlock()
 	loadOptionsFromDatabase()
 }
@@ -153,6 +156,8 @@ func updateOptionMap(key string, value string) (err error) {
 			config.DisplayInCurrencyEnabled = boolValue
 		case "DisplayTokenStatEnabled":
 			config.DisplayTokenStatEnabled = boolValue
+		case "FallbackEnabled":
+			config.FallbackEnabled = boolValue
 		}
 	}
 	switch key {
@@ -239,6 +244,10 @@ func updateOptionMap(key string, value string) (err error) {
 		config.QuotaPerUnit, _ = strconv.ParseFloat(value, 64)
 	case "Theme":
 		config.Theme = value
+	case "FallbackChannelId":
+		config.FallbackChannelId, _ = strconv.ParseInt(value, 10, 64)
+	case "FallbackModel":
+		config.FallbackModel = value
 	}
 	return err
 }
