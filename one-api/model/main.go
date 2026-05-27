@@ -172,6 +172,9 @@ func migrateDB() error {
 	if err = DB.AutoMigrate(&ModelDowngradeRule{}); err != nil {
 		return err
 	}
+	if err = DB.AutoMigrate(&Skill{}); err != nil {
+		return err
+	}
 	return nil
 }
 
