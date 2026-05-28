@@ -21,7 +21,9 @@ import {
   DialogActions,
   Button,
   LinearProgress,
-  Collapse
+  Collapse,
+  ToggleButtonGroup,
+  ToggleButton
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { API } from 'utils/api';
@@ -38,9 +40,7 @@ import {
   IconBook,
   IconFolder,
   IconPlus,
-  IconChevronRight,
   IconArrowLeft,
-  IconEdit,
   IconPencil,
   IconFileZip,
   IconFolderUp,
@@ -48,7 +48,9 @@ import {
   IconHistory,
   IconDragDrop,
   IconFileCheck,
-  IconFileX
+  IconFileX,
+  IconEye,
+  IconArticle
 } from '@tabler/icons-react';
 import JSZip from 'jszip';
 import ReactMarkdown from 'react-markdown';
@@ -58,11 +60,11 @@ const SKILL_CATEGORIES = ['编码', '调试', '测试', '部署', '文档', '工
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 
-const MarkdownRenderer = ({ content, theme }) => {
+const MarkdownRenderer = ({ content, theme, emptyText = '暂无内容' }) => {
   if (!content) {
     return (
       <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
-        暂无内容
+        {emptyText}
       </Typography>
     );
   }
@@ -203,7 +205,7 @@ const ProjectCard = ({ project, user, theme, onClick, onDelete, onEdit }) => {
   );
 };
 
-const SkillCard = ({ skill, user, theme, onDownload, onInstall, onDelete, onDetail, onUpgrade }) => {
+const SkillCard = ({ skill, user, theme, onDownload, onInstall, onDelete, onDetail, onUpgrade, onEdit }) => {
   const isOwner = user && skill.user_id === user.id;
   const isAdmin = user && user.role >= 10;
   const isComplex = skill.skill_type === 'complex';
@@ -278,6 +280,13 @@ const SkillCard = ({ skill, user, theme, onDownload, onInstall, onDelete, onDeta
             </Box>
           </Box>
           <Box sx={{ display: 'flex', gap: 0.5, flexShrink: 0 }}>
+            {(isOwner || isAdmin) && (
+              <Tooltip title="编辑" arrow>
+                <IconButton size="small" onClick={() => onEdit(skill)} sx={{ color: theme.palette.text.secondary }}>
+                  <IconPencil size={18} />
+                </IconButton>
+              </Tooltip>
+            )}
             {(isOwner || isAdmin) && (
               <Tooltip title="升级版本" arrow>
                 <IconButton size="small" onClick={() => onUpgrade(skill)} sx={{ color: theme.palette.success.main }}>
@@ -1297,9 +1306,21 @@ const InstallDialog = ({ open, skill, onClose, theme }) => {
   );
 };
 
-const DetailDialog = ({ open, skill, onClose, theme }) => {
+const DetailDialog = ({ open, skill, onClose, theme, user }) => {
+  const [viewMode, setViewMode] = useState('content');
+
+  // Reset viewMode when skill changes
+  useEffect(() => {
+    if (skill) {
+      setViewMode(skill.display_mode || 'content');
+    }
+  }, [skill]);
+
   if (!skill) return null;
   const isComplex = skill.skill_type === 'complex';
+
+  const displayContent = viewMode === 'content' ? skill.content : skill.description;
+
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -1313,18 +1334,35 @@ const DetailDialog = ({ open, skill, onClose, theme }) => {
       </DialogTitle>
       <DialogContent dividers>
         <Box sx={{ mb: 2 }}>
-          <Typography variant="body2" color="text.secondary">{skill.description || '暂无描述'}</Typography>
-          <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
-            {skill.category && <Chip label={skill.category} size="small" color="primary" />}
-            <Chip
-              label={isComplex ? 'ZIP (复杂)' : skill.file_type?.toUpperCase()}
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+            <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+              {skill.category && <Chip label={skill.category} size="small" color="primary" />}
+              <Chip
+                label={isComplex ? 'ZIP (复杂)' : skill.file_type?.toUpperCase()}
+                size="small"
+                variant="outlined"
+                color={isComplex ? 'warning' : 'default'}
+              />
+              <Typography variant="caption" sx={{ color: theme.palette.text.secondary, lineHeight: '24px' }}>
+                作者: {skill.user_name} · 下载: {skill.downloads}
+              </Typography>
+            </Box>
+            <ToggleButtonGroup
               size="small"
-              variant="outlined"
-              color={isComplex ? 'warning' : 'default'}
-            />
-            <Typography variant="caption" sx={{ color: theme.palette.text.secondary, lineHeight: '24px' }}>
-              作者: {skill.user_name} · 下载: {skill.downloads}
-            </Typography>
+              value={viewMode}
+              exclusive
+              onChange={(_, v) => v && setViewMode(v)}
+              sx={{ ml: 1 }}
+            >
+              <ToggleButton value="content" sx={{ fontSize: '0.75rem', py: 0.25, px: 1.5 }}>
+                <IconFileText size={14} style={{ marginRight: 4 }} />
+                skill.md
+              </ToggleButton>
+              <ToggleButton value="description" sx={{ fontSize: '0.75rem', py: 0.25, px: 1.5 }}>
+                <IconArticle size={14} style={{ marginRight: 4 }} />
+                描述
+              </ToggleButton>
+            </ToggleButtonGroup>
           </Box>
         </Box>
         <Box
@@ -1337,9 +1375,129 @@ const DetailDialog = ({ open, skill, onClose, theme }) => {
             overflow: 'auto'
           }}
         >
-          <MarkdownRenderer content={skill.content || ''} theme={theme} />
+          <MarkdownRenderer content={displayContent || ''} theme={theme} emptyText={viewMode === 'description' ? '暂无描述' : '暂无内容'} />
         </Box>
       </DialogContent>
+    </Dialog>
+  );
+};
+
+const EditSkillDialog = ({ open, skill, onClose, onUpdated, theme }) => {
+  const [form, setForm] = useState({ description: '', display_mode: 'content' });
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (skill) {
+      setForm({
+        description: skill.description || '',
+        display_mode: skill.display_mode || 'content'
+      });
+      setPreviewOpen(false);
+    }
+  }, [skill]);
+
+  if (!skill) return null;
+
+  const handleSubmit = async () => {
+    setLoading(true);
+    try {
+      const res = await API.put(`/api/skill/${skill.id}`, {
+        ...form,
+        id: skill.id,
+        name: skill.name,
+        category: skill.category,
+        content: skill.content,
+        file_name: skill.file_name,
+        version: skill.version
+      });
+      const { success, message } = res.data;
+      if (success) {
+        showSuccess('Skill 更新成功');
+        onUpdated();
+        onClose();
+      } else {
+        showError(message);
+      }
+    } catch (err) {
+      showError(err);
+    }
+    setLoading(false);
+  };
+
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+      <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        编辑 Skill: {skill.name}
+        <IconButton size="small" onClick={onClose}>
+          <IconX size={18} />
+        </IconButton>
+      </DialogTitle>
+      <DialogContent dividers>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
+          <FormControl size="small" fullWidth>
+            <InputLabel>默认展示模式</InputLabel>
+            <Select
+              value={form.display_mode}
+              label="默认展示模式"
+              onChange={(e) => setForm((f) => ({ ...f, display_mode: e.target.value }))}
+            >
+              <MenuItem value="content">
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <IconFileText size={16} />
+                  skill.md 内容
+                </Box>
+              </MenuItem>
+              <MenuItem value="description">
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <IconArticle size={16} />
+                  描述文本
+                </Box>
+              </MenuItem>
+            </Select>
+          </FormControl>
+          <TextField
+            label="描述"
+            size="small"
+            fullWidth
+            multiline
+            minRows={4}
+            maxRows={12}
+            value={form.description}
+            onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+            placeholder="支持 Markdown 格式，作为 Skill 的描述信息展示"
+          />
+          <Button
+            size="small"
+            variant={previewOpen ? 'contained' : 'outlined'}
+            onClick={() => setPreviewOpen(!previewOpen)}
+            startIcon={<IconEye size={14} />}
+            sx={{ alignSelf: 'flex-start' }}
+          >
+            {previewOpen ? '隐藏预览' : '预览 Markdown'}
+          </Button>
+          <Collapse in={previewOpen}>
+            <Box
+              sx={{
+                p: 1.5,
+                borderRadius: 1,
+                border: `1px solid ${theme.palette.divider}`,
+                bgcolor: theme.palette.mode === 'dark' ? theme.palette.background.default : theme.palette.background.paper,
+                maxHeight: 200,
+                overflow: 'auto'
+              }}
+            >
+              <MarkdownRenderer content={form.description} theme={theme} emptyText="暂无描述内容，请在上方输入" />
+            </Box>
+          </Collapse>
+        </Box>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>取消</Button>
+        <Button variant="contained" onClick={handleSubmit} disabled={loading}>
+          {loading ? '保存中...' : '保存'}
+        </Button>
+      </DialogActions>
     </Dialog>
   );
 };
@@ -1360,6 +1518,7 @@ const SkillMarket = () => {
   const [installSkill, setInstallSkill] = useState(null);
   const [detailSkill, setDetailSkill] = useState(null);
   const [upgradeSkill, setUpgradeSkill] = useState(null);
+  const [editSkill, setEditSkill] = useState(null);
 
   const loadProjects = useCallback(async () => {
     setLoading(true);
@@ -1645,6 +1804,7 @@ const SkillMarket = () => {
                   onDelete={handleDeleteSkill}
                   onDetail={setDetailSkill}
                   onUpgrade={setUpgradeSkill}
+                  onEdit={setEditSkill}
                 />
               </div>
             </Fade>
@@ -1662,7 +1822,8 @@ const SkillMarket = () => {
         upgradeSkill={upgradeSkill}
       />
       <InstallDialog open={!!installSkill} skill={installSkill} onClose={() => setInstallSkill(null)} theme={theme} />
-      <DetailDialog open={!!detailSkill} skill={detailSkill} onClose={() => setDetailSkill(null)} theme={theme} />
+      <DetailDialog open={!!detailSkill} skill={detailSkill} onClose={() => setDetailSkill(null)} theme={theme} user={user} />
+      <EditSkillDialog open={!!editSkill} skill={editSkill} onClose={() => setEditSkill(null)} onUpdated={() => loadProjectSkills(currentProject.id)} theme={theme} />
     </Box>
   );
 };

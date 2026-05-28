@@ -35,6 +35,7 @@ type Skill struct {
 	ParentVersionId int    `json:"parent_version_id" gorm:"default:0;index"`
 	IsArchived      bool   `json:"is_archived" gorm:"default:false;index"`
 	Downloads       int    `json:"downloads" gorm:"default:0"`
+	DisplayMode     string `json:"display_mode" gorm:"size:16;default:'content'"`
 	Status          int    `json:"status" gorm:"default:1"`
 	CreatedTime     int64  `json:"created_time" gorm:"bigint"`
 	UpdatedTime     int64  `json:"updated_time" gorm:"bigint"`
@@ -45,7 +46,7 @@ func (s *Skill) Insert() error {
 }
 
 func (s *Skill) Update() error {
-	return DB.Model(s).Select("name", "description", "category", "content", "file_name", "file_type", "skill_type", "archive", "archive_size", "version", "status", "project_id", "updated_time").Updates(s).Error
+	return DB.Model(s).Select("name", "description", "category", "content", "file_name", "file_type", "skill_type", "archive", "archive_size", "version", "status", "project_id", "display_mode", "updated_time").Updates(s).Error
 }
 
 func (s *Skill) Delete() error {
