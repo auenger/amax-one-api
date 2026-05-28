@@ -135,6 +135,11 @@ func recordTiming(c *gin.Context) {
 		TotalMs:      totalMs,
 	}
 	dbmodel.RecordTimingAsync(c.Request.Context(), timing)
+
+	// Update Log.ProxyMs for the corresponding request
+	if requestId != "" && middlewareMs >= 0 {
+		dbmodel.UpdateLogProxyMs(c.Request.Context(), requestId, middlewareMs)
+	}
 }
 
 func Relay(c *gin.Context) {

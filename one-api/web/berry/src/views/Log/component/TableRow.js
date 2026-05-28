@@ -25,6 +25,13 @@ function renderType(type) {
   }
 }
 
+function proxyMsColor(ms) {
+  if (ms <= 0) return 'default';
+  if (ms < 50) return 'success';
+  if (ms < 200) return 'warning';
+  return 'error';
+}
+
 export default function LogTableRow({ item, userIsAdmin, channelMap }) {
   const renderChannel = () => {
     if (!item.channel) return '';
@@ -63,6 +70,16 @@ export default function LogTableRow({ item, userIsAdmin, channelMap }) {
         <TableCell>{item.prompt_tokens || ''}</TableCell>
         <TableCell>{item.completion_tokens || ''}</TableCell>
         <TableCell>{item.quota ? renderQuota(item.quota, 6) : ''}</TableCell>
+        <TableCell>{item.elapsed_time ? `${item.elapsed_time}ms` : ''}</TableCell>
+        <TableCell>
+          {item.proxy_ms > 0 ? (
+            <Label color={proxyMsColor(item.proxy_ms)} variant="filled">
+              {item.proxy_ms}ms
+            </Label>
+          ) : (
+            ''
+          )}
+        </TableCell>
         <TableCell>{item.content}</TableCell>
       </TableRow>
     </>

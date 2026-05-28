@@ -28,6 +28,7 @@ type Log struct {
 	ChannelId         int    `json:"channel" gorm:"index"`
 	RequestId         string `json:"request_id" gorm:"default:''"`
 	ElapsedTime       int64  `json:"elapsed_time" gorm:"default:0"` // unit is ms
+	ProxyMs           int64  `json:"proxy_ms" gorm:"default:0"`    // middleware/proxy overhead in ms
 	IsStream          bool   `json:"is_stream" gorm:"default:false"`
 	SystemPromptReset bool   `json:"system_prompt_reset" gorm:"default:false"`
 }
@@ -215,6 +216,14 @@ func SumUsedToken(logType int, startTimestamp int64, endTimestamp int64, modelNa
 func DeleteOldLog(targetTimestamp int64) (int64, error) {
 	result := LOG_DB.Where("created_at < ?", targetTimestamp).Delete(&Log{})
 	return result.RowsAffected, result.Error
+}
+
+// UpdateLogProxyMs updates the proxy_ms field for a log record by request_id.
+func UpdateLogProxyMs(ctx context.Context, requestId string, proxyMs int64) {
+	err := LOG_DB.Model(&Log{}).Where("request_id = ?", requestId).Update("proxy_ms", proxyMs).Error
+	if err != nil {
+		logger.Error(ctx, "failed to update log proxy_ms: "+err.Error())
+	}
 }
 
 type LogStatistic struct {
