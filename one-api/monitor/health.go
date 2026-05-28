@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -466,7 +468,23 @@ func getCachedQuotaWindows(channelId int) []model.QuotaWindow {
 
 // checkChannelHealth checks a channel's health using quota data first,
 // falling back to HTTP probe for providers without windowed quotas.
+// If the channel has SkipHealthCheck enabled, only TCP connectivity is tested.
 func checkChannelHealth(channel *model.Channel) {
+	// Skip HTTP probe: only check TCP connectivity to baseURL
+	if channel.SkipHealthCheck {
+		success, latencyMs := probeChannelTCP(channel.GetBaseURL())
+		oldStatus, newStatus, err := RecordHealthCheck(channel.Id, success, latencyMs)
+		if err != nil {
+			logger.SysError(fmt.Sprintf("health checker: failed to record TCP health for channel #%d: %s", channel.Id, err.Error()))
+			return
+		}
+		_ = oldStatus
+		_ = newStatus
+		channel.ResponseTime = latencyMs
+		_ = model.DB.Model(channel).Update("response_time", latencyMs)
+		return
+	}
+
 	// Quota-aware check: if any window shows 100% usage, mark unhealthy
 	// and skip the /v1/models probe (it succeeds even when quota is exhausted).
 	windows := getCachedQuotaWindows(channel.Id)
@@ -527,6 +545,37 @@ func probeChannel(channel *model.Channel) bool {
 	defer resp.Body.Close()
 
 	return resp.StatusCode >= 200 && resp.StatusCode < 300
+}
+
+// probeChannelTCP tests TCP connectivity to the channel's baseURL.
+// Returns (success, latencyMs).
+func probeChannelTCP(baseURL string) (bool, int) {
+	if baseURL == "" {
+		baseURL = "https://api.openai.com"
+	}
+	parsed, err := url.Parse(baseURL)
+	if err != nil {
+		return false, 0
+	}
+	host := parsed.Host
+	if _, port, splitErr := net.SplitHostPort(host); splitErr != nil {
+		// No port specified, use scheme default
+		switch parsed.Scheme {
+		case "https":
+			host = host + ":443"
+		default:
+			host = host + ":80"
+		}
+		_ = port
+	}
+	start := time.Now()
+	conn, err := net.DialTimeout("tcp", host, 5*time.Second)
+	latencyMs := int(time.Since(start).Milliseconds())
+	if err != nil {
+		return false, latencyMs
+	}
+	conn.Close()
+	return true, latencyMs
 }
 
 // FindHealthyChannel selects a healthy channel from the candidate list.

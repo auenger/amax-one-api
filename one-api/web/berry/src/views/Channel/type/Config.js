@@ -8,6 +8,7 @@ const defaultConfig = {
     model_mapping: '',
     models: [],
     groups: ['default'],
+    skip_health_check: false,
     config: {}
   },
   inputLabel: {
