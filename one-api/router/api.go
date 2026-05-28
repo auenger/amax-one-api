@@ -183,6 +183,8 @@ func SetApiRouter(router *gin.Engine) {
 			skillRoute.DELETE("/:id", controller.DeleteSkill)
 			skillRoute.GET("/:id/download", controller.DownloadSkill)
 			skillRoute.GET("/:id/install", controller.GetInstallCommand)
+			skillRoute.GET("/:id/versions", controller.GetSkillVersions)
+			skillRoute.POST("/upgrade", controller.UpgradeSkill)
 		}
 		// Skill Project
 		skillProjectRoute := apiRouter.Group("/skill-project")
