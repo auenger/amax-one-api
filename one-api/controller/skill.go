@@ -435,6 +435,7 @@ func UpdateSkill(c *gin.Context) {
 		existing.Content = skill.Content
 		existing.FileName = skill.FileName
 		existing.Version = skill.Version
+		existing.DisplayMode = skill.DisplayMode
 		if skill.ProjectId > 0 {
 			existing.ProjectId = skill.ProjectId
 		}
