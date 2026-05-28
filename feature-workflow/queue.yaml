@@ -1,19 +1,46 @@
 meta:
   last_updated: '2026-05-28'
-  total_features: 64
+  total_features: 75
 active: []
 pending:
-- id: feat-skill-marketplace-v2
-  name: Skill Marketplace V2 重构
-  priority: 65
+- id: feat-daily-request-limit
+  name: 每日请求次数限额
+  priority: 80
+  size: M
+  depends_on: []
+  added: '2026-05-28'
+  value_points: 2
+- id: feat-skill-market-ux
+  name: Skill 市场 UI 优化
+  priority: 70
   size: L
   split: true
-  depends_on: []
-  added: '2026-05-27'
+  depends_on:
+  - feat-skill-version-upgrade
+  added: '2026-05-28'
   value_points: 4
   children:
-  - feat-skill-project-org
-  - feat-skill-multi-format
+  - feat-skill-md-render
+  - feat-skill-batch-upload
+  - feat-skill-display-edit
+- id: feat-skill-batch-upload
+  name: Skill 批量上传与拖拽
+  priority: 70
+  size: S
+  parent: feat-skill-market-ux
+  depends_on:
+  - feat-skill-md-render
+  added: '2026-05-28'
+  value_points: 1
+- id: feat-skill-display-edit
+  name: Skill 展示模式与编辑
+  priority: 70
+  size: S
+  parent: feat-skill-market-ux
+  depends_on:
+  - feat-skill-md-render
+  added: '2026-05-28'
+  value_points: 1
 - id: feat-mcp-proxy
   name: MCP 代理平台
   priority: 75
@@ -62,6 +89,73 @@ pending:
   value_points: 2
 blocked: []
 completed:
+- id: feat-skill-md-render
+  name: Skill Markdown 渲染
+  priority: 70
+  size: S
+  depends_on:
+  - feat-skill-version-upgrade
+  added: '2026-05-28'
+  completed_at: '2026-05-28'
+  archive_path: features/archive/done-feat-skill-md-render-20260528
+  value_points: 1
+- id: feat-skill-version-upgrade
+  name: Skill 版本升级与归档
+  priority: 70
+  size: M
+  depends_on:
+  - feat-skill-marketplace
+  - feat-skill-multi-format
+  added: '2026-05-28'
+  completed_at: '2026-05-28'
+  archive_path: features/archive/done-feat-skill-version-upgrade-20260528
+  value_points: 2
+- id: feat-skill-marketplace-v2
+  name: Skill Marketplace V2 重构
+  priority: 65
+  size: L
+  split: true
+  depends_on: []
+  added: '2026-05-27'
+  completed_at: '2026-05-28'
+  archive_path: features/archive/done-feat-skill-marketplace-v2-20260528
+  value_points: 4
+  note: Split parent — all children completed
+  children:
+  - feat-skill-project-org
+  - feat-skill-multi-format
+- id: feat-channel-skip-health-check
+  name: 渠道跳过健康探针
+  priority: 85
+  size: S
+  depends_on: []
+  completed_at: '2026-05-28'
+  archive_path: features/archive/done-feat-channel-skip-health-check-20260528
+  value_points: 1
+- id: feat-timing-display-optimize
+  name: 计时日志展示优化
+  priority: 85
+  size: M
+  depends_on: []
+  completed_at: '2026-05-28'
+  archive_path: features/archive/done-feat-timing-display-optimize-20260528
+  value_points: 2
+- id: feat-hourly-chart-ux
+  name: 当日24小时用量图表交互优化
+  priority: 70
+  size: S
+  depends_on: []
+  completed_at: '2026-05-28'
+  archive_path: features/archive/done-feat-hourly-chart-ux-20260528
+  value_points: 2
+- id: feat-health-status-ui
+  name: 渠道健康状态前端展示与恢复阈值优化
+  priority: 80
+  size: M
+  depends_on: []
+  completed_at: '2026-05-28'
+  archive_path: features/archive/done-feat-health-status-ui-20260528
+  value_points: 2
 - id: feat-skill-multi-format
   name: 多格式 Skill 与智能上传
   priority: 65
@@ -103,7 +197,7 @@ completed:
   size: M
   split: true
   completed_at: '2026-05-26'
-  archive_path: features/archive
+  archive_path: ~
   value_points: 2
   note: Split parent — all children completed
   children:

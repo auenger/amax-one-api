@@ -1,8 +1,196 @@
 meta:
   last_updated: '2026-05-28'
   version: 1
-  total_completed: 44
+  total_completed: 50
 records:
+  - id: feat-skill-md-render
+    name: Skill Markdown 渲染
+    completed: '2026-05-28'
+    tag: feat-skill-md-render-20260528
+    merge_commit: b7bc0d4
+    merged_to: main
+    branch_deleted: true
+    branch_name: feature/skill-md-render
+    worktree_deleted: true
+    worktree_path: ../aihub-skill-md-render
+    keywords: [markdown, react-markdown, remark-gfm, skill市场, ui, 前端, 渲染]
+    category: frontend
+    value_points: 1
+    related_features: [feat-skill-marketplace, feat-skill-multi-format, feat-skill-market-ux]
+    conflicts:
+      had_conflict: false
+      conflict_files: []
+    verification:
+      status: passed
+      scenarios_total: 3
+      scenarios_passed: 3
+    stats:
+      started: '2026-05-28'
+      duration: ~5min
+      commits: 1
+      files_changed: 2
+  - id: feat-skill-version-upgrade
+    name: Skill 版本升级与归档
+    completed: '2026-05-28'
+    tag: feat-skill-version-upgrade-20260528
+    merge_commit: ac40fa0
+    merged_to: main
+    branch_deleted: true
+    branch_name: feature/skill-version-upgrade
+    worktree_deleted: true
+    worktree_path: ../aihub-skill-version-upgrade
+    keywords: [skill, 版本升级, 归档, version, upgrade, archive, 版本历史]
+    category: fullstack
+    value_points: 2
+    related_features: [feat-skill-marketplace, feat-skill-multi-format, feat-skill-project-org]
+    conflicts:
+      had_conflict: true
+      conflict_files: [one-api/model/skill.go]
+      resolved_at: '2026-05-28'
+      re_verified: true
+    verification:
+      status: passed
+      scenarios_total: 5
+      scenarios_passed: 5
+    stats:
+      started: '2026-05-28'
+      duration: same-day
+      commits: 1
+      files_changed: 4
+  - id: feat-channel-skip-health-check
+    name: 渠道跳过健康探针
+    completed: '2026-05-28'
+    tag: feat-channel-skip-health-check-20260528
+    merge_commit: 8b9f4ee
+    merged_to: main
+    branch_deleted: true
+    branch_name: feature/channel-skip-health-check
+    worktree_deleted: true
+    worktree_path: ../aihub-channel-skip-health-check
+    keywords: [health-check, tcp-probe, skip, channel, connectivity, probeChannelTCP]
+    category: fullstack
+    value_points: 1
+    related_features: [feat-channel-failover, feat-health-status-ui, feat-quota-exhaustion-recovery, feat-rate-limit-exhaustion]
+    conflicts:
+      had_conflict: false
+      conflict_files: []
+    verification:
+      status: passed
+      scenarios_total: 5
+      scenarios_passed: 5
+    stats:
+      started: '2026-05-28'
+      duration: same-day
+      commits: 1
+      files_changed: 4
+  - id: feat-timing-display-optimize
+    name: 计时日志展示优化
+    completed: '2026-05-28'
+    tag: feat-timing-display-optimize-20260528
+    merge_commit: ea181e8
+    merged_to: main
+    branch_deleted: true
+    branch_name: feature/feat-timing-display-optimize
+    worktree_deleted: true
+    worktree_path: ../aihub-feat-timing-display-optimize
+    keywords:
+    - timing
+    - display
+    - optimize
+    - proxy
+    - log
+    - 耗时
+    - 中转开销
+    - 中转占比
+    - timingbar
+    - tooltip
+    - 颜色标签
+    - 列头语义化
+    category: fullstack
+    value_points: 2
+    related_features:
+    - feat-request-timing-log
+    conflicts:
+      had_conflict: false
+      conflict_files: []
+    verification:
+      status: passed
+      scenarios_total: 4
+      scenarios_passed: 4
+    stats:
+      started: '2026-05-28'
+      duration: same-day
+      commits: 1
+      files_changed: 6
+  - id: feat-hourly-chart-ux
+    name: 当日24小时用量图表交互优化
+    completed: '2026-05-28'
+    tag: feat-hourly-chart-ux-20260528
+    merge_commit: d9f104bcb5040577f8268f903b6f4450ac931c21
+    merged_to: main
+    branch_deleted: true
+    branch_name: feature/hourly-chart-ux
+    worktree_deleted: true
+    worktree_path: ../aihub-hourly-chart-ux
+    keywords: [hourly, chart, tooltip, sorting, annotations, labels, apexcharts, report, usage, 前端, 折线图]
+    category: frontend
+    value_points: 2
+    related_features: [feat-daily-hourly-chart, feat-usage-report-v2, feat-usage-chart-granularity]
+    conflicts:
+      had_conflict: false
+      conflict_files: []
+    verification:
+      status: passed
+      scenarios_total: 4
+      scenarios_passed: 4
+    stats:
+      started: '2026-05-28'
+      duration: same_day
+      commits: 1
+      files_changed: 1
+- id: feat-health-status-ui
+  name: 渠道健康状态前端展示与恢复阈值优化
+  completed: '2026-05-28'
+  tag: feat-health-status-ui-20260528
+  merge_commit: 410d9c362d29a27c05dda4beaa5fd1d509817bfe
+  merged_to: main
+  branch_deleted: true
+  branch_name: feature/health-status-ui
+  worktree_deleted: true
+  worktree_path: ../aihub-health-status-ui
+  keywords:
+  - health
+  - status
+  - ui
+  - channel
+  - recovery
+  - threshold
+  - quota
+  - unhealthy
+  - degraded
+  - marketplace
+  - tooltip
+  category: fullstack
+  value_points: 2
+  related_features:
+  - feat-quota-exhaustion-recovery
+  - feat-rate-limit-exhaustion
+  - feat-channel-failover
+  - feat-model-marketplace
+  - feat-marketplace-flat-layout
+  - feat-provider-quota-ui
+  conflicts:
+    had_conflict: false
+    conflict_files: []
+  verification:
+    status: passed
+    scenarios_total: 5
+    scenarios_passed: 5
+  stats:
+    started: '2026-05-28'
+    duration: same-day
+    commits: 1
+    files_changed: 8
 - id: feat-downgrade-limit-window
   name: 降级阈值基于限速窗口（5h）
   completed: '2026-05-28'
