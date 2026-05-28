@@ -74,6 +74,13 @@ const CHANNEL_STATUS_MAP = {
   3: { label: '自动禁用', color: 'error' }
 };
 
+// Health status display for model marketplace
+const HEALTH_STATUS_MAP = {
+  healthy: { label: '正常', color: 'success' },
+  degraded: { label: '降级', color: 'warning' },
+  unhealthy: { label: '不可用', color: 'error' },
+};
+
 // Guess channel type from model name prefix (fallback when no channel data)
 const guessChannelType = (modelName) => {
   const lower = modelName.toLowerCase();
@@ -145,6 +152,9 @@ const ChannelRow = ({ channel, concurrency, quota, onCopyToken, onCcSwitchImport
   const typeLabel = CHANNEL_TYPE_MAP[channel.type] || `Type ${channel.type}`;
   const statusInfo = CHANNEL_STATUS_MAP[channel.status] || CHANNEL_STATUS_MAP[0];
   const concCount = concurrency?.count || 0;
+  const healthStatus = channel.health_status || 'healthy';
+  const healthInfo = HEALTH_STATUS_MAP[healthStatus] || HEALTH_STATUS_MAP.healthy;
+  const healthReason = channel.health_reason || '';
 
   return (
     <Box
@@ -166,6 +176,11 @@ const ChannelRow = ({ channel, concurrency, quota, onCopyToken, onCcSwitchImport
           <Chip label={`ID:${channel.id}`} size="small" variant="outlined" sx={{ fontSize: '0.6rem', height: 18, '& .MuiChip-label': { px: 0.5 } }} />
           <Chip label={typeLabel} size="small" color={CHANNEL_COLOR_MAP[channel.type] || 'default'} variant="outlined" sx={{ fontSize: '0.6rem', height: 18, '& .MuiChip-label': { px: 0.5 } }} />
           <Chip label={statusInfo.label} size="small" color={statusInfo.color} variant="filled" sx={{ fontSize: '0.6rem', height: 18, '& .MuiChip-label': { px: 0.5 } }} />
+          {healthStatus !== 'healthy' && (
+            <Tooltip title={healthReason || `${healthInfo.label}`} arrow>
+              <Chip label={`健康: ${healthInfo.label}`} size="small" color={healthInfo.color} variant="outlined" sx={{ fontSize: '0.6rem', height: 18, '& .MuiChip-label': { px: 0.5 } }} />
+            </Tooltip>
+          )}
         </Box>
         <Box sx={{ display: 'flex', gap: 0 }}>
               <Tooltip title={hasToken ? '复制带渠道的令牌' : '请先创建令牌'} arrow>

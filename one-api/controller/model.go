@@ -2,6 +2,9 @@ package controller
 
 import (
 	"fmt"
+	"net/http"
+	"strings"
+
 	"github.com/gin-gonic/gin"
 	"github.com/songquanpeng/one-api/common/ctxkey"
 	"github.com/songquanpeng/one-api/model"
@@ -11,8 +14,7 @@ import (
 	"github.com/songquanpeng/one-api/relay/channeltype"
 	"github.com/songquanpeng/one-api/relay/meta"
 	relaymodel "github.com/songquanpeng/one-api/relay/model"
-	"net/http"
-	"strings"
+	"github.com/songquanpeng/one-api/monitor"
 )
 
 // https://platform.openai.com/docs/api-reference/models/list
@@ -225,9 +227,28 @@ func GetModelChannels(c *gin.Context) {
 		return
 	}
 	result := model.CacheGetModelChannels(userGroup)
+	enrichModelChannelsHealthStatus(result)
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
 		"data":    result,
 	})
+}
+
+// enrichModelChannelsHealthStatus populates HealthStatus for each channel in the model-channel map.
+func enrichModelChannelsHealthStatus(data map[string][]model.ChannelInfo) {
+	if data == nil {
+		return
+	}
+	for _, channels := range data {
+		for i := range channels {
+			health, err := monitor.GetChannelHealth(channels[i].Id)
+			if err != nil {
+				channels[i].HealthStatus = string(monitor.HealthStatusHealthy)
+			} else {
+				channels[i].HealthStatus = string(health.Status)
+				channels[i].HealthReason = health.Reason
+			}
+		}
+	}
 }

@@ -31,6 +31,13 @@ import ChannelQuotaCell from "./ChannelQuotaCell";
 
 import { IconDotsVertical, IconEdit, IconTrash } from "@tabler/icons-react";
 
+// Health status display configuration
+const HEALTH_STATUS_MAP = {
+  healthy: { label: '正常', color: 'success' },
+  degraded: { label: '降级', color: 'warning' },
+  unhealthy: { label: '不可用', color: 'error' },
+};
+
 export default function ChannelTableRow({
   item,
   manageChannel,
@@ -163,6 +170,27 @@ export default function ChannelTableRow({
               onChange={handleStatus}
             />
           </Tooltip>
+        </TableCell>
+
+        <TableCell>
+          {(() => {
+            const hs = item.health_status || 'healthy';
+            const info = HEALTH_STATUS_MAP[hs] || HEALTH_STATUS_MAP.healthy;
+            const reason = item.health_reason || '';
+            const healthLabel = (
+              <Label color={info.color} variant="filled" sx={{ fontSize: '0.7rem', cursor: reason ? 'help' : 'default' }}>
+                {info.label}
+              </Label>
+            );
+            if (reason) {
+              return (
+                <Tooltip title={reason} placement="top" arrow>
+                  {healthLabel}
+                </Tooltip>
+              );
+            }
+            return healthLabel;
+          })()}
         </TableCell>
 
         <TableCell>

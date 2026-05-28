@@ -384,10 +384,12 @@ func CacheGetModelChannels(group string) map[string][]ChannelInfo {
 
 // ChannelInfo represents a channel's basic info for the marketplace.
 type ChannelInfo struct {
-	Id     int    `json:"id"`
-	Name   string `json:"name"`
-	Type   int    `json:"type"`
-	Status int    `json:"status"`
+	Id           int    `json:"id"`
+	Name         string `json:"name"`
+	Type         int    `json:"type"`
+	Status       int    `json:"status"`
+	HealthStatus string `json:"health_status"`
+	HealthReason string `json:"health_reason,omitempty"`
 }
 
 // ChannelRef is a lightweight channel reference (id + name) for concurrency tracking.

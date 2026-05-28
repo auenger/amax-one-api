@@ -1,13 +1,15 @@
 package controller
 
 import (
+	"net/http"
+	"strconv"
+	"strings"
+
 	"github.com/gin-gonic/gin"
 	"github.com/songquanpeng/one-api/common/config"
 	"github.com/songquanpeng/one-api/common/helper"
 	"github.com/songquanpeng/one-api/model"
-	"net/http"
-	"strconv"
-	"strings"
+	"github.com/songquanpeng/one-api/monitor"
 )
 
 func GetAllChannels(c *gin.Context) {
@@ -23,6 +25,7 @@ func GetAllChannels(c *gin.Context) {
 		})
 		return
 	}
+	enrichChannelsHealthStatus(channels)
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
@@ -41,6 +44,7 @@ func SearchChannels(c *gin.Context) {
 		})
 		return
 	}
+	enrichChannelsHealthStatus(channels)
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
@@ -169,4 +173,19 @@ func UpdateChannel(c *gin.Context) {
 		"data":    channel,
 	})
 	return
+}
+
+// enrichChannelsHealthStatus populates HealthStatus and HealthReason fields
+// for each channel by reading from the health monitor (Redis-backed).
+// Falls back to "healthy" when Redis is not enabled or no health data exists.
+func enrichChannelsHealthStatus(channels []*model.Channel) {
+	for _, ch := range channels {
+		health, err := monitor.GetChannelHealth(ch.Id)
+		if err != nil {
+			ch.HealthStatus = string(monitor.HealthStatusHealthy)
+		} else {
+			ch.HealthStatus = string(health.Status)
+			ch.HealthReason = health.Reason
+		}
+	}
 }

@@ -31,7 +31,7 @@ const (
 	// Quota exhaustion threshold (percentage): above this, channel is disabled.
 	defaultQuotaExhaustionThreshold = 100.0
 	// Quota recovery threshold (percentage): below this, channel can recover.
-	defaultQuotaRecoveryThreshold = 95.0
+	defaultQuotaRecoveryThreshold = 100.0
 	// Exhaustion poll interval: how often to re-query exhausted channels.
 	defaultExhaustionPollInterval = 60
 )
