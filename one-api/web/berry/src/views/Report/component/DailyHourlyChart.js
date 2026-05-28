@@ -70,9 +70,9 @@ const DailyHourlyChart = () => {
     setDate(e.target.value);
   };
 
-  const { tokenSeries, requestSeries, chartOptions } = useMemo(() => {
+  const { tokenSeries, requestSeries, chartOptions, tokenAnnotations, requestAnnotations } = useMemo(() => {
     if (!data || !data.usernames || data.usernames.length === 0) {
-      return { tokenSeries: [], requestSeries: [], chartOptions: {} };
+      return { tokenSeries: [], requestSeries: [], chartOptions: {}, tokenAnnotations: {}, requestAnnotations: {} };
     }
 
     const hours = data.hours || [];
@@ -123,13 +123,100 @@ const DailyHourlyChart = () => {
           style: { colors: theme.palette.mode === 'dark' ? '#ccc' : '#666' }
         }
       },
-      tooltip: { theme: theme.palette.mode === 'dark' ? 'dark' : 'light' },
+      tooltip: {
+        shared: true,
+        intersect: false,
+        theme: theme.palette.mode === 'dark' ? 'dark' : 'light',
+        custom: function ({ series, dataPointIndex, w }) {
+          const isDark = theme.palette.mode === 'dark';
+          const bgColor = isDark ? '#2a2a2a' : '#fff';
+          const textColor = isDark ? '#e0e0e0' : '#333';
+          const borderColor = isDark ? '#444' : '#e0e0e0';
+
+          // Build sorted entries (descending by value)
+          const entries = w.config.series
+            .map((s, i) => ({
+              name: s.name,
+              value: series[i][dataPointIndex],
+              color: w.globals.colors[i]
+            }))
+            .filter((e) => e.value > 0)
+            .sort((a, b) => b.value - a.value);
+
+          const hourLabel = w.globals.categoryLabels[dataPointIndex] || dataPointIndex;
+          let rows = entries
+            .map(
+              (e) =>
+                `<div style="display:flex;align-items:center;padding:2px 0;">` +
+                `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${e.color};margin-right:8px;flex-shrink:0;"></span>` +
+                `<span style="flex:1;color:${textColor};">${e.name}</span>` +
+                `<span style="margin-left:16px;font-weight:600;color:${textColor};">${e.value.toLocaleString()}</span>` +
+                `</div>`
+            )
+            .join('');
+
+          return (
+            `<div style="padding:8px 12px;background:${bgColor};border:1px solid ${borderColor};border-radius:4px;font-size:13px;min-width:150px;">` +
+            `<div style="font-weight:700;margin-bottom:4px;color:${textColor};">${hourLabel}</div>` +
+            rows +
+            `</div>`
+          );
+        }
+      },
       legend: { show: true, position: 'bottom', horizontalAlign: 'center' },
       grid: { show: true },
       theme: { mode: theme.palette.mode }
     };
 
-    return { tokenSeries: tokenSeriesData, requestSeries: requestSeriesData, chartOptions: baseOptions };
+    // Helper: build end-of-line annotation points for a given series array
+    function buildEndAnnotations(seriesArr, categories) {
+      if (!seriesArr || seriesArr.length === 0 || !categories || categories.length === 0) return {};
+      const lastIdx = categories.length - 1;
+      const points = [];
+      const occupiedYValues = [];
+
+      const allValues = seriesArr.flatMap((ss) => ss.data).filter((v) => v > 0);
+      const maxVal = allValues.length > 0 ? Math.max(...allValues) : 1;
+      const threshold = maxVal * 0.03;
+
+      seriesArr.forEach((s, i) => {
+        const value = s.data[lastIdx];
+        if (value === undefined || value === null) return;
+
+        let adjustedY = value;
+        for (const prev of occupiedYValues) {
+          if (Math.abs(adjustedY - prev) < threshold) {
+            adjustedY = prev + threshold;
+          }
+        }
+        occupiedYValues.push(adjustedY);
+
+        const color = USER_COLORS[i % USER_COLORS.length];
+        points.push({
+          x: categories[lastIdx],
+          y: adjustedY,
+          marker: { size: 0 },
+          label: {
+            text: s.name,
+            borderColor: 'transparent',
+            style: {
+              background: color,
+              color: '#fff',
+              fontSize: '11px',
+              fontWeight: 600,
+              padding: { left: 6, right: 6, top: 2, bottom: 2 }
+            }
+          }
+        });
+      });
+
+      return points.length > 0 ? { annotations: { points } } : {};
+    }
+
+    const tokenAnnotations = buildEndAnnotations(tokenSeriesData, hours);
+    const requestAnnotations = buildEndAnnotations(requestSeriesData, hours);
+
+    return { tokenSeries: tokenSeriesData, requestSeries: requestSeriesData, chartOptions: baseOptions, tokenAnnotations, requestAnnotations };
   }, [data, theme.palette.mode]);
 
   const handleTableSort = (property) => {
@@ -209,6 +296,7 @@ const DailyHourlyChart = () => {
             <Chart
               options={{
                 ...chartOptions,
+                ...tokenAnnotations,
                 chart: { ...chartOptions.chart, id: 'daily-hourly-tokens' },
                 yaxis: {
                   title: { text: 'Token 数' },
@@ -235,6 +323,7 @@ const DailyHourlyChart = () => {
             <Chart
               options={{
                 ...chartOptions,
+                ...requestAnnotations,
                 chart: { ...chartOptions.chart, id: 'daily-hourly-requests' },
                 yaxis: {
                   title: { text: '请求次数' },
