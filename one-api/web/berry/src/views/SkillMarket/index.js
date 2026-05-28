@@ -45,7 +45,10 @@ import {
   IconFileZip,
   IconFolderUp,
   IconArrowUp,
-  IconHistory
+  IconHistory,
+  IconDragDrop,
+  IconFileCheck,
+  IconFileX
 } from '@tabler/icons-react';
 import JSZip from 'jszip';
 import ReactMarkdown from 'react-markdown';
@@ -475,31 +478,35 @@ const UploadDialog = ({ open, onClose, onCreated, theme, projectId, upgradeSkill
   const [form, setForm] = useState({ name: '', description: '', category: '工具', version: '1.0' });
   const [loading, setLoading] = useState(false);
   const [uploadMode, setUploadMode] = useState('file'); // 'file' | 'folder'
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [folderZip, setFolderZip] = useState(null);
-  const [folderFiles, setFolderFiles] = useState([]);
-  const [hasSkillMd, setHasSkillMd] = useState(null); // null = not checked yet
+  const [selectedFiles, setSelectedFiles] = useState([]); // array of { file, name, skillMdPreview, hasSkillMd }
+  const [hasSkillMd, setHasSkillMd] = useState(null);
   const [skillMdPreview, setSkillMdPreview] = useState('');
   const [packagingProgress, setPackagingProgress] = useState(0);
   const [isPackaging, setIsPackaging] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
+  const [batchProgress, setBatchProgress] = useState({ current: 0, total: 0 });
+  const [batchResults, setBatchResults] = useState([]); // { name, status: 'pending'|'uploading'|'success'|'error', message? }
+  const [isBatchUploading, setIsBatchUploading] = useState(false);
   const fileInputRef = useRef(null);
   const folderInputRef = useRef(null);
+  const dropZoneRef = useRef(null);
 
   const resetState = useCallback(() => {
     setForm({ name: '', description: '', category: '工具', version: '1.0' });
-    setSelectedFile(null);
-    setFolderZip(null);
-    setFolderFiles([]);
+    setSelectedFiles([]);
     setHasSkillMd(null);
     setSkillMdPreview('');
     setPackagingProgress(0);
     setIsPackaging(false);
+    setDragActive(false);
+    setBatchProgress({ current: 0, total: 0 });
+    setBatchResults([]);
+    setIsBatchUploading(false);
   }, []);
 
   // Initialize form when upgrading
   useEffect(() => {
     if (upgradeSkill) {
-      // Auto-increment version: try to parse and increment
       let nextVersion = '1.0';
       if (upgradeSkill.version) {
         const parts = upgradeSkill.version.split('.');
@@ -523,257 +530,620 @@ const UploadDialog = ({ open, onClose, onCreated, theme, projectId, upgradeSkill
   }, [upgradeSkill]);
 
   const handleClose = () => {
-    resetState();
-    onClose();
+    if (!isBatchUploading) {
+      resetState();
+      onClose();
+    }
   };
 
-  // Handle file selection (.md or .zip)
-  const handleFileSelect = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
+  // Validate and process a single file into a selectedFile entry
+  const processFile = async (file) => {
     const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
     if (ext !== '.md' && ext !== '.zip') {
-      showError('仅支持 .md 和 .zip 文件');
-      return;
+      return null; // skip unsupported
     }
     if (file.size > MAX_FILE_SIZE) {
-      showError('文件大小超过 20MB 限制');
-      return;
+      return { file, name: file.name, hasSkillMd: false, skillMdPreview: '', error: '文件大小超过 20MB' };
     }
 
-    setSelectedFile(file);
-    setFolderZip(null);
-    setHasSkillMd(null);
+    const entry = { file, name: file.name.replace(/\.[^.]+$/, ''), hasSkillMd: null, skillMdPreview: '', error: null };
 
-    // Auto-fill name from filename
-    if (!form.name) {
-      setForm((f) => ({ ...f, name: file.name.replace(/\.[^.]+$/, '') }));
-    }
-
-    // For .md files, preview content
     if (ext === '.md') {
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        setSkillMdPreview(ev.target.result);
-      };
-      reader.readAsText(file);
-    } else {
-      // For .zip, try to read skill.md
-      const reader = new FileReader();
-      reader.onload = async (ev) => {
-        try {
-          const zip = await JSZip.loadAsync(ev.target.result);
-          const files = Object.keys(zip.files);
-          const skillMdFile = files.find((f) => f.toLowerCase().endsWith('skill.md') && !zip.files[f].dir);
-          if (skillMdFile) {
-            const content = await zip.file(skillMdFile).async('string');
-            setHasSkillMd(true);
-            setSkillMdPreview(content);
-          } else {
-            setHasSkillMd(false);
-            setSkillMdPreview('');
-          }
-        } catch {
-          setHasSkillMd(false);
+      try {
+        const content = await file.text();
+        entry.skillMdPreview = content;
+        entry.hasSkillMd = true;
+      } catch { /* ignore */ }
+    } else if (ext === '.zip') {
+      try {
+        const ab = await file.arrayBuffer();
+        const zip = await JSZip.loadAsync(ab);
+        const files = Object.keys(zip.files);
+        const skillMdFile = files.find((f) => f.toLowerCase().endsWith('skill.md') && !zip.files[f].dir);
+        if (skillMdFile) {
+          entry.skillMdPreview = await zip.file(skillMdFile).async('string');
+          entry.hasSkillMd = true;
+        } else {
+          entry.hasSkillMd = false;
         }
-      };
-      reader.readAsArrayBuffer(file);
+      } catch {
+        entry.hasSkillMd = false;
+      }
     }
+
+    return entry;
   };
 
-  // Handle folder selection
+  // Handle multi-file selection (.md/.zip)
+  const handleFileSelect = async (e) => {
+    const fileList = Array.from(e.target.files || []);
+    if (fileList.length === 0) return;
+
+    if (isUpgrade) {
+      // Upgrade mode: only first file
+      const entry = await processFile(fileList[0]);
+      if (!entry) { showError('仅支持 .md 和 .zip 文件'); return; }
+      if (entry.error) { showError(entry.error); return; }
+      setSelectedFiles([entry]);
+      if (!form.name) setForm((f) => ({ ...f, name: entry.name }));
+      setHasSkillMd(entry.hasSkillMd);
+      setSkillMdPreview(entry.skillMdPreview);
+    } else {
+      // Batch mode
+      const entries = [];
+      for (const file of fileList) {
+        const entry = await processFile(file);
+        if (entry) entries.push(entry);
+      }
+      if (entries.length === 0) { showError('没有可上传的文件（仅支持 .md 和 .zip）'); return; }
+      setSelectedFiles((prev) => [...prev, ...entries]);
+      // Show preview for first entry
+      if (entries.length > 0) {
+        setHasSkillMd(entries[0].hasSkillMd);
+        setSkillMdPreview(entries[0].skillMdPreview);
+      }
+    }
+
+    // Reset input value so same file can be re-selected
+    if (e.target.value) e.target.value = '';
+  };
+
+  // Handle folder selection (multi-directory support)
   const handleFolderSelect = async (e) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
     setIsPackaging(true);
     setPackagingProgress(10);
-    setHasSkillMd(null);
 
     const fileList = Array.from(files);
-    setFolderFiles(fileList);
 
-    // Check for skill.md
-    const skillMdEntry = fileList.find((f) => f.name.toLowerCase() === 'skill.md' || f.webkitRelativePath.toLowerCase().endsWith('skill.md'));
-    const detectedSkillMd = !!skillMdEntry;
-    setHasSkillMd(detectedSkillMd);
-
-    // Read skill.md content if present
-    if (detectedSkillMd) {
-      const content = await skillMdEntry.text();
-      setSkillMdPreview(content);
-    } else {
-      setSkillMdPreview('');
+    // Group files by root directory name
+    const dirMap = {};
+    for (const file of fileList) {
+      const parts = (file.webkitRelativePath || file.name).split('/');
+      const rootDir = parts[0] || 'skill';
+      if (!dirMap[rootDir]) dirMap[rootDir] = [];
+      dirMap[rootDir].push(file);
     }
 
+    const dirNames = Object.keys(dirMap);
     setPackagingProgress(30);
 
-    // Package with JSZip
     try {
-      const zip = new JSZip();
-      const rootFolder = fileList[0].webkitRelativePath.split('/')[0] || 'skill';
+      const entries = [];
+      const total = dirNames.length;
+      for (let i = 0; i < total; i++) {
+        const dirName = dirNames[i];
+        const dirFiles = dirMap[dirName];
 
-      for (const file of fileList) {
-        const path = file.webkitRelativePath || file.name;
-        if (!file.dir) {
-          const data = await file.arrayBuffer();
-          zip.file(path, data);
+        // Check for skill.md
+        const skillMdEntry = dirFiles.find((f) => {
+          const path = f.webkitRelativePath || f.name;
+          return path.toLowerCase().endsWith('skill.md');
+        });
+
+        const zip = new JSZip();
+        for (const file of dirFiles) {
+          const path = file.webkitRelativePath || file.name;
+          if (!file.dir) {
+            const data = await file.arrayBuffer();
+            zip.file(path, data);
+          }
         }
+
+        const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
+        if (blob.size > MAX_FILE_SIZE) {
+          entries.push({ file: null, name: dirName, hasSkillMd: false, skillMdPreview: '', error: '打包后超过 20MB' });
+          continue;
+        }
+
+        const zipFile = new File([blob], `${dirName}.zip`, { type: 'application/zip' });
+        let skillMdContent = '';
+        let detected = false;
+        if (skillMdEntry) {
+          skillMdContent = await skillMdEntry.text();
+          detected = true;
+        }
+
+        entries.push({
+          file: zipFile,
+          name: dirName,
+          hasSkillMd: detected,
+          skillMdPreview: skillMdContent,
+          error: null
+        });
+
+        setPackagingProgress(30 + Math.round((i + 1) / total * 60));
       }
 
-      setPackagingProgress(70);
-
-      const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
+      setSelectedFiles((prev) => [...prev, ...entries]);
+      if (entries.length > 0) {
+        setHasSkillMd(entries[0].hasSkillMd);
+        setSkillMdPreview(entries[0].skillMdPreview);
+      }
 
       setPackagingProgress(100);
-
-      if (blob.size > MAX_FILE_SIZE) {
-        showError('打包后文件大小超过 20MB 限制');
-        setIsPackaging(false);
-        return;
-      }
-
-      const zipFile = new File([blob], `${rootFolder}.zip`, { type: 'application/zip' });
-      setFolderZip(zipFile);
-      setSelectedFile(null);
-
-      // Auto-fill name from folder name
-      if (!form.name) {
-        setForm((f) => ({ ...f, name: rootFolder }));
-      }
     } catch (err) {
       showError('文件夹打包失败: ' + err.message);
     }
     setIsPackaging(false);
+
+    if (e.target.value) e.target.value = '';
   };
 
+  // Remove a file from the selected list
+  const removeFile = (index) => {
+    setSelectedFiles((prev) => {
+      const next = prev.filter((_, i) => i !== index);
+      // Update preview to first remaining
+      if (next.length > 0) {
+        setHasSkillMd(next[0].hasSkillMd);
+        setSkillMdPreview(next[0].skillMdPreview);
+      } else {
+        setHasSkillMd(null);
+        setSkillMdPreview('');
+      }
+      return next;
+    });
+  };
+
+  // Drag-and-drop handlers
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Only deactivate when leaving the drop zone
+    if (dropZoneRef.current && !dropZoneRef.current.contains(e.relatedTarget)) {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+
+    const items = e.dataTransfer.items;
+    if (!items || items.length === 0) return;
+
+    // Try to read entries (supports directories)
+    const entries = [];
+    for (let i = 0; i < items.length; i++) {
+      const entry = items[i].webkitGetAsEntry?.();
+      if (entry) entries.push(entry);
+    }
+
+    if (entries.length === 0) {
+      // Fallback to files
+      const droppedFiles = Array.from(e.dataTransfer.files);
+      const processed = [];
+      for (const file of droppedFiles) {
+        const entry = await processFile(file);
+        if (entry) processed.push(entry);
+      }
+      if (processed.length > 0) {
+        setSelectedFiles((prev) => [...prev, ...processed]);
+        if (processed.length > 0) {
+          setHasSkillMd(processed[0].hasSkillMd);
+          setSkillMdPreview(processed[0].skillMdPreview);
+        }
+      }
+      return;
+    }
+
+    // Read all entries (files and directories)
+    setIsPackaging(true);
+    setPackagingProgress(10);
+
+    const readEntry = (entry) => {
+      return new Promise((resolve) => {
+        if (entry.isFile) {
+          entry.file((file) => resolve(file), () => resolve(null));
+        } else if (entry.isDirectory) {
+          const reader = entry.createReader();
+          const allEntries = [];
+          const readBatch = () => {
+            reader.readEntries(async (batch) => {
+              if (batch.length === 0) {
+                const files = [];
+                for (const e of allEntries) {
+                  const f = await readEntry(e);
+                  if (f) {
+                    if (Array.isArray(f)) files.push(...f);
+                    else files.push(f);
+                  }
+                }
+                resolve(files);
+              } else {
+                allEntries.push(...batch);
+                readBatch();
+              }
+            }, () => resolve([]));
+          };
+          readBatch();
+        } else {
+          resolve(null);
+        }
+      });
+    };
+
+    const processed = [];
+    for (let i = 0; i < entries.length; i++) {
+      const entry = entries[i];
+      if (entry.isDirectory) {
+        // Package directory as ZIP
+        const dirName = entry.name;
+        const dirFiles = await readEntry(entry);
+        if (!dirFiles || dirFiles.length === 0) continue;
+
+        const zip = new JSZip();
+        for (const file of dirFiles) {
+          const data = await file.arrayBuffer();
+          zip.file(`${dirName}/${file.name}`, data);
+        }
+
+        const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
+        if (blob.size > MAX_FILE_SIZE) {
+          processed.push({ file: null, name: dirName, hasSkillMd: false, skillMdPreview: '', error: '打包后超过 20MB' });
+          continue;
+        }
+
+        const zipFile = new File([blob], `${dirName}.zip`, { type: 'application/zip' });
+        const skillMdFile = dirFiles.find((f) => f.name.toLowerCase() === 'skill.md');
+        let skillMdContent = '';
+        let detected = false;
+        if (skillMdFile) {
+          skillMdContent = await skillMdFile.text();
+          detected = true;
+        }
+
+        processed.push({ file: zipFile, name: dirName, hasSkillMd: detected, skillMdPreview: skillMdContent, error: null });
+      } else {
+        // Single file
+        const file = await readEntry(entry);
+        if (file && !Array.isArray(file)) {
+          const entryResult = await processFile(file);
+          if (entryResult) processed.push(entryResult);
+        }
+      }
+      setPackagingProgress(10 + Math.round((i + 1) / entries.length * 80));
+    }
+
+    if (processed.length > 0) {
+      setSelectedFiles((prev) => [...prev, ...processed]);
+      setHasSkillMd(processed[0].hasSkillMd);
+      setSkillMdPreview(processed[0].skillMdPreview);
+    } else {
+      showError('没有可上传的文件（仅支持 .md 和 .zip）');
+    }
+
+    setIsPackaging(false);
+    setPackagingProgress(100);
+  };
+
+  // Single upload helper
+  const uploadSingle = async (fileEntry) => {
+    const formData = new FormData();
+    formData.append('file', fileEntry.file);
+
+    if (isUpgrade) {
+      formData.append('skill_id', upgradeSkill.id);
+      formData.append('description', form.description);
+      formData.append('version', form.version);
+    } else {
+      formData.append('project_id', projectId);
+      formData.append('name', fileEntry.name || fileEntry.file.name.replace(/\.[^.]+$/, ''));
+      formData.append('description', form.description);
+      formData.append('category', form.category);
+      formData.append('version', form.version);
+    }
+
+    const url = isUpgrade ? '/api/skill/upgrade' : '/api/skill/';
+    const res = await API.post(url, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    return res.data;
+  };
+
+  // Batch submit: upload all files sequentially
   const handleSubmit = async () => {
-    const fileToUpload = selectedFile || folderZip;
-    if (!fileToUpload) {
+    const validFiles = selectedFiles.filter((f) => f.file && !f.error);
+    if (validFiles.length === 0) {
       showError('请选择文件或文件夹');
       return;
     }
 
-    // For ZIP without skill.md, require description
-    const ext = fileToUpload.name.substring(fileToUpload.name.lastIndexOf('.')).toLowerCase();
-    if (ext === '.zip' && !hasSkillMd && !form.description) {
-      showError('未找到 skill.md，请填写描述信息');
+    // For upgrade mode, still single-file
+    if (isUpgrade) {
+      setLoading(true);
+      try {
+        const result = await uploadSingle(validFiles[0]);
+        if (result.success) {
+          showSuccess('Skill 升级成功');
+          resetState();
+          onCreated();
+          handleClose();
+        } else {
+          showError(result.message);
+        }
+      } catch (err) {
+        showError(err);
+      }
+      setLoading(false);
       return;
     }
 
-    setLoading(true);
-    try {
-      const formData = new FormData();
-      formData.append('file', fileToUpload);
-
-      if (isUpgrade) {
-        formData.append('skill_id', upgradeSkill.id);
-        formData.append('description', form.description);
-        formData.append('version', form.version);
-      } else {
-        formData.append('project_id', projectId);
-        formData.append('name', form.name || fileToUpload.name.replace(/\.[^.]+$/, ''));
-        formData.append('description', form.description);
-        formData.append('category', form.category);
-        formData.append('version', form.version);
+    // Batch mode
+    if (validFiles.length === 1) {
+      // Single file: direct upload (no batch UI)
+      setLoading(true);
+      try {
+        const result = await uploadSingle(validFiles[0]);
+        if (result.success) {
+          showSuccess('Skill 创建成功');
+          resetState();
+          onCreated();
+          handleClose();
+        } else {
+          showError(result.message);
+        }
+      } catch (err) {
+        showError(err);
       }
-
-      const url = isUpgrade ? '/api/skill/upgrade' : '/api/skill/';
-      const res = await API.post(url, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      const { success, message } = res.data;
-      if (success) {
-        showSuccess(isUpgrade ? 'Skill 升级成功' : 'Skill 创建成功');
-        resetState();
-        onCreated();
-        handleClose();
-      } else {
-        showError(message);
-      }
-    } catch (err) {
-      showError(err);
+      setLoading(false);
+      return;
     }
-    setLoading(false);
+
+    // Multi-file batch upload
+    setIsBatchUploading(true);
+    setBatchProgress({ current: 0, total: validFiles.length });
+    const results = validFiles.map((f) => ({ name: f.name, status: 'pending', message: '' }));
+    setBatchResults([...results]);
+
+    let successCount = 0;
+    for (let i = 0; i < validFiles.length; i++) {
+      results[i].status = 'uploading';
+      setBatchResults([...results]);
+      setBatchProgress({ current: i + 1, total: validFiles.length });
+
+      try {
+        const result = await uploadSingle(validFiles[i]);
+        if (result.success) {
+          results[i].status = 'success';
+          successCount++;
+        } else {
+          results[i].status = 'error';
+          results[i].message = result.message || '上传失败';
+        }
+      } catch (err) {
+        results[i].status = 'error';
+        results[i].message = err.message || '网络错误';
+      }
+      setBatchResults([...results]);
+    }
+
+    setIsBatchUploading(false);
+
+    if (successCount > 0) {
+      showSuccess(`批量上传完成: ${successCount}/${validFiles.length} 成功`);
+      onCreated();
+    }
+
+    // If all failed, show error
+    if (successCount === 0) {
+      showError('所有文件上传失败');
+    }
   };
 
-  const currentFile = selectedFile || folderZip;
+  // Check if we're in batch mode (multiple files, not upgrade)
+  const isBatch = !isUpgrade && selectedFiles.length > 1;
+  const validFileCount = selectedFiles.filter((f) => f.file && !f.error).length;
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
       <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        {isUpgrade ? `升级 Skill: ${upgradeSkill.name}` : '上传 Skill'}
-        <IconButton size="small" onClick={handleClose}>
+        {isUpgrade ? `升级 Skill: ${upgradeSkill.name}` : (isBatch ? `批量上传 (${validFileCount} 个文件)` : '上传 Skill')}
+        <IconButton size="small" onClick={handleClose} disabled={isBatchUploading}>
           <IconX size={18} />
         </IconButton>
       </DialogTitle>
       <DialogContent dividers>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
           {/* Upload mode tabs */}
-          <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
-            <Button
-              variant={uploadMode === 'file' ? 'contained' : 'outlined'}
-              size="small"
-              onClick={() => { setUploadMode('file'); resetState(); }}
-              startIcon={<IconFileText size={16} />}
-            >
-              文件上传
-            </Button>
-            <Button
-              variant={uploadMode === 'folder' ? 'contained' : 'outlined'}
-              size="small"
-              onClick={() => { setUploadMode('folder'); resetState(); }}
-              startIcon={<IconFolderUp size={16} />}
-            >
-              文件夹上传
-            </Button>
-          </Box>
-
-          {/* File select button */}
-          {uploadMode === 'file' ? (
-            <Box>
-              <Button variant="outlined" component="label" size="small" startIcon={<IconUpload size={14} />}>
-                选择文件 (.md / .zip)
-                <input ref={fileInputRef} type="file" hidden accept=".md,.zip" onChange={handleFileSelect} />
+          {!isUpgrade && (
+            <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
+              <Button
+                variant={uploadMode === 'file' ? 'contained' : 'outlined'}
+                size="small"
+                onClick={() => { setUploadMode('file'); resetState(); }}
+                startIcon={<IconFileText size={16} />}
+                disabled={isBatchUploading}
+              >
+                文件上传
               </Button>
-              {currentFile && (
-                <Typography variant="caption" sx={{ ml: 1, color: theme.palette.text.secondary }}>
-                  {currentFile.name} ({(currentFile.size / 1024).toFixed(1)} KB)
-                </Typography>
-              )}
+              <Button
+                variant={uploadMode === 'folder' ? 'contained' : 'outlined'}
+                size="small"
+                onClick={() => { setUploadMode('folder'); resetState(); }}
+                startIcon={<IconFolderUp size={16} />}
+                disabled={isBatchUploading}
+              >
+                文件夹上传
+              </Button>
             </Box>
-          ) : (
-            <Box>
-              <Button variant="outlined" component="label" size="small" startIcon={<IconFolder size={14} />}>
-                选择文件夹
-                <input ref={folderInputRef} type="file" hidden webkitdirectory="" directory="" onChange={handleFolderSelect} />
-              </Button>
-              {folderZip && (
-                <Typography variant="caption" sx={{ ml: 1, color: theme.palette.text.secondary }}>
-                  {folderZip.name} ({(folderZip.size / 1024).toFixed(1)} KB, {folderFiles.length} 个文件)
-                </Typography>
+          )}
+
+          {/* Drag & Drop Zone */}
+          {!isUpgrade && !isBatchUploading && (
+            <Box
+              ref={dropZoneRef}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              sx={{
+                p: 2.5,
+                borderRadius: 2,
+                border: `2px dashed ${dragActive ? theme.palette.primary.main : theme.palette.divider}`,
+                bgcolor: dragActive
+                  ? (theme.palette.mode === 'dark' ? 'rgba(33,150,243,0.12)' : 'rgba(33,150,243,0.06)')
+                  : (theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)'),
+                textAlign: 'center',
+                transition: 'all 0.2s ease',
+                cursor: 'pointer',
+                '&:hover': {
+                  borderColor: theme.palette.primary.light,
+                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(33,150,243,0.06)' : 'rgba(33,150,243,0.03)'
+                }
+              }}
+              onClick={() => uploadMode === 'file' ? fileInputRef.current?.click() : folderInputRef.current?.click()}
+            >
+              <IconDragDrop size={32} color={dragActive ? theme.palette.primary.main : theme.palette.text.secondary} style={{ opacity: dragActive ? 1 : 0.5 }} />
+              <Typography variant="body2" sx={{ mt: 1, color: dragActive ? theme.palette.primary.main : theme.palette.text.secondary }}>
+                {dragActive ? '释放文件到此处' : '拖拽文件到此处，或点击选择'}
+              </Typography>
+              <Typography variant="caption" sx={{ color: theme.palette.text.secondary, opacity: 0.7 }}>
+                支持多选 .md/.zip 文件，拖拽文件夹自动打包
+              </Typography>
+              {/* Hidden inputs */}
+              <input ref={fileInputRef} type="file" hidden multiple accept=".md,.zip" onChange={handleFileSelect} />
+              <input ref={folderInputRef} type="file" hidden webkitdirectory="" directory="" onChange={handleFolderSelect} />
+            </Box>
+          )}
+
+          {/* Traditional file/folder select buttons (alternative) */}
+          {!isUpgrade && !isBatchUploading && (
+            <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+              {uploadMode === 'file' ? (
+                <Button variant="outlined" component="label" size="small" startIcon={<IconUpload size={14} />}>
+                  选择文件 (.md / .zip)
+                  <input type="file" hidden multiple accept=".md,.zip" onChange={handleFileSelect} />
+                </Button>
+              ) : (
+                <Button variant="outlined" component="label" size="small" startIcon={<IconFolder size={14} />}>
+                  选择文件夹
+                  <input type="file" hidden webkitdirectory="" directory="" onChange={handleFolderSelect} />
+                </Button>
               )}
-              {isPackaging && (
-                <Box sx={{ mt: 1 }}>
-                  <LinearProgress variant="determinate" value={packagingProgress} />
-                  <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>
-                    打包中... {packagingProgress}%
-                  </Typography>
-                </Box>
+              {selectedFiles.length > 0 && !isBatchUploading && (
+                <Button size="small" color="error" onClick={() => { setSelectedFiles([]); setHasSkillMd(null); setSkillMdPreview(''); }}>
+                  清空列表
+                </Button>
               )}
             </Box>
           )}
 
-          {/* skill.md detection result */}
-          {hasSkillMd === true && (
+          {/* Packaging progress */}
+          {isPackaging && (
+            <Box sx={{ mt: 1 }}>
+              <LinearProgress variant="determinate" value={packagingProgress} />
+              <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>
+                打包中... {packagingProgress}%
+              </Typography>
+            </Box>
+          )}
+
+          {/* File list (batch mode) */}
+          {selectedFiles.length > 0 && !isBatchUploading && (
+            <Box sx={{ maxHeight: 200, overflow: 'auto', border: `1px solid ${theme.palette.divider}`, borderRadius: 1 }}>
+              {selectedFiles.map((entry, index) => (
+                <Box
+                  key={index}
+                  sx={{
+                    display: 'flex', alignItems: 'center', gap: 1, px: 1.5, py: 0.75,
+                    borderBottom: index < selectedFiles.length - 1 ? `1px solid ${theme.palette.divider}` : 'none',
+                    '&:hover': { bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)' }
+                  }}
+                >
+                  {entry.error ? (
+                    <IconFileX size={16} color={theme.palette.error.main} />
+                  ) : entry.hasSkillMd ? (
+                    <IconFileCheck size={16} color={theme.palette.success.main} />
+                  ) : (
+                    <IconFileText size={16} color={theme.palette.text.secondary} />
+                  )}
+                  <Typography variant="caption" sx={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {entry.name}
+                    {entry.error && <span style={{ color: theme.palette.error.main, marginLeft: 4 }}>({entry.error})</span>}
+                  </Typography>
+                  {!isBatchUploading && (
+                    <IconButton size="small" onClick={() => removeFile(index)} sx={{ p: 0.25 }}>
+                      <IconX size={14} />
+                    </IconButton>
+                  )}
+                </Box>
+              ))}
+            </Box>
+          )}
+
+          {/* Batch upload progress */}
+          {isBatchUploading && (
+            <Box sx={{ mt: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  批量上传中 {batchProgress.current}/{batchProgress.total}
+                </Typography>
+              </Box>
+              <LinearProgress
+                variant="determinate"
+                value={batchProgress.total > 0 ? (batchProgress.current / batchProgress.total * 100) : 0}
+                sx={{ mb: 1 }}
+              />
+              <Box sx={{ maxHeight: 160, overflow: 'auto' }}>
+                {batchResults.map((r, i) => (
+                  <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 0.3 }}>
+                    {r.status === 'success' && <IconFileCheck size={14} color={theme.palette.success.main} />}
+                    {r.status === 'error' && <IconFileX size={14} color={theme.palette.error.main} />}
+                    {r.status === 'uploading' && <LinearProgress sx={{ width: 14, height: 2 }} />}
+                    {r.status === 'pending' && <IconFileText size={14} style={{ opacity: 0.3 }} />}
+                    <Typography variant="caption" sx={{
+                      flex: 1,
+                      color: r.status === 'error' ? theme.palette.error.main : r.status === 'success' ? theme.palette.success.main : theme.palette.text.secondary,
+                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
+                    }}>
+                      {r.name}
+                      {r.message && ` — ${r.message}`}
+                    </Typography>
+                  </Box>
+                ))}
+              </Box>
+            </Box>
+          )}
+
+          {/* skill.md detection result (single file mode) */}
+          {!isBatch && hasSkillMd === true && (
             <Box sx={{ p: 1, borderRadius: 1, bgcolor: theme.palette.mode === 'dark' ? 'rgba(76,175,80,0.1)' : 'rgba(76,175,80,0.08)', border: `1px solid ${theme.palette.success.main}` }}>
               <Typography variant="caption" sx={{ color: theme.palette.success.main }}>
                 已检测到 skill.md
               </Typography>
             </Box>
           )}
-          {hasSkillMd === false && (
+          {!isBatch && hasSkillMd === false && (
             <Box sx={{ p: 1, borderRadius: 1, bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,152,0,0.1)' : 'rgba(255,152,0,0.08)', border: `1px solid ${theme.palette.warning.main}` }}>
               <Typography variant="caption" sx={{ color: theme.palette.warning.main }}>
                 未找到 skill.md，请在下方填写名称和描述信息
@@ -782,8 +1152,15 @@ const UploadDialog = ({ open, onClose, onCreated, theme, projectId, upgradeSkill
           )}
 
           {/* Metadata fields */}
-          {!isUpgrade && (
-            <TextField label="名称" size="small" fullWidth value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
+          {!isUpgrade && !isBatch && (
+            <TextField label="名称" size="small" fullWidth value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} disabled={isBatchUploading} />
+          )}
+          {!isUpgrade && isBatch && (
+            <Box sx={{ p: 1, borderRadius: 1, bgcolor: theme.palette.mode === 'dark' ? 'rgba(33,150,243,0.08)' : 'rgba(33,150,243,0.05)', border: `1px solid ${theme.palette.divider}` }}>
+              <Typography variant="caption" sx={{ color: theme.palette.primary.main }}>
+                批量模式: 每个文件/文件夹名称自动作为 Skill 名称，下方设置共享描述和分类
+              </Typography>
+            </Box>
           )}
           {isUpgrade && (
             <Box sx={{ p: 1, borderRadius: 1, bgcolor: theme.palette.mode === 'dark' ? 'rgba(33,150,243,0.08)' : 'rgba(33,150,243,0.05)', border: `1px solid ${theme.palette.divider}` }}>
@@ -800,27 +1177,30 @@ const UploadDialog = ({ open, onClose, onCreated, theme, projectId, upgradeSkill
             minRows={2}
             value={form.description}
             onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-            required={hasSkillMd === false}
+            required={!isBatch && hasSkillMd === false}
+            disabled={isBatchUploading}
           />
           {!isUpgrade && (
             <Box sx={{ display: 'flex', gap: 2 }}>
               <FormControl size="small" sx={{ flex: 1 }}>
                 <InputLabel>分类</InputLabel>
-                <Select value={form.category} label="分类" onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}>
+                <Select value={form.category} label="分类" onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))} disabled={isBatchUploading}>
                   {SKILL_CATEGORIES.map((c) => (
                     <MenuItem key={c} value={c}>{c}</MenuItem>
                   ))}
                 </Select>
               </FormControl>
-              <TextField label="版本" size="small" sx={{ flex: 1 }} value={form.version} onChange={(e) => setForm((f) => ({ ...f, version: e.target.value }))} />
+              {!isBatch && (
+                <TextField label="版本" size="small" sx={{ flex: 1 }} value={form.version} onChange={(e) => setForm((f) => ({ ...f, version: e.target.value }))} disabled={isBatchUploading} />
+              )}
             </Box>
           )}
           {isUpgrade && (
             <TextField label="版本号" size="small" fullWidth value={form.version} onChange={(e) => setForm((f) => ({ ...f, version: e.target.value }))} />
           )}
 
-          {/* Content preview */}
-          {skillMdPreview && (
+          {/* Content preview (single file mode) */}
+          {!isBatch && skillMdPreview && (
             <Box>
               <Typography variant="caption" sx={{ color: theme.palette.text.secondary, mb: 0.5, display: 'block' }}>
                 skill.md 预览
@@ -842,10 +1222,16 @@ const UploadDialog = ({ open, onClose, onCreated, theme, projectId, upgradeSkill
         </Box>
       </DialogContent>
       <DialogActions>
-        <Button onClick={handleClose}>取消</Button>
-        <Button variant="contained" onClick={handleSubmit} disabled={loading || isPackaging || !currentFile}>
-          {loading ? (isUpgrade ? '升级中...' : '上传中...') : (isUpgrade ? '升级' : '上传')}
-        </Button>
+        <Button onClick={handleClose} disabled={isBatchUploading}>取消</Button>
+        {!isBatchUploading ? (
+          <Button variant="contained" onClick={handleSubmit} disabled={loading || isPackaging || validFileCount === 0}>
+            {loading ? (isUpgrade ? '升级中...' : '上传中...') : (isUpgrade ? '升级' : (isBatch ? `批量上传 (${validFileCount})` : '上传'))}
+          </Button>
+        ) : (
+          <Button variant="contained" disabled>
+            上传中 {batchProgress.current}/{batchProgress.total}
+          </Button>
+        )}
       </DialogActions>
     </Dialog>
   );
