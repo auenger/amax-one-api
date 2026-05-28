@@ -45,6 +45,8 @@ type Channel struct {
 	// Enterprise: Model downgrade on quota threshold
 	DowngradeThresholdPct int    `json:"downgrade_threshold_pct" gorm:"default:0"`          // 0=disabled, 1-100=trigger threshold
 	DowngradeTargetModel  string `json:"downgrade_target_model" gorm:"type:varchar(128);default:''"`
+	// Enterprise: Skip HTTP health probe, only check TCP connectivity
+	SkipHealthCheck bool `json:"skip_health_check" gorm:"default:false"`
 	// Health status from Redis (not persisted in DB)
 	HealthStatus string `json:"health_status" gorm:"-"`
 	HealthReason string `json:"health_reason,omitempty" gorm:"-"`

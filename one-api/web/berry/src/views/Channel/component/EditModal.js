@@ -22,7 +22,8 @@ import {
   Autocomplete,
   FormHelperText,
   Switch,
-  Checkbox
+  Checkbox,
+  FormControlLabel
 } from '@mui/material';
 
 import { Formik } from 'formik';
@@ -654,6 +655,19 @@ const EditModal = ({ open, channelId, onCancel, onOk, quota }) => {
                   </FormHelperText>
                 </FormControl>
               )}
+              <Divider sx={{ my: 1 }} />
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={values.skip_health_check ?? false}
+                    onChange={(e) => setFieldValue('skip_health_check', e.target.checked)}
+                    name="skip_health_check"
+                    color="primary"
+                  />
+                }
+                label="跳过健康检查"
+              />
+              <FormHelperText>开启后仅检测网络连通性（TCP），不验证 API 端点，适用于不支持标准 /v1/models 的第三方渠道</FormHelperText>
               <DialogActions>
                 <Button onClick={onCancel}>取消</Button>
                 <Button disableElevation disabled={isSubmitting} type="submit" variant="contained" color="primary">
