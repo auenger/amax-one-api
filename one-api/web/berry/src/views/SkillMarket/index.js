@@ -20,7 +20,6 @@ import {
   DialogContent,
   DialogActions,
   Button,
-  TextareaAutosize,
   LinearProgress,
   Collapse
 } from '@mui/material';
@@ -49,10 +48,96 @@ import {
   IconHistory
 } from '@tabler/icons-react';
 import JSZip from 'jszip';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 const SKILL_CATEGORIES = ['编码', '调试', '测试', '部署', '文档', '工具', '其他'];
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
+
+const MarkdownRenderer = ({ content, theme }) => {
+  if (!content) {
+    return (
+      <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+        暂无内容
+      </Typography>
+    );
+  }
+  return (
+    <Box
+      sx={{
+        '& h1': { fontSize: '1.5rem', fontWeight: 700, mt: 2, mb: 1, color: theme.palette.text.primary },
+        '& h2': { fontSize: '1.25rem', fontWeight: 600, mt: 2, mb: 1, color: theme.palette.text.primary },
+        '& h3': { fontSize: '1.1rem', fontWeight: 600, mt: 1.5, mb: 0.5, color: theme.palette.text.primary },
+        '& p': { fontSize: '0.875rem', lineHeight: 1.7, mb: 1, color: theme.palette.text.primary },
+        '& ul, & ol': { pl: 2.5, mb: 1 },
+        '& li': { fontSize: '0.875rem', lineHeight: 1.7, color: theme.palette.text.primary },
+        '& code': {
+          fontFamily: 'monospace',
+          fontSize: '0.8rem',
+          px: 0.5,
+          py: 0.2,
+          borderRadius: 0.5,
+          bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+          color: theme.palette.mode === 'dark' ? '#e06c75' : '#c7254e',
+        },
+        '& pre': {
+          fontFamily: 'monospace',
+          fontSize: '0.8rem',
+          p: 1.5,
+          borderRadius: 1,
+          bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)',
+          border: `1px solid ${theme.palette.divider}`,
+          overflow: 'auto',
+          mb: 1,
+        },
+        '& pre code': {
+          bgcolor: 'transparent',
+          px: 0,
+          py: 0,
+          color: theme.palette.text.primary,
+        },
+        '& blockquote': {
+          borderLeft: `3px solid ${theme.palette.primary.main}`,
+          pl: 1.5,
+          ml: 0,
+          mr: 0,
+          mb: 1,
+          color: theme.palette.text.secondary,
+          fontSize: '0.875rem',
+        },
+        '& a': {
+          color: theme.palette.primary.main,
+          textDecoration: 'none',
+          '&:hover': { textDecoration: 'underline' },
+        },
+        '& table': {
+          borderCollapse: 'collapse',
+          width: '100%',
+          mb: 1,
+          fontSize: '0.8rem',
+        },
+        '& th, & td': {
+          border: `1px solid ${theme.palette.divider}`,
+          px: 1,
+          py: 0.5,
+          textAlign: 'left',
+        },
+        '& th': {
+          bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)',
+          fontWeight: 600,
+        },
+        '& hr': { border: 'none', borderTop: `1px solid ${theme.palette.divider}`, my: 2 },
+        '& img': { maxWidth: '100%', borderRadius: 1 },
+        '& del, & s': { color: theme.palette.text.secondary },
+      }}
+    >
+      <ReactMarkdown remarkPlugins={[remarkGfm]} linkTarget="_blank">
+        {content}
+      </ReactMarkdown>
+    </Box>
+  );
+};
 
 const ProjectCard = ({ project, user, theme, onClick, onDelete, onEdit }) => {
   const isOwner = user && project.user_id === user.id;
@@ -740,24 +825,18 @@ const UploadDialog = ({ open, onClose, onCreated, theme, projectId, upgradeSkill
               <Typography variant="caption" sx={{ color: theme.palette.text.secondary, mb: 0.5, display: 'block' }}>
                 skill.md 预览
               </Typography>
-              <TextareaAutosize
-                readOnly
-                value={skillMdPreview.substring(0, 2000)}
-                style={{
-                  width: '100%',
-                  minHeight: 120,
-                  maxHeight: 200,
-                  padding: 8,
-                  borderRadius: 4,
+              <Box
+                sx={{
+                  p: 1.5,
+                  borderRadius: 1,
                   border: `1px solid ${theme.palette.divider}`,
-                  fontSize: '0.8rem',
-                  fontFamily: 'monospace',
-                  background: theme.palette.mode === 'dark' ? theme.palette.background.default : theme.palette.background.paper,
-                  color: theme.palette.text.primary,
-                  resize: 'vertical',
+                  bgcolor: theme.palette.mode === 'dark' ? theme.palette.background.default : theme.palette.background.paper,
+                  maxHeight: 200,
                   overflow: 'auto'
                 }}
-              />
+              >
+                <MarkdownRenderer content={skillMdPreview.substring(0, 2000)} theme={theme} />
+              </Box>
             </Box>
           )}
         </Box>
@@ -862,23 +941,18 @@ const DetailDialog = ({ open, skill, onClose, theme }) => {
             </Typography>
           </Box>
         </Box>
-        <TextareaAutosize
-          readOnly
-          value={skill.content || ''}
-          style={{
-            width: '100%',
-            minHeight: 300,
-            padding: 12,
-            borderRadius: 4,
+        <Box
+          sx={{
+            p: 1.5,
+            borderRadius: 1,
             border: `1px solid ${theme.palette.divider}`,
-            fontSize: '0.8rem',
-            fontFamily: 'monospace',
-            background: theme.palette.mode === 'dark' ? theme.palette.background.default : theme.palette.background.paper,
-            color: theme.palette.text.primary,
-            resize: 'vertical',
+            bgcolor: theme.palette.mode === 'dark' ? theme.palette.background.default : theme.palette.background.paper,
+            maxHeight: 400,
             overflow: 'auto'
           }}
-        />
+        >
+          <MarkdownRenderer content={skill.content || ''} theme={theme} />
+        </Box>
       </DialogContent>
     </Dialog>
   );
