@@ -21,7 +21,8 @@ import {
   DialogActions,
   Button,
   TextareaAutosize,
-  LinearProgress
+  LinearProgress,
+  Collapse
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { API } from 'utils/api';
@@ -43,7 +44,9 @@ import {
   IconEdit,
   IconPencil,
   IconFileZip,
-  IconFolderUp
+  IconFolderUp,
+  IconArrowUp,
+  IconHistory
 } from '@tabler/icons-react';
 import JSZip from 'jszip';
 
@@ -112,10 +115,25 @@ const ProjectCard = ({ project, user, theme, onClick, onDelete, onEdit }) => {
   );
 };
 
-const SkillCard = ({ skill, user, theme, onDownload, onInstall, onDelete, onDetail }) => {
+const SkillCard = ({ skill, user, theme, onDownload, onInstall, onDelete, onDetail, onUpgrade }) => {
   const isOwner = user && skill.user_id === user.id;
   const isAdmin = user && user.role >= 10;
   const isComplex = skill.skill_type === 'complex';
+  const [showVersions, setShowVersions] = useState(false);
+  const [versions, setVersions] = useState([]);
+  const [versionsLoading, setVersionsLoading] = useState(false);
+
+  const loadVersions = async () => {
+    if (versions.length > 0) { setShowVersions(!showVersions); return; }
+    setVersionsLoading(true);
+    try {
+      const res = await API.get(`/api/skill/${skill.id}/versions`);
+      const { success, data } = res.data;
+      if (success) setVersions(data || []);
+    } catch (err) { /* ignore */ }
+    setVersionsLoading(false);
+    setShowVersions(true);
+  };
 
   return (
     <Card
@@ -172,6 +190,13 @@ const SkillCard = ({ skill, user, theme, onDownload, onInstall, onDelete, onDeta
             </Box>
           </Box>
           <Box sx={{ display: 'flex', gap: 0.5, flexShrink: 0 }}>
+            {(isOwner || isAdmin) && (
+              <Tooltip title="升级版本" arrow>
+                <IconButton size="small" onClick={() => onUpgrade(skill)} sx={{ color: theme.palette.success.main }}>
+                  <IconArrowUp size={18} />
+                </IconButton>
+              </Tooltip>
+            )}
             <Tooltip title="一键安装" arrow>
               <IconButton size="small" onClick={() => onInstall(skill)} sx={{ color: theme.palette.primary.main }}>
                 <IconTerminal size={18} />
@@ -191,6 +216,61 @@ const SkillCard = ({ skill, user, theme, onDownload, onInstall, onDelete, onDeta
             )}
           </Box>
         </Box>
+        {/* Version history toggle */}
+        <Box sx={{ mt: 1, borderTop: `1px solid ${theme.palette.divider}`, pt: 0.5 }}>
+          <Button
+            size="small"
+            onClick={loadVersions}
+            startIcon={<IconHistory size={14} />}
+            sx={{ fontSize: '0.7rem', textTransform: 'none', p: 0, minWidth: 0, color: theme.palette.text.secondary }}
+          >
+            版本历史 {versions.length > 0 ? `(${versions.length})` : ''}
+          </Button>
+        </Box>
+        <Collapse in={showVersions}>
+          {versionsLoading && <Skeleton height={40} sx={{ mt: 1 }} />}
+          {!versionsLoading && versions.length > 1 && (
+            <Box sx={{ mt: 0.5 }}>
+              {versions.map((v) => (
+                <Box
+                  key={v.id}
+                  sx={{
+                    display: 'flex', alignItems: 'center', gap: 1, py: 0.5, px: 1,
+                    borderRadius: 1,
+                    bgcolor: v.is_archived
+                      ? (theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)')
+                      : (theme.palette.mode === 'dark' ? 'rgba(33,150,243,0.08)' : 'rgba(33,150,243,0.05)'),
+                    mb: 0.5,
+                    opacity: v.is_archived ? 0.7 : 1
+                  }}
+                >
+                  <Typography variant="caption" sx={{ flex: 1, fontSize: '0.7rem' }}>
+                    v{v.version || '—'}
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: theme.palette.text.secondary, fontSize: '0.65rem' }}>
+                    {v.user_name} · {new Date(v.created_time * 1000).toLocaleDateString()}
+                  </Typography>
+                  {v.is_archived && (
+                    <Chip label="归档" size="small" sx={{ fontSize: '0.55rem', height: 16, '& .MuiChip-label': { px: 0.5 } }} />
+                  )}
+                  {!v.is_archived && (
+                    <Chip label="当前" size="small" color="primary" sx={{ fontSize: '0.55rem', height: 16, '& .MuiChip-label': { px: 0.5 } }} />
+                  )}
+                  <Tooltip title="下载此版本" arrow>
+                    <IconButton size="small" onClick={() => onDownload(v)} sx={{ color: theme.palette.text.secondary }}>
+                      <IconDownload size={14} />
+                    </IconButton>
+                  </Tooltip>
+                </Box>
+              ))}
+            </Box>
+          )}
+          {!versionsLoading && versions.length <= 1 && showVersions && (
+            <Typography variant="caption" sx={{ color: theme.palette.text.secondary, display: 'block', mt: 0.5 }}>
+              暂无历史版本
+            </Typography>
+          )}
+        </Collapse>
       </CardContent>
     </Card>
   );
@@ -305,7 +385,8 @@ const EditProjectDialog = ({ open, project, onClose, onUpdated, theme }) => {
   );
 };
 
-const UploadDialog = ({ open, onClose, onCreated, theme, projectId }) => {
+const UploadDialog = ({ open, onClose, onCreated, theme, projectId, upgradeSkill }) => {
+  const isUpgrade = !!upgradeSkill;
   const [form, setForm] = useState({ name: '', description: '', category: '工具', version: '1.0' });
   const [loading, setLoading] = useState(false);
   const [uploadMode, setUploadMode] = useState('file'); // 'file' | 'folder'
@@ -329,6 +410,32 @@ const UploadDialog = ({ open, onClose, onCreated, theme, projectId }) => {
     setPackagingProgress(0);
     setIsPackaging(false);
   }, []);
+
+  // Initialize form when upgrading
+  useEffect(() => {
+    if (upgradeSkill) {
+      // Auto-increment version: try to parse and increment
+      let nextVersion = '1.0';
+      if (upgradeSkill.version) {
+        const parts = upgradeSkill.version.split('.');
+        if (parts.length >= 2) {
+          const last = parseInt(parts[parts.length - 1], 10);
+          if (!isNaN(last)) {
+            parts[parts.length - 1] = String(last + 1);
+            nextVersion = parts.join('.');
+          }
+        }
+      }
+      setForm({
+        name: upgradeSkill.name || '',
+        description: upgradeSkill.description || '',
+        category: upgradeSkill.category || '工具',
+        version: nextVersion
+      });
+    } else {
+      resetState();
+    }
+  }, [upgradeSkill]);
 
   const handleClose = () => {
     resetState();
@@ -474,18 +581,26 @@ const UploadDialog = ({ open, onClose, onCreated, theme, projectId }) => {
     try {
       const formData = new FormData();
       formData.append('file', fileToUpload);
-      formData.append('project_id', projectId);
-      formData.append('name', form.name || fileToUpload.name.replace(/\.[^.]+$/, ''));
-      formData.append('description', form.description);
-      formData.append('category', form.category);
-      formData.append('version', form.version);
 
-      const res = await API.post('/api/skill/', formData, {
+      if (isUpgrade) {
+        formData.append('skill_id', upgradeSkill.id);
+        formData.append('description', form.description);
+        formData.append('version', form.version);
+      } else {
+        formData.append('project_id', projectId);
+        formData.append('name', form.name || fileToUpload.name.replace(/\.[^.]+$/, ''));
+        formData.append('description', form.description);
+        formData.append('category', form.category);
+        formData.append('version', form.version);
+      }
+
+      const url = isUpgrade ? '/api/skill/upgrade' : '/api/skill/';
+      const res = await API.post(url, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       const { success, message } = res.data;
       if (success) {
-        showSuccess('Skill 创建成功');
+        showSuccess(isUpgrade ? 'Skill 升级成功' : 'Skill 创建成功');
         resetState();
         onCreated();
         handleClose();
@@ -503,7 +618,7 @@ const UploadDialog = ({ open, onClose, onCreated, theme, projectId }) => {
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
       <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        上传 Skill
+        {isUpgrade ? `升级 Skill: ${upgradeSkill.name}` : '上传 Skill'}
         <IconButton size="small" onClick={handleClose}>
           <IconX size={18} />
         </IconButton>
@@ -582,7 +697,16 @@ const UploadDialog = ({ open, onClose, onCreated, theme, projectId }) => {
           )}
 
           {/* Metadata fields */}
-          <TextField label="名称" size="small" fullWidth value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
+          {!isUpgrade && (
+            <TextField label="名称" size="small" fullWidth value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
+          )}
+          {isUpgrade && (
+            <Box sx={{ p: 1, borderRadius: 1, bgcolor: theme.palette.mode === 'dark' ? 'rgba(33,150,243,0.08)' : 'rgba(33,150,243,0.05)', border: `1px solid ${theme.palette.divider}` }}>
+              <Typography variant="caption" sx={{ color: theme.palette.primary.main }}>
+                继承自: {upgradeSkill.name} (项目: {upgradeSkill.project_name || '—'}) · 当前版本: v{upgradeSkill.version || '—'}
+              </Typography>
+            </Box>
+          )}
           <TextField
             label="描述"
             size="small"
@@ -593,17 +717,22 @@ const UploadDialog = ({ open, onClose, onCreated, theme, projectId }) => {
             onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
             required={hasSkillMd === false}
           />
-          <Box sx={{ display: 'flex', gap: 2 }}>
-            <FormControl size="small" sx={{ flex: 1 }}>
-              <InputLabel>分类</InputLabel>
-              <Select value={form.category} label="分类" onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}>
-                {SKILL_CATEGORIES.map((c) => (
-                  <MenuItem key={c} value={c}>{c}</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <TextField label="版本" size="small" sx={{ flex: 1 }} value={form.version} onChange={(e) => setForm((f) => ({ ...f, version: e.target.value }))} />
-          </Box>
+          {!isUpgrade && (
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <FormControl size="small" sx={{ flex: 1 }}>
+                <InputLabel>分类</InputLabel>
+                <Select value={form.category} label="分类" onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}>
+                  {SKILL_CATEGORIES.map((c) => (
+                    <MenuItem key={c} value={c}>{c}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <TextField label="版本" size="small" sx={{ flex: 1 }} value={form.version} onChange={(e) => setForm((f) => ({ ...f, version: e.target.value }))} />
+            </Box>
+          )}
+          {isUpgrade && (
+            <TextField label="版本号" size="small" fullWidth value={form.version} onChange={(e) => setForm((f) => ({ ...f, version: e.target.value }))} />
+          )}
 
           {/* Content preview */}
           {skillMdPreview && (
@@ -636,7 +765,7 @@ const UploadDialog = ({ open, onClose, onCreated, theme, projectId }) => {
       <DialogActions>
         <Button onClick={handleClose}>取消</Button>
         <Button variant="contained" onClick={handleSubmit} disabled={loading || isPackaging || !currentFile}>
-          {loading ? '上传中...' : '上传'}
+          {loading ? (isUpgrade ? '升级中...' : '上传中...') : (isUpgrade ? '升级' : '上传')}
         </Button>
       </DialogActions>
     </Dialog>
@@ -770,6 +899,7 @@ const SkillMarket = () => {
   const [uploadOpen, setUploadOpen] = useState(false);
   const [installSkill, setInstallSkill] = useState(null);
   const [detailSkill, setDetailSkill] = useState(null);
+  const [upgradeSkill, setUpgradeSkill] = useState(null);
 
   const loadProjects = useCallback(async () => {
     setLoading(true);
@@ -1054,6 +1184,7 @@ const SkillMarket = () => {
                   onInstall={setInstallSkill}
                   onDelete={handleDeleteSkill}
                   onDetail={setDetailSkill}
+                  onUpgrade={setUpgradeSkill}
                 />
               </div>
             </Fade>
@@ -1061,7 +1192,15 @@ const SkillMarket = () => {
         </Box>
       )}
 
-      <UploadDialog open={uploadOpen} onClose={() => setUploadOpen(false)} onCreated={() => loadProjectSkills(currentProject.id)} theme={theme} projectId={currentProject.id} />
+      <UploadDialog open={uploadOpen} onClose={() => setUploadOpen(false)} onCreated={() => loadProjectSkills(currentProject.id)} theme={theme} projectId={currentProject.id} upgradeSkill={null} />
+      <UploadDialog
+        open={!!upgradeSkill}
+        onClose={() => setUpgradeSkill(null)}
+        onCreated={() => loadProjectSkills(currentProject.id)}
+        theme={theme}
+        projectId={currentProject?.id}
+        upgradeSkill={upgradeSkill}
+      />
       <InstallDialog open={!!installSkill} skill={installSkill} onClose={() => setInstallSkill(null)} theme={theme} />
       <DetailDialog open={!!detailSkill} skill={detailSkill} onClose={() => setDetailSkill(null)} theme={theme} />
     </Box>

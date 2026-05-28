@@ -567,3 +567,223 @@ func GetSkillCategories(c *gin.Context) {
 		"data":    categories,
 	})
 }
+
+// UpgradeSkill creates a new version of an existing skill.
+// The old skill is archived and the new skill becomes the active version.
+func UpgradeSkill(c *gin.Context) {
+	userId := c.GetInt(ctxkey.Id)
+	role := c.GetInt(ctxkey.Role)
+	isAdmin := role >= model.RoleAdminUser
+
+	// Parse multipart form
+	if err := c.Request.ParseMultipartForm(model.MaxArchiveSize); err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "请求解析失败，文件可能过大",
+		})
+		return
+	}
+
+	// Get the source skill ID
+	skillIdStr := c.PostForm("skill_id")
+	if skillIdStr == "" {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "缺少 skill_id",
+		})
+		return
+	}
+	skillId, _ := strconv.Atoi(skillIdStr)
+	if skillId <= 0 {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "无效的 skill_id",
+		})
+		return
+	}
+
+	// Get the existing skill
+	existing, err := model.GetSkillById(skillId)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "原 Skill 不存在",
+		})
+		return
+	}
+
+	// Permission check: only owner or admin can upgrade
+	if !isAdmin && existing.UserId != userId {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "无权限升级此 Skill",
+		})
+		return
+	}
+
+	// Cannot upgrade an archived skill
+	if existing.IsArchived {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "归档版本的 Skill 不能升级",
+		})
+		return
+	}
+
+	// Parse the uploaded file
+	file, header, fileErr := c.Request.FormFile("file")
+	if fileErr != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "请选择要上传的文件",
+		})
+		return
+	}
+	defer file.Close()
+
+	// Build new skill from existing
+	newSkill := model.Skill{
+		UserId:          existing.UserId,
+		ProjectId:       existing.ProjectId,
+		Name:            existing.Name,
+		Category:        existing.Category,
+		ParentVersionId: existing.Id,
+		Status:          model.SkillStatusEnabled,
+		CreatedTime:     helper.GetTimestamp(),
+		UpdatedTime:     helper.GetTimestamp(),
+	}
+
+	// Override version if provided
+	if ver := c.PostForm("version"); ver != "" {
+		newSkill.Version = ver
+	} else {
+		newSkill.Version = existing.Version
+	}
+	if desc := c.PostForm("description"); desc != "" {
+		newSkill.Description = desc
+	} else {
+		newSkill.Description = existing.Description
+	}
+
+	// Process uploaded file
+	ext := strings.ToLower(filepath.Ext(header.Filename))
+	if ext == ".md" {
+		data, err := io.ReadAll(file)
+		if err != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "文件读取失败",
+			})
+			return
+		}
+		newSkill.Content = string(data)
+		newSkill.FileName = header.Filename
+		newSkill.FileType = "md"
+		newSkill.SkillType = model.SkillTypeSimple
+	} else if ext == ".zip" {
+		if header.Size > model.MaxArchiveSize {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "文件大小超过 20MB 限制",
+			})
+			return
+		}
+		data, err := io.ReadAll(file)
+		if err != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "文件读取失败",
+			})
+			return
+		}
+		skillMdContent, _, extractErr := extractSkillMdFromZip(data)
+		if extractErr != nil {
+			if newSkill.Description == "" {
+				c.JSON(http.StatusOK, gin.H{
+					"success": false,
+					"message": "ZIP 中未找到 skill.md，请提供描述信息",
+				})
+				return
+			}
+			newSkill.Content = newSkill.Description
+		} else {
+			newSkill.Content = skillMdContent
+		}
+		newSkill.FileName = header.Filename
+		newSkill.FileType = "zip"
+		newSkill.SkillType = model.SkillTypeComplex
+		newSkill.Archive = data
+		newSkill.ArchiveSize = header.Size
+	} else {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "仅支持 .md 和 .zip 文件",
+		})
+		return
+	}
+
+	// Archive the old skill and create the new one in a transaction
+	tx := model.DB.Begin()
+
+	// Archive old skill
+	if err := tx.Model(existing).Updates(map[string]interface{}{
+		"is_archived":  true,
+		"updated_time": helper.GetTimestamp(),
+	}).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "归档旧版本失败: " + err.Error(),
+		})
+		return
+	}
+
+	// Create new skill
+	if err := tx.Create(&newSkill).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "创建新版本失败: " + err.Error(),
+		})
+		return
+	}
+
+	tx.Commit()
+
+	// Fill user/project names for response
+	newSkill.UserName = existing.UserName
+	newSkill.ProjectName = existing.ProjectName
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Skill 升级成功",
+		"data":    newSkill,
+	})
+}
+
+// GetSkillVersions returns version history for a skill.
+func GetSkillVersions(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "无效的 ID",
+		})
+		return
+	}
+
+	versions, err := model.GetSkillVersionHistory(id)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data":    versions,
+	})
+}
