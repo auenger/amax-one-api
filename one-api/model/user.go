@@ -51,6 +51,7 @@ type User struct {
 	Group            string `json:"group" gorm:"type:varchar(32);default:'default'"`
 	AffCode          string `json:"aff_code" gorm:"type:varchar(32);column:aff_code;uniqueIndex"`
 	InviterId        int    `json:"inviter_id" gorm:"type:int;column:inviter_id;index"`
+	DailyLimitExempt bool   `json:"daily_limit_exempt" gorm:"type:boolean;default:false"`
 }
 
 func GetMaxUserId() int {
@@ -177,7 +178,7 @@ func (user *User) Update(updatePassword bool) error {
 	} else if user.Status == UserStatusEnabled {
 		blacklist.UnbanUser(user.Id)
 	}
-	fields := []string{"username", "display_name", "status", "role", "email", "quota", "group"}
+	fields := []string{"username", "display_name", "status", "role", "email", "quota", "group", "daily_limit_exempt"}
 	if updatePassword {
 		fields = append(fields, "password")
 	}

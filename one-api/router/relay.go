@@ -16,6 +16,7 @@ func SetRelayRouter(router *gin.Engine) {
 			middleware.TimingMiddleware(),
 			middleware.RelayPanicRecover(),
 			middleware.TokenAuth(),
+			middleware.DailyLimit(),
 			middleware.Affinity(),
 			middleware.Distribute(),
 		}

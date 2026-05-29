@@ -168,3 +168,5 @@ var TestPrompt = env.String("TEST_PROMPT", "Output only your specific model name
 var FallbackEnabled = false
 var FallbackChannelId int64 = 0
 var FallbackModel = ""
+
+var DailyRequestLimit = 0 // 0 = disabled

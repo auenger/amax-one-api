@@ -196,5 +196,28 @@ func SetApiRouter(router *gin.Engine) {
 			skillProjectRoute.PUT("/:id", controller.UpdateSkillProject)
 			skillProjectRoute.DELETE("/:id", controller.DeleteSkillProject)
 		}
+			// Enterprise: Daily request limit
+			selfDailyRoute := userRoute.Group("/")
+			selfDailyRoute.Use(middleware.UserAuth())
+			{
+				selfDailyRoute.GET("/daily-usage", controller.GetSelfDailyLimit)
+			}
+			dailyLimitAdminRoute := userRoute.Group("/")
+			dailyLimitAdminRoute.Use(middleware.AdminAuth())
+			{
+				dailyLimitAdminRoute.PUT("/:id/daily-limit-exempt", controller.UpdateDailyLimitExempt)
+				dailyLimitAdminRoute.POST("/:id/daily-limit-exempt-today", controller.GrantDailyLimitTempExempt)
+			}
+			dailyLimitRoute := apiRouter.Group("/daily-limit")
+			dailyLimitRoute.Use(middleware.AdminAuth())
+			{
+				dailyLimitRoute.GET("/status", controller.GetDailyLimitStatus)
+			}
+			dailyLimitConfigRoute := apiRouter.Group("/daily-limit")
+			dailyLimitConfigRoute.Use(middleware.RootAuth())
+			{
+				dailyLimitConfigRoute.GET("/config", controller.GetDailyLimitConfig)
+				dailyLimitConfigRoute.PUT("/config", controller.UpdateDailyLimitConfig)
+			}
 	}
 }

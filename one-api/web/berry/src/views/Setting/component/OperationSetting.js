@@ -40,6 +40,7 @@ const OperationSetting = () => {
     DisplayTokenStatEnabled: "",
     ApproximateTokenEnabled: "",
     RetryTimes: 0,
+    DailyRequestLimit: 0,
   });
   const [originInputs, setOriginInputs] = useState({});
   let [loading, setLoading] = useState(false);
@@ -171,6 +172,11 @@ const OperationSetting = () => {
         }
         if (originInputs["RetryTimes"] !== inputs.RetryTimes) {
           await updateOption("RetryTimes", inputs.RetryTimes);
+        }
+        break;
+      case "daily_limit":
+        if (originInputs["DailyRequestLimit"] !== inputs.DailyRequestLimit) {
+          await updateOption("DailyRequestLimit", inputs.DailyRequestLimit);
         }
         break;
     }
@@ -433,6 +439,31 @@ const OperationSetting = () => {
             }}
           >
             保存监控设置
+          </Button>
+        </Stack>
+      </SubCard>
+      <SubCard title="每日限额">
+        <Stack justifyContent="flex-start" alignItems="flex-start" spacing={2}>
+          <FormControl fullWidth>
+            <InputLabel htmlFor="DailyRequestLimit">每日请求次数上限</InputLabel>
+            <OutlinedInput
+              id="DailyRequestLimit"
+              name="DailyRequestLimit"
+              type="number"
+              value={inputs.DailyRequestLimit}
+              onChange={handleInputChange}
+              label="每日请求次数上限"
+              placeholder="0 表示不限制"
+              disabled={loading}
+            />
+          </FormControl>
+          <Button
+            variant="contained"
+            onClick={() => {
+              submitConfig("daily_limit").then();
+            }}
+          >
+            保存每日限额设置
           </Button>
         </Stack>
       </SubCard>
