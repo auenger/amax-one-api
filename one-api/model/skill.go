@@ -3,6 +3,8 @@ package model
 import (
 	"errors"
 
+	"github.com/songquanpeng/one-api/common"
+	"github.com/songquanpeng/one-api/common/helper"
 	"gorm.io/gorm"
 )
 
@@ -25,11 +27,11 @@ type Skill struct {
 	Name            string `json:"name" gorm:"size:128;index:idx_project_name"`
 	Description     string `json:"description" gorm:"type:text"`
 	Category        string `json:"category" gorm:"size:64;index"`
-	Content         string `json:"content" gorm:"type:longtext"`
+	Content         string `json:"content" gorm:"type:text"`
 	FileName        string `json:"file_name" gorm:"size:256"`
 	FileType        string `json:"file_type" gorm:"size:16"`
 	SkillType       string `json:"skill_type" gorm:"size:16;default:'simple'"`
-	Archive         []byte `json:"-" gorm:"type:longblob"`
+	Archive         []byte `json:"-" gorm:"type:bytea"`
 	ArchiveSize     int64  `json:"archive_size"`
 	Version         string `json:"version" gorm:"size:32"`
 	ParentVersionId int    `json:"parent_version_id" gorm:"default:0;index"`
@@ -141,7 +143,8 @@ func DeleteSkillById(id int, userId int, isAdmin bool) error {
 }
 
 func IncrementSkillDownloads(id int) error {
-	return DB.Model(&Skill{}).Where("id = ?", id).UpdateColumn("downloads", gorm.Expr("downloads + ?", 1)).Error
+	return DB.Model(&Skill{}).Where("id = ?", id).
+		UpdateColumn("downloads", gorm.Expr("COALESCE(downloads, 0) + ?", 1)).Error
 }
 
 func GetSkillCategories() ([]string, error) {
@@ -239,4 +242,88 @@ func CheckSkillNameUnique(name string, projectId int, excludeId int) bool {
 	}
 	query.Count(&count)
 	return count == 0
+}
+
+// RollbackSkillVersion archives the current active version and restores the specified archived version.
+func RollbackSkillVersion(targetId int, userId int, isAdmin bool) (*Skill, error) {
+	target, err := GetSkillById(targetId)
+	if err != nil {
+		return nil, errors.New("目标版本不存在")
+	}
+	if !isAdmin && target.UserId != userId {
+		return nil, errors.New("无权限操作此 Skill")
+	}
+	if !target.IsArchived {
+		return nil, errors.New("目标版本不是归档版本，无需回退")
+	}
+
+	// Find the current active version in the same version chain
+	chain, err := GetSkillVersionHistory(targetId)
+	if err != nil {
+		return nil, err
+	}
+
+	tx := DB.Begin()
+
+	// Archive all active versions in the chain
+	for _, v := range chain {
+		if !v.IsArchived {
+			if err := tx.Model(v).Updates(map[string]interface{}{
+				"is_archived":  true,
+				"updated_time": helper.GetTimestamp(),
+			}).Error; err != nil {
+				tx.Rollback()
+				return nil, err
+			}
+		}
+	}
+
+	// Restore target version
+	if err := tx.Model(target).Updates(map[string]interface{}{
+		"is_archived":  false,
+		"updated_time": helper.GetTimestamp(),
+	}).Error; err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
+	tx.Commit()
+	target.IsArchived = false
+	return target, nil
+}
+
+// DeleteSkillVersion deletes a specific version from the chain.
+func DeleteSkillVersion(versionId int, userId int, isAdmin bool) error {
+	skill, err := GetSkillById(versionId)
+	if err != nil {
+		return errors.New("版本不存在")
+	}
+	if !isAdmin && skill.UserId != userId {
+		return errors.New("无权限删除此版本")
+	}
+	if !skill.IsArchived {
+		return errors.New("当前活跃版本不能删除，请先升级或回退到其他版本")
+	}
+
+	// Relink: if any skill has parent_version_id pointing to this one, point it to this one's parent
+	DB.Model(&Skill{}).Where("parent_version_id = ?", versionId).
+		Update("parent_version_id", skill.ParentVersionId)
+
+	return skill.Delete()
+}
+
+// migrateSkillVersionFields handles index migration for version upgrade support.
+func migrateSkillVersionFields() {
+	if common.UsingPostgreSQL {
+		DB.Exec("DROP INDEX IF EXISTS idx_project_name")
+		DB.Exec("CREATE INDEX IF NOT EXISTS idx_project_name ON skills (project_id, name)")
+
+		// Fix: if archive column was created as text, migrate to bytea.
+		// Binary ZIP data (e.g. 0x87) is invalid UTF-8 and gets rejected by PostgreSQL.
+		var dataType string
+		row := DB.Raw("SELECT data_type FROM information_schema.columns WHERE table_name = 'skills' AND column_name = 'archive'").Row()
+		if err := row.Scan(&dataType); err == nil && dataType == "text" {
+			DB.Exec("ALTER TABLE skills ALTER COLUMN archive TYPE bytea USING archive::bytea")
+		}
+	}
 }

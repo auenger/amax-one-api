@@ -76,6 +76,15 @@ cd one-api/web/berry && npm run build
 
 ## Database
 
+**生产环境使用 PostgreSQL**。GORM 字段类型必须使用 PostgreSQL 兼容类型：
+
+| 用途 | PostgreSQL | MySQL | 错误写法 |
+|------|-----------|-------|---------|
+| 二进制/BLOB | `bytea` | `longblob` | ❌ `longblob` (PG 不支持) |
+| 大文本 | `text` | `longtext` | ❌ `longtext` (PG 不支持) |
+
+GORM tag 示例：`gorm:"type:bytea"` 而非 `gorm:"type:longblob"`。
+
 GORM 模型 (`one-api/model/`)：
 
 - `User` — 用户，4 级角色，AccessToken

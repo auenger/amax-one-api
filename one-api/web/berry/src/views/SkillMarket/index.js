@@ -205,7 +205,7 @@ const ProjectCard = ({ project, user, theme, onClick, onDelete, onEdit }) => {
   );
 };
 
-const SkillCard = ({ skill, user, theme, onDownload, onInstall, onDelete, onDetail, onUpgrade, onEdit }) => {
+const SkillCard = ({ skill, user, theme, onDownload, onInstall, onDelete, onDetail, onUpgrade, onEdit, onRefresh }) => {
   const isOwner = user && skill.user_id === user.id;
   const isAdmin = user && user.role >= 10;
   const isComplex = skill.skill_type === 'complex';
@@ -223,6 +223,38 @@ const SkillCard = ({ skill, user, theme, onDownload, onInstall, onDelete, onDeta
     } catch (err) { /* ignore */ }
     setVersionsLoading(false);
     setShowVersions(true);
+  };
+
+  const handleRollback = async (v) => {
+    if (!window.confirm(`确定回退到 v${v.version || '—'}？当前版本将被归档。`)) return;
+    try {
+      const res = await API.post('/api/skill/rollback', { version_id: v.id });
+      const { success, message } = res.data;
+      if (success) {
+        showSuccess('版本回退成功');
+        setVersions([]);
+        setShowVersions(false);
+        if (onRefresh) onRefresh();
+      } else {
+        showError(message);
+      }
+    } catch (err) { showError(err); }
+  };
+
+  const handleDeleteVersion = async (v) => {
+    if (!window.confirm(`确定删除 v${v.version || '—'}？此操作不可恢复。`)) return;
+    try {
+      const res = await API.delete(`/api/skill/${v.id}/version`);
+      const { success, message } = res.data;
+      if (success) {
+        showSuccess('版本已删除');
+        setVersions([]);
+        setShowVersions(false);
+        if (onRefresh) onRefresh();
+      } else {
+        showError(message);
+      }
+    } catch (err) { showError(err); }
   };
 
   return (
@@ -358,6 +390,20 @@ const SkillCard = ({ skill, user, theme, onDownload, onInstall, onDelete, onDeta
                       <IconDownload size={14} />
                     </IconButton>
                   </Tooltip>
+                  {(isOwner || isAdmin) && v.is_archived && (
+                    <>
+                      <Tooltip title="回退到此版本" arrow>
+                        <IconButton size="small" onClick={() => handleRollback(v)} sx={{ color: theme.palette.warning.main }}>
+                          <IconHistory size={14} />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="删除此版本" arrow>
+                        <IconButton size="small" onClick={() => handleDeleteVersion(v)} sx={{ color: theme.palette.error.main }}>
+                          <IconTrash size={14} />
+                        </IconButton>
+                      </Tooltip>
+                    </>
+                  )}
                 </Box>
               ))}
             </Box>
@@ -962,6 +1008,8 @@ const UploadDialog = ({ open, onClose, onCreated, theme, projectId, upgradeSkill
     if (successCount > 0) {
       showSuccess(`批量上传完成: ${successCount}/${validFiles.length} 成功`);
       onCreated();
+      resetState();
+      onClose();
     }
 
     // If all failed, show error
@@ -1233,7 +1281,7 @@ const UploadDialog = ({ open, onClose, onCreated, theme, projectId, upgradeSkill
       <DialogActions>
         <Button onClick={handleClose} disabled={isBatchUploading}>取消</Button>
         {!isBatchUploading ? (
-          <Button variant="contained" onClick={handleSubmit} disabled={loading || isPackaging || validFileCount === 0}>
+          <Button variant="contained" onClick={handleSubmit} disabled={loading || isPackaging || isBatchUploading || validFileCount === 0}>
             {loading ? (isUpgrade ? '升级中...' : '上传中...') : (isUpgrade ? '升级' : (isBatch ? `批量上传 (${validFileCount})` : '上传'))}
           </Button>
         ) : (
@@ -1247,14 +1295,26 @@ const UploadDialog = ({ open, onClose, onCreated, theme, projectId, upgradeSkill
 };
 
 const InstallDialog = ({ open, skill, onClose, theme }) => {
-  if (!skill) return null;
-  const fileName = skill.skill_type === 'complex' ? `${skill.name}.zip` : skill.file_name;
-  const command = `mkdir -p .claude/skills && curl -sS -H "Authorization: Bearer sk-YOUR_TOKEN" -o .claude/skills/${fileName} ${window.location.origin}/api/skill/${skill.id}/download`;
+  const [command, setCommand] = useState('');
+  const fileName = skill?.skill_type === 'complex' ? `${skill?.name}.zip` : skill?.file_name;
+
+  useEffect(() => {
+    if (skill) {
+      API.get(`/api/skill/${skill.id}/install`).then(res => {
+        const { success, data } = res.data;
+        if (success && data?.command) {
+          setCommand(data.command);
+        }
+      }).catch(() => {});
+    }
+  }, [skill]);
 
   const handleCopy = () => {
     copy(command, '安装命令');
     showSuccess('已复制安装命令');
   };
+
+  if (!skill) return null;
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
@@ -1266,7 +1326,7 @@ const InstallDialog = ({ open, skill, onClose, theme }) => {
       </DialogTitle>
       <DialogContent dividers>
         <Typography variant="body2" sx={{ mb: 2 }}>
-          复制以下命令到项目根目录的终端执行（将 <code>sk-YOUR_TOKEN</code> 替换为你的 API Token）：
+          复制以下命令到项目根目录的终端执行：
         </Typography>
         <Box
           sx={{
@@ -1322,7 +1382,7 @@ const DetailDialog = ({ open, skill, onClose, theme, user }) => {
   const displayContent = viewMode === 'content' ? skill.content : skill.description;
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+    <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
       <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           {isComplex ? <IconFileZip size={20} color={theme.palette.warning.main} /> : <IconFileText size={20} color={theme.palette.primary.main} />}
@@ -1805,6 +1865,7 @@ const SkillMarket = () => {
                   onDetail={setDetailSkill}
                   onUpgrade={setUpgradeSkill}
                   onEdit={setEditSkill}
+                  onRefresh={() => loadProjectSkills(currentProject.id)}
                 />
               </div>
             </Fade>
@@ -1821,7 +1882,7 @@ const SkillMarket = () => {
         projectId={currentProject?.id}
         upgradeSkill={upgradeSkill}
       />
-      <InstallDialog open={!!installSkill} skill={installSkill} onClose={() => setInstallSkill(null)} theme={theme} />
+      <InstallDialog open={!!installSkill} skill={installSkill} onClose={() => setInstallSkill(null)} theme={theme} user={user} />
       <DetailDialog open={!!detailSkill} skill={detailSkill} onClose={() => setDetailSkill(null)} theme={theme} user={user} />
       <EditSkillDialog open={!!editSkill} skill={editSkill} onClose={() => setEditSkill(null)} onUpdated={() => loadProjectSkills(currentProject.id)} theme={theme} />
     </Box>

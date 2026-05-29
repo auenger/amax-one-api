@@ -1,8 +1,77 @@
 meta:
-  last_updated: '2026-05-28'
+  last_updated: '2026-05-29'
   version: 1
-  total_completed: 50
+  total_completed: 52
 records:
+  - id: feat-daily-request-limit
+    name: 每日请求次数限额
+    completed: '2026-05-29'
+    tag: feat-daily-request-limit-20260529
+    merge_commit: 3874771
+    merged_to: main
+    branch_deleted: true
+    branch_name: feature/daily-request-limit
+    worktree_deleted: true
+    worktree_path: ../aihub-daily-request-limit
+    keywords:
+    - daily
+    - request
+    - limit
+    - quota
+    - rate-limit
+    - 429
+    - exempt
+    - redis
+    - INCR
+    - beijing
+    - middleware
+    - user
+    category: fullstack
+    value_points: 2
+    related_features:
+    - feat-rate-limit-exhaustion
+    - feat-channel-failover
+    conflicts:
+      had_conflict: false
+      conflict_files: []
+    verification:
+      status: passed
+      scenarios_total: 8
+      scenarios_passed: 8
+    stats:
+      started: '2026-05-29'
+      duration: same-day
+      commits: 1
+      files_changed: 10
+
+  - id: feat-skill-display-edit
+    name: Skill 展示模式与编辑
+    completed: '2026-05-28'
+    tag: feat-skill-display-edit-20260528
+    merge_commit: af8f05f
+    merged_to: main
+    branch_deleted: true
+    branch_name: feature/skill-display-edit
+    worktree_deleted: true
+    worktree_path: ../aihub-skill-display-edit
+    keywords: [skill, 展示, 编辑, display_mode, 描述, ToggleButton, EditSkillDialog, DetailDialog, 前端, ui]
+    category: frontend
+    value_points: 1
+    related_features: [feat-skill-md-render, feat-skill-market-ux, feat-skill-batch-upload]
+    conflicts:
+      had_conflict: true
+      conflict_files: [one-api/web/berry/src/views/SkillMarket/index.js]
+      resolved_at: '2026-05-28'
+      re_verified: true
+    verification:
+      status: passed
+      scenarios_total: 5
+      scenarios_passed: 5
+    stats:
+      started: '2026-05-28'
+      duration: ~5min
+      commits: 1
+      files_changed: 3
   - id: feat-skill-md-render
     name: Skill Markdown 渲染
     completed: '2026-05-28'

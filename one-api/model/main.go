@@ -175,6 +175,7 @@ func migrateDB() error {
 	if err = DB.AutoMigrate(&Skill{}); err != nil {
 		return err
 	}
+	migrateSkillVersionFields()
 	if err = DB.AutoMigrate(&SkillProject{}); err != nil {
 		return err
 	}

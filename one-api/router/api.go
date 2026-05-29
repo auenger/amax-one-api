@@ -180,11 +180,14 @@ func SetApiRouter(router *gin.Engine) {
 			skillRoute.GET("/:id", controller.GetSkill)
 			skillRoute.POST("/", controller.CreateSkill)
 			skillRoute.PUT("/", controller.UpdateSkill)
+			skillRoute.PUT("/:id", controller.UpdateSkill)
 			skillRoute.DELETE("/:id", controller.DeleteSkill)
 			skillRoute.GET("/:id/download", controller.DownloadSkill)
 			skillRoute.GET("/:id/install", controller.GetInstallCommand)
 			skillRoute.GET("/:id/versions", controller.GetSkillVersions)
 			skillRoute.POST("/upgrade", controller.UpgradeSkill)
+			skillRoute.POST("/rollback", controller.RollbackSkillVersion)
+			skillRoute.DELETE("/:id/version", controller.DeleteSkillVersion)
 		}
 		// Skill Project
 		skillProjectRoute := apiRouter.Group("/skill-project")

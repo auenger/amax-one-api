@@ -9,11 +9,13 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/gin-gonic/gin"
 	"github.com/songquanpeng/one-api/common/config"
 	"github.com/songquanpeng/one-api/common/ctxkey"
 	"github.com/songquanpeng/one-api/common/helper"
+	"github.com/songquanpeng/one-api/common/logger"
 	"github.com/songquanpeng/one-api/model"
 )
 
@@ -133,6 +135,9 @@ func extractSkillMdFromZip(data []byte) (string, string, error) {
 			rc.Close()
 			if err != nil {
 				continue
+			}
+			if !utf8.Valid(content) {
+				return "", "", fmt.Errorf("skill.md 内容不是合法文本，请提供描述信息")
 			}
 			skillMdContent = string(content)
 			// Use the parent directory name as base name
@@ -501,7 +506,9 @@ func DownloadSkill(c *gin.Context) {
 		})
 		return
 	}
-	_ = model.IncrementSkillDownloads(id)
+	if err := model.IncrementSkillDownloads(id); err != nil {
+		logger.SysError("failed to increment skill downloads: " + err.Error())
+	}
 	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%s", skill.FileName))
 
 	if skill.SkillType == model.SkillTypeComplex && len(skill.Archive) > 0 {
@@ -535,10 +542,12 @@ func GetInstallCommand(c *gin.Context) {
 	if c.Request.TLS != nil || c.GetHeader("X-Forwarded-Proto") == "https" {
 		scheme = "https"
 	}
-	// get user token for install command
-	token := c.Query("token")
-	if token == "" {
-		token = "sk-YOUR_TOKEN"
+	// Use the authenticated user's access token
+	userId := c.GetInt(ctxkey.Id)
+	var user model.User
+	token := "sk-YOUR_TOKEN"
+	if err := model.DB.Select("access_token").First(&user, "id = ?", userId).Error; err == nil && user.AccessToken != "" {
+		token = user.AccessToken
 	}
 	cmd := fmt.Sprintf("mkdir -p .claude/skills && curl -sS -H \"Authorization: Bearer %s\" -o .claude/skills/%s %s://%s/api/skill/%d/download",
 		token, skill.FileName, scheme, baseURL, id)
@@ -546,8 +555,8 @@ func GetInstallCommand(c *gin.Context) {
 		"success": true,
 		"message": "",
 		"data": gin.H{
-			"command":   cmd,
-			"file_name": skill.FileName,
+			"command":    cmd,
+			"file_name":  skill.FileName,
 			"skill_type": skill.SkillType,
 		},
 	})
@@ -786,5 +795,67 @@ func GetSkillVersions(c *gin.Context) {
 		"success": true,
 		"message": "",
 		"data":    versions,
+	})
+}
+
+// RollbackSkillVersion handles rollback to an archived version.
+func RollbackSkillVersion(c *gin.Context) {
+	userId := c.GetInt(ctxkey.Id)
+	role := c.GetInt(ctxkey.Role)
+	isAdmin := role >= model.RoleAdminUser
+
+	var req struct {
+		VersionId int `json:"version_id"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil || req.VersionId <= 0 {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "缺少 version_id",
+		})
+		return
+	}
+
+	skill, err := model.RollbackSkillVersion(req.VersionId, userId, isAdmin)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "版本回退成功",
+		"data":    skill,
+	})
+}
+
+// DeleteSkillVersion handles deletion of a specific archived version.
+func DeleteSkillVersion(c *gin.Context) {
+	userId := c.GetInt(ctxkey.Id)
+	role := c.GetInt(ctxkey.Role)
+	isAdmin := role >= model.RoleAdminUser
+
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil || id <= 0 {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "无效的 ID",
+		})
+		return
+	}
+
+	if err := model.DeleteSkillVersion(id, userId, isAdmin); err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "版本已删除",
 	})
 }

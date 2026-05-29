@@ -1,15 +1,8 @@
 meta:
-  last_updated: '2026-05-28'
+  last_updated: '2026-05-29'
   total_features: 75
 active: []
 pending:
-- id: feat-daily-request-limit
-  name: 每日请求次数限额
-  priority: 80
-  size: M
-  depends_on: []
-  added: '2026-05-28'
-  value_points: 2
 - id: feat-skill-market-ux
   name: Skill 市场 UI 优化
   priority: 70
@@ -23,24 +16,7 @@ pending:
   - feat-skill-md-render
   - feat-skill-batch-upload
   - feat-skill-display-edit
-- id: feat-skill-batch-upload
-  name: Skill 批量上传与拖拽
-  priority: 70
-  size: S
-  parent: feat-skill-market-ux
-  depends_on:
-  - feat-skill-md-render
-  added: '2026-05-28'
-  value_points: 1
-- id: feat-skill-display-edit
-  name: Skill 展示模式与编辑
-  priority: 70
-  size: S
-  parent: feat-skill-market-ux
-  depends_on:
-  - feat-skill-md-render
-  added: '2026-05-28'
-  value_points: 1
+
 - id: feat-mcp-proxy
   name: MCP 代理平台
   priority: 75
@@ -89,6 +65,37 @@ pending:
   value_points: 2
 blocked: []
 completed:
+- id: feat-daily-request-limit
+  name: 每日请求次数限额
+  priority: 80
+  size: M
+  depends_on: []
+  added: '2026-05-28'
+  completed_at: '2026-05-29'
+  archive_path: features/archive/done-feat-daily-request-limit-20260529
+  value_points: 2
+- id: feat-skill-display-edit
+  name: Skill 展示模式与编辑
+  priority: 70
+  size: S
+  parent: feat-skill-market-ux
+  depends_on:
+  - feat-skill-md-render
+  added: '2026-05-28'
+  completed_at: '2026-05-28'
+  archive_path: features/archive/done-feat-skill-display-edit-20260528
+  value_points: 1
+- id: feat-skill-batch-upload
+  name: Skill 批量上传与拖拽
+  priority: 70
+  size: S
+  parent: feat-skill-market-ux
+  depends_on:
+  - feat-skill-md-render
+  added: '2026-05-28'
+  completed_at: '2026-05-28'
+  archive_path: features/archive/done-feat-skill-batch-upload-20260528
+  value_points: 1
 - id: feat-skill-md-render
   name: Skill Markdown 渲染
   priority: 70

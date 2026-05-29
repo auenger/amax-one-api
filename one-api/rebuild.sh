@@ -10,9 +10,10 @@ npm run build
 
 echo "==> 2/3 拷贝产物到 berry 根层..."
 cd ../..
-rm -rf web/build/berry/static web/build/berry/index.html web/build/berry/asset-manifest.json web/build/berry/favicon.ico web/build/berry/bg.png
-cp -r web/build/berry/build/* web/build/berry/
-rm -rf web/build/berry/build
+rm -rf web/build/berry
+mkdir -p web/build/berry
+cp -r web/berry/build/* web/build/berry/
+rm -rf web/berry/build
 cp -n web/berry/public/*.html web/build/berry/ 2>/dev/null || true
 
 echo "==> 3/3 构建 Go 二进制..."
