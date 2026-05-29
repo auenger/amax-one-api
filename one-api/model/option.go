@@ -78,6 +78,7 @@ func InitOptionMap() {
 	config.OptionMap["FallbackEnabled"] = strconv.FormatBool(config.FallbackEnabled)
 	config.OptionMap["FallbackChannelId"] = strconv.FormatInt(config.FallbackChannelId, 10)
 	config.OptionMap["FallbackModel"] = config.FallbackModel
+	config.OptionMap["DailyRequestLimit"] = strconv.Itoa(config.DailyRequestLimit)
 	config.OptionMapRWMutex.Unlock()
 	loadOptionsFromDatabase()
 }
@@ -248,6 +249,8 @@ func updateOptionMap(key string, value string) (err error) {
 		config.FallbackChannelId, _ = strconv.ParseInt(value, 10, 64)
 	case "FallbackModel":
 		config.FallbackModel = value
+	case "DailyRequestLimit":
+		config.DailyRequestLimit, _ = strconv.Atoi(value)
 	}
 	return err
 }

@@ -20,8 +20,10 @@ import {
 import Label from 'ui-component/Label';
 import TableSwitch from 'ui-component/Switch';
 import { renderQuota, renderNumber } from 'utils/common';
-import { IconDotsVertical, IconEdit, IconTrash, IconUser, IconBrandWechat, IconBrandGithub, IconMail } from '@tabler/icons-react';
+import { IconDotsVertical, IconEdit, IconTrash, IconUser, IconBrandWechat, IconBrandGithub, IconMail, IconShield } from '@tabler/icons-react';
 import { useTheme } from '@mui/material/styles';
+import { API } from 'utils/api';
+import { showSuccess, showError } from 'utils/common';
 
 function renderRole(role) {
   switch (role) {
@@ -41,6 +43,7 @@ export default function UsersTableRow({ item, manageUser, handleOpenModal, setMo
   const [open, setOpen] = useState(null);
   const [openDelete, setOpenDelete] = useState(false);
   const [statusSwitch, setStatusSwitch] = useState(item.status);
+  const [exemptSwitch, setExemptSwitch] = useState(item.daily_limit_exempt || false);
 
   const handleDeleteOpen = () => {
     handleCloseMenu();
@@ -64,6 +67,29 @@ export default function UsersTableRow({ item, manageUser, handleOpenModal, setMo
     const { success } = await manageUser(item.username, 'status', switchVlue);
     if (success) {
       setStatusSwitch(switchVlue);
+    }
+  };
+
+  const handleExempt = async () => {
+    const newValue = !exemptSwitch;
+    const res = await API.put(`/api/user/${item.id}/daily-limit-exempt`, { exempt: newValue });
+    const { success, message } = res.data;
+    if (success) {
+      setExemptSwitch(newValue);
+      showSuccess(newValue ? '已设置永久豁免' : '已取消永久豁免');
+    } else {
+      showError(message);
+    }
+  };
+
+  const handleTempExempt = async () => {
+    handleCloseMenu();
+    const res = await API.post(`/api/user/${item.id}/daily-limit-exempt-today`);
+    const { success, message } = res.data;
+    if (success) {
+      showSuccess('已授予当日临时豁免');
+    } else {
+      showError(message);
     }
   };
 
@@ -125,6 +151,9 @@ export default function UsersTableRow({ item, manageUser, handleOpenModal, setMo
           <TableSwitch id={`switch-${item.id}`} checked={statusSwitch === 1} onChange={handleStatus} />
         </TableCell>
         <TableCell>
+          <TableSwitch id={`exempt-${item.id}`} checked={exemptSwitch} onChange={handleExempt} />
+        </TableCell>
+        <TableCell>
           <IconButton onClick={handleOpenMenu} sx={{ color: 'rgb(99, 115, 129)' }}>
             <IconDotsVertical />
           </IconButton>
@@ -162,6 +191,10 @@ export default function UsersTableRow({ item, manageUser, handleOpenModal, setMo
         >
           <IconEdit style={{ marginRight: '16px' }} />
           编辑
+        </MenuItem>
+        <MenuItem onClick={handleTempExempt}>
+          <IconShield style={{ marginRight: '16px' }} />
+          当日豁免
         </MenuItem>
         <MenuItem onClick={handleDeleteOpen} sx={{ color: 'error.main' }}>
           <IconTrash style={{ marginRight: '16px' }} />

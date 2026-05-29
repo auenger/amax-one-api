@@ -11,6 +11,7 @@ const UsersTableHead = () => {
         <TableCell>用户角色</TableCell>
         <TableCell>绑定</TableCell>
         <TableCell>状态</TableCell>
+        <TableCell>每日豁免</TableCell>
         <TableCell>操作</TableCell>
       </TableRow>
     </TableHead>
