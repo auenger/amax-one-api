@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/songquanpeng/one-api/common/logger"
@@ -102,7 +103,7 @@ func AddMCPProvider(c *gin.Context) {
 
 	// Try to connect in background
 	go func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 30)
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 		if err := client.Connect(ctx); err != nil {
 			logger.SysError("MCP: failed to connect new provider " + provider.Name + ": " + err.Error())
@@ -147,7 +148,7 @@ func UpdateMCPProvider(c *gin.Context) {
 
 	// Reconnect in background
 	go func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 30)
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 		if err := client.Connect(ctx); err != nil {
 			logger.SysError("MCP: failed to reconnect provider " + provider.Name + ": " + err.Error())
@@ -215,7 +216,7 @@ func SyncMCPProvider(c *gin.Context) {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(c.Request.Context(), 60)
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 60*time.Second)
 	defer cancel()
 
 	if err := client.SyncTools(ctx); err != nil {
@@ -239,7 +240,7 @@ func SyncMCPProvider(c *gin.Context) {
 
 // SyncAllMCPProviders triggers a manual tool sync for all enabled providers.
 func SyncAllMCPProviders(c *gin.Context) {
-	ctx, cancel := context.WithTimeout(c.Request.Context(), 120)
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 120*time.Second)
 	defer cancel()
 
 	mcpPkg.SyncAllProviders(ctx)
