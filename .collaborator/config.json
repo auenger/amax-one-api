@@ -23,7 +23,9 @@
     "/Users/ryan/mycode/AIHub/one-api/web/berry/public",
     "/Users/ryan/mycode/AIHub/features",
     "/Users/ryan/mycode/AIHub/features/pending-feat-skill-marketplace-v2",
-    "/Users/ryan/mycode/AIHub/.claude"
+    "/Users/ryan/mycode/AIHub/.claude",
+    "/Users/ryan/mycode/AIHub/one-api",
+    "/Users/ryan/mycode/AIHub/.claude/hooks"
   ],
   "agent_skip_permissions": false
 }

@@ -1,5 +1,14 @@
 # Feature: feat-mcp-management MCP 供应商管理界面
 
+## Merge Record
+- **Completed**: 2026-06-01
+- **Merged Branch**: feature/mcp-management
+- **Merge Commit**: f97f1f8
+- **Archive Tag**: feat-mcp-management-20260601
+- **Conflicts**: none
+- **Verification**: passed (all 4 Gherkin scenarios validated, go vet clean)
+- **Stats**: 1 commit, 11 files changed, ~1400 lines added
+
 ## Basic Information
 - **ID**: feat-mcp-management
 - **Name**: MCP 供应商管理界面

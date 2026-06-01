@@ -1,8 +1,34 @@
 meta:
   last_updated: '2026-06-01'
   version: 1
-  total_completed: 54
+  total_completed: 55
 records:
+  - id: feat-mcp-management
+    name: MCP 供应商管理界面
+    completed: '2026-06-01'
+    tag: feat-mcp-management-20260601
+    merge_commit: f97f1f8
+    merged_to: main
+    branch_deleted: true
+    branch_name: feature/mcp-management
+    worktree_deleted: true
+    worktree_path: ../aihub-mcp-management
+    keywords: [mcp, provider, management, ui, tool, stats, admin, supplier, crud]
+    category: fullstack
+    value_points: 1
+    related_features: [feat-mcp-proxy, feat-mcp-upstream-proxy, feat-mcp-server]
+    conflicts:
+      had_conflict: false
+      conflict_files: []
+    verification:
+      status: passed
+      scenarios_total: 4
+      scenarios_passed: 4
+    stats:
+      started: '2026-06-01'
+      duration: same_day
+      commits: 1
+      files_changed: 11
   - id: feat-mcp-upstream-proxy
     name: 上游 MCP 代理中转
     completed: '2026-06-01'

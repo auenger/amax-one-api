@@ -16,7 +16,6 @@ pending:
   - feat-skill-md-render
   - feat-skill-batch-upload
   - feat-skill-display-edit
-
 - id: feat-mcp-proxy
   name: MCP 代理平台
   priority: 75
@@ -30,15 +29,6 @@ pending:
   - feat-mcp-server
   - feat-mcp-upstream-proxy
   - feat-mcp-management
-- id: feat-mcp-management
-  name: MCP 供应商管理界面
-  priority: 75
-  size: S
-  parent: feat-mcp-proxy
-  depends_on:
-  - feat-mcp-upstream-proxy
-  added: '2026-05-27'
-  value_points: 1
 - id: feat-glm-coding-plan
   name: 智谱 GLM Coding Plan 渠道支持
   priority: 70
@@ -48,6 +38,17 @@ pending:
   value_points: 2
 blocked: []
 completed:
+- id: feat-mcp-management
+  name: MCP 供应商管理界面
+  priority: 75
+  size: S
+  parent: feat-mcp-proxy
+  depends_on:
+  - feat-mcp-upstream-proxy
+  added: '2026-05-27'
+  completed_at: '2026-06-01'
+  archive_path: features/archive/done-feat-mcp-management-20260601
+  value_points: 1
 - id: feat-mcp-upstream-proxy
   name: 上游 MCP 代理中转
   priority: 75
@@ -208,7 +209,7 @@ completed:
   size: M
   split: true
   completed_at: '2026-05-26'
-  archive_path: ~
+  archive_path: null
   value_points: 2
   note: Split parent — all children completed
   children:
@@ -334,7 +335,7 @@ completed:
   - feat-concurrency-market
   - feat-log-channel-visibility
   completed_at: '2026-05-20'
-  archive_path: ~
+  archive_path: null
   value_points: 3
   note: Split parent — all children completed
 - id: feat-log-channel-visibility
@@ -367,7 +368,7 @@ completed:
   - feat-provider-quota-refresh
   - feat-provider-quota-ui
   completed_at: '2026-05-19'
-  archive_path: ~
+  archive_path: null
   value_points: 6
   note: Split parent — all children completed
 - id: feat-provider-quota-ui
@@ -451,7 +452,7 @@ completed:
   size: L
   split: true
   completed_at: '2026-05-18'
-  archive_path: ~
+  archive_path: null
   value_points: 8
   children:
   - feat-channel-affinity
