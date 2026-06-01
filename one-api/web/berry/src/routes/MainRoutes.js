@@ -16,6 +16,9 @@ const Report = Loadable(lazy(() => import('views/Report')));
 const DowngradeRules = Loadable(lazy(() => import('views/DowngradeRules')));
 const SkillMarket = Loadable(lazy(() => import('views/SkillMarket')));
 const MCPSetting = Loadable(lazy(() => import('views/MCPSetting')));
+const MCPProviders = Loadable(lazy(() => import('views/MCPSetting/Providers')));
+const MCPProviderDetail = Loadable(lazy(() => import('views/MCPSetting/ProviderDetail')));
+const MCPStats = Loadable(lazy(() => import('views/MCPSetting/Stats')));
 const NotFoundView = Loadable(lazy(() => import('views/Error')));
 
 // dashboard routing
@@ -74,6 +77,18 @@ const MainRoutes = {
     {
       path: 'mcp',
       element: <MCPSetting />
+    },
+    {
+      path: 'mcp/providers',
+      element: <MCPProviders />
+    },
+    {
+      path: 'mcp/providers/:id',
+      element: <MCPProviderDetail />
+    },
+    {
+      path: 'mcp/stats',
+      element: <MCPStats />
     },
     {
       path: 'profile',

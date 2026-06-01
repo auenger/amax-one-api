@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/songquanpeng/one-api/model"
@@ -167,7 +168,28 @@ func handleToolsCall(ctx context.Context, req *JSONRPCRequest, _ *MCPSession) *J
 	}
 
 	// Forward the tool call to the upstream provider
+	startTime := time.Now()
 	upstreamResp, err := client.CallTool(ctx, originalName, params.Arguments)
+	duration := time.Since(startTime).Milliseconds()
+
+	// Log the MCP invocation
+	mcpLog := &model.MCPLog{
+		ProviderID:   client.Provider.ID,
+		ProviderName: client.Provider.Name,
+		ToolName:     params.Name,
+		Duration:     duration,
+	}
+	if err != nil {
+		mcpLog.ResponseStatus = 500
+		mcpLog.ErrorMessage = err.Error()
+	} else if upstreamResp.Error != nil {
+		mcpLog.ResponseStatus = 500
+		mcpLog.ErrorMessage = upstreamResp.Error.Message
+	} else {
+		mcpLog.ResponseStatus = 200
+	}
+	_ = model.CreateMCPLog(mcpLog)
+
 	if err != nil {
 		return &JSONRPCResponse{
 			JSONRPC: "2.0",

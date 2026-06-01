@@ -250,3 +250,178 @@ func SyncAllMCPProviders(c *gin.Context) {
 		"message": "",
 	})
 }
+
+// TestMCPProvider tests the connectivity to an upstream MCP provider.
+func TestMCPProvider(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "invalid provider id",
+		})
+		return
+	}
+
+	client := mcpPkg.GlobalUpstreamClients.GetByProviderID(uint(id))
+	if client == nil {
+		// Try loading from DB and creating a temporary client
+		provider, dbErr := model.GetMCPProviderByID(uint(id))
+		if dbErr != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "provider not found",
+			})
+			return
+		}
+		client = mcpPkg.NewUpstreamClient(provider)
+	}
+
+	start := time.Now()
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 30*time.Second)
+	defer cancel()
+
+	connectErr := client.Connect(ctx)
+	latency := time.Since(start).Milliseconds()
+
+	if connectErr != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "连接失败: " + connectErr.Error(),
+			"data": gin.H{
+				"connected": false,
+				"latency":   latency,
+			},
+		})
+		return
+	}
+
+	// Register the client if not already
+	if mcpPkg.GlobalUpstreamClients.GetByProviderID(uint(id)) == nil {
+		mcpPkg.GlobalUpstreamClients.Register(client)
+	}
+
+	tools := client.GetTools()
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data": gin.H{
+			"connected":    true,
+			"latency":      latency,
+			"tools_count":  len(tools),
+		},
+	})
+}
+
+// GetMCPProviderTools returns all tools for a specific provider.
+func GetMCPProviderTools(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "invalid provider id",
+		})
+		return
+	}
+
+	tools, err := model.GetMCPToolsByProviderID(uint(id))
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data":    tools,
+	})
+}
+
+// UpdateMCPToolStatus updates the enabled status of an MCP tool.
+func UpdateMCPToolStatus(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "invalid tool id",
+		})
+		return
+	}
+
+	var body struct {
+		Enabled bool `json:"enabled"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "invalid request: " + err.Error(),
+		})
+		return
+	}
+
+	tool, err := model.GetMCPToolByID(uint(id))
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "tool not found",
+		})
+		return
+	}
+
+	tool.Enabled = body.Enabled
+	if err := model.UpdateMCPTool(tool); err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+	})
+}
+
+// GetMCPStats returns aggregated MCP usage statistics.
+func GetMCPStats(c *gin.Context) {
+	startStr := c.Query("start")
+	endStr := c.Query("end")
+
+	var startTimestamp, endTimestamp int64
+	if startStr != "" {
+		startTimestamp, _ = strconv.ParseInt(startStr, 10, 64)
+	}
+	if endStr != "" {
+		endTimestamp, _ = strconv.ParseInt(endStr, 10, 64)
+	}
+
+	providerStats, err := model.GetMCPProviderStats(startTimestamp, endTimestamp)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	toolStats, err := model.GetMCPToolStats(startTimestamp, endTimestamp)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data": gin.H{
+			"providers": providerStats,
+			"tools":     toolStats,
+		},
+	})
+}

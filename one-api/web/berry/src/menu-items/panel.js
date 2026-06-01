@@ -54,12 +54,33 @@ const panel = {
     },
     {
       id: 'mcp',
-      title: 'MCP Server',
-      type: 'item',
-      url: '/panel/mcp',
+      title: 'MCP',
+      type: 'collapse',
       icon: icons.IconPlugConnected,
-      breadcrumbs: false,
-      isAdmin: true
+      isAdmin: true,
+      children: [
+        {
+          id: 'mcp-providers',
+          title: '供应商',
+          type: 'item',
+          url: '/panel/mcp/providers',
+          breadcrumbs: false
+        },
+        {
+          id: 'mcp-stats',
+          title: '使用统计',
+          type: 'item',
+          url: '/panel/mcp/stats',
+          breadcrumbs: false
+        },
+        {
+          id: 'mcp-server',
+          title: 'Server 配置',
+          type: 'item',
+          url: '/panel/mcp',
+          breadcrumbs: false
+        }
+      ]
     },
     {
       id: 'channel',

@@ -233,6 +233,20 @@ func SetApiRouter(router *gin.Engine) {
 				mcpProviderRoute.DELETE("/:id", controller.DeleteMCPProvider)
 				mcpProviderRoute.POST("/:id/sync", controller.SyncMCPProvider)
 				mcpProviderRoute.POST("/sync", controller.SyncAllMCPProviders)
+				mcpProviderRoute.POST("/:id/test", controller.TestMCPProvider)
+				mcpProviderRoute.GET("/:id/tools", controller.GetMCPProviderTools)
+			}
+			// MCP Tool management (admin only)
+			mcpToolRoute := apiRouter.Group("/mcp-tool")
+			mcpToolRoute.Use(middleware.AdminAuth())
+			{
+				mcpToolRoute.PUT("/:id", controller.UpdateMCPToolStatus)
+			}
+			// MCP Stats (admin only)
+			mcpStatsRoute := apiRouter.Group("/mcp-stats")
+			mcpStatsRoute.Use(middleware.AdminAuth())
+			{
+				mcpStatsRoute.GET("/", controller.GetMCPStats)
 			}
 	}
 }
