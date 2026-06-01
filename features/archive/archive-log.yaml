@@ -1,8 +1,33 @@
 meta:
   last_updated: '2026-06-01'
   version: 1
-  total_completed: 55
+  total_completed: 56
 records:
+  - id: feat-mcp-vision-tool
+    name: 内置视觉理解 MCP Tool
+    completed: '2026-06-01'
+    tag: feat-mcp-vision-tool-20260601
+    merge_commit: 8e6fbb3
+    merged_to: main
+    branch_deleted: true
+    branch_name: feature/mcp-vision-tool
+    worktree_deleted: true
+    worktree_path: ../aihub-mcp-vision-tool
+    keywords: [mcp, builtin, vision, image, multimodal, tool, relay, provider, gpt-4o, claude]
+    category: fullstack
+    value_points: 2
+    related_features: [feat-mcp-proxy, feat-mcp-server, feat-mcp-upstream-proxy, feat-mcp-management]
+    conflicts:
+      had_conflict: false
+      conflict_files: []
+    verification:
+      status: passed
+      scenarios_total: 5
+      scenarios_passed: 5
+    stats:
+      started: '2026-06-01'
+      duration: same_day
+      commits: 1
   - id: feat-mcp-management
     name: MCP 供应商管理界面
     completed: '2026-06-01'
