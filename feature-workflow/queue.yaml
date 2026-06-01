@@ -30,15 +30,6 @@ pending:
   - feat-mcp-server
   - feat-mcp-upstream-proxy
   - feat-mcp-management
-- id: feat-mcp-upstream-proxy
-  name: 上游 MCP 代理中转
-  priority: 75
-  size: S
-  parent: feat-mcp-proxy
-  depends_on:
-  - feat-mcp-server
-  added: '2026-05-27'
-  value_points: 1
 - id: feat-mcp-management
   name: MCP 供应商管理界面
   priority: 75
@@ -57,6 +48,17 @@ pending:
   value_points: 2
 blocked: []
 completed:
+- id: feat-mcp-upstream-proxy
+  name: 上游 MCP 代理中转
+  priority: 75
+  size: S
+  parent: feat-mcp-proxy
+  depends_on:
+  - feat-mcp-server
+  added: '2026-05-27'
+  completed_at: '2026-06-01'
+  archive_path: features/archive/done-feat-mcp-upstream-proxy-20260601
+  value_points: 1
 - id: feat-mcp-server
   name: MCP Server 协议端点
   priority: 75

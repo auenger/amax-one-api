@@ -1,8 +1,51 @@
 meta:
   last_updated: '2026-06-01'
   version: 1
-  total_completed: 53
+  total_completed: 54
 records:
+  - id: feat-mcp-upstream-proxy
+    name: 上游 MCP 代理中转
+    completed: '2026-06-01'
+    tag: feat-mcp-upstream-proxy-20260601
+    merge_commit: c6d0fc6
+    merged_to: main
+    branch_deleted: true
+    branch_name: feature/mcp-upstream-proxy
+    worktree_deleted: true
+    worktree_path: ../aihub-mcp-upstream-proxy
+    keywords:
+    - mcp
+    - upstream
+    - proxy
+    - client
+    - sse
+    - streamable-http
+    - tool-sync
+    - prefix-routing
+    - provider
+    - namespace
+    - tools/call
+    - tools/list
+    - json-rpc
+    category: backend
+    value_points: 1
+    related_features:
+    - feat-mcp-server
+    - feat-mcp-proxy
+    - feat-glm-coding-plan
+    - feat-mcp-management
+    conflicts:
+      had_conflict: false
+      conflict_files: []
+    verification:
+      status: passed
+      scenarios_total: 4
+      scenarios_passed: 4
+    stats:
+      started: '2026-06-01'
+      duration: same-day
+      commits: 3
+      files_changed: 9
   - id: feat-mcp-server
     name: MCP Server 协议端点
     completed: '2026-06-01'
