@@ -14,11 +14,12 @@ import {
   IconClock,
   IconArrowDown,
   IconDownload,
-  IconBook
+  IconBook,
+  IconPlugConnected
 } from '@tabler/icons-react';
 
 // constant
-const icons = { IconDashboard, IconSitemap, IconArticle, IconCoin, IconAdjustments, IconKey, IconGardenCart, IconUser, IconUserScan, IconSparkles, IconChartBar, IconClock, IconArrowDown, IconDownload, IconBook };
+const icons = { IconDashboard, IconSitemap, IconArticle, IconCoin, IconAdjustments, IconKey, IconGardenCart, IconUser, IconUserScan, IconSparkles, IconChartBar, IconClock, IconArrowDown, IconDownload, IconBook, IconPlugConnected };
 
 // ==============================|| DASHBOARD MENU ITEMS ||============================== //
 
@@ -50,6 +51,15 @@ const panel = {
       url: '/panel/skills',
       icon: icons.IconBook,
       breadcrumbs: false
+    },
+    {
+      id: 'mcp',
+      title: 'MCP Server',
+      type: 'item',
+      url: '/panel/mcp',
+      icon: icons.IconPlugConnected,
+      breadcrumbs: false,
+      isAdmin: true
     },
     {
       id: 'channel',

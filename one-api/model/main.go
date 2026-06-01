@@ -181,6 +181,9 @@ func migrateDB() error {
 	}
 	// Migrate existing Skills: assign to default project if project_id is 0
 	MigrateSkillsToProjects()
+	if err = DB.AutoMigrate(&MCPTool{}); err != nil {
+		return err
+	}
 	return nil
 }
 
