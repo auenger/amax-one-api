@@ -184,6 +184,9 @@ func migrateDB() error {
 	if err = DB.AutoMigrate(&MCPTool{}); err != nil {
 		return err
 	}
+	if err = DB.AutoMigrate(&MCPProvider{}); err != nil {
+		return err
+	}
 	return nil
 }
 

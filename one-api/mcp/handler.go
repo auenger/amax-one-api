@@ -3,6 +3,8 @@ package mcp
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/songquanpeng/one-api/model"
@@ -85,9 +87,9 @@ func handleToolsList(_ context.Context, req *JSONRPCRequest, _ *MCPSession) *JSO
 	}
 }
 
-// handleToolsCall handles a tool invocation. This is a framework stub;
-// actual tool execution will be added in feat-mcp-upstream-proxy.
-func handleToolsCall(_ context.Context, req *JSONRPCRequest, _ *MCPSession) *JSONRPCResponse {
+// handleToolsCall handles a tool invocation by routing to the appropriate
+// upstream MCP provider based on the tool name prefix.
+func handleToolsCall(ctx context.Context, req *JSONRPCRequest, _ *MCPSession) *JSONRPCResponse {
 	var params struct {
 		Name      string          `json:"name"`
 		Arguments json.RawMessage `json:"arguments,omitempty"`
@@ -119,18 +121,76 @@ func handleToolsCall(_ context.Context, req *JSONRPCRequest, _ *MCPSession) *JSO
 		}
 	}
 
-	// Stub: return a placeholder response
-	// Actual upstream dispatching will be implemented in feat-mcp-upstream-proxy
+	// Resolve the upstream provider using the prefix-based router
+	client, originalName, found := GlobalUpstreamClients.ResolveProvider(params.Name)
+	if !found {
+		// No upstream provider found — check if tool has a provider_id
+		if tool.ProviderID > 0 {
+			client = GlobalUpstreamClients.GetByProviderID(tool.ProviderID)
+			if client != nil {
+				// Strip prefix to get original tool name
+				if client.Provider.ToolPrefix != "" {
+					prefix := client.Provider.ToolPrefix + "_"
+					originalName = strings.TrimPrefix(params.Name, prefix)
+				} else {
+					originalName = params.Name
+				}
+				found = true
+			}
+		}
+	}
+
+	if !found || client == nil {
+		return &JSONRPCResponse{
+			JSONRPC: "2.0",
+			ID:      req.ID,
+			Error: &JSONRPCError{
+				Code:    -32603,
+				Message: fmt.Sprintf("no upstream provider configured for tool: %s", params.Name),
+			},
+		}
+	}
+
+	// Check upstream connectivity
+	if !client.IsConnected() {
+		// Attempt to reconnect
+		if connectErr := client.Connect(ctx); connectErr != nil {
+			return &JSONRPCResponse{
+				JSONRPC: "2.0",
+				ID:      req.ID,
+				Error: &JSONRPCError{
+					Code:    -32603,
+					Message: fmt.Sprintf("upstream provider %s is unavailable: %v", client.Provider.Name, connectErr),
+				},
+			}
+		}
+	}
+
+	// Forward the tool call to the upstream provider
+	upstreamResp, err := client.CallTool(ctx, originalName, params.Arguments)
+	if err != nil {
+		return &JSONRPCResponse{
+			JSONRPC: "2.0",
+			ID:      req.ID,
+			Error: &JSONRPCError{
+				Code:    -32603,
+				Message: fmt.Sprintf("upstream tool call failed for %s (via %s): %v", originalName, client.Provider.Name, err),
+			},
+		}
+	}
+
+	// Return the upstream response to the client
+	if upstreamResp.Error != nil {
+		return &JSONRPCResponse{
+			JSONRPC: "2.0",
+			ID:      req.ID,
+			Error:   upstreamResp.Error,
+		}
+	}
+
 	return &JSONRPCResponse{
 		JSONRPC: "2.0",
 		ID:      req.ID,
-		Result: gin.H{
-			"content": []gin.H{
-				{
-					"type": "text",
-					"text": "Tool execution is not yet connected to an upstream provider. This will be available after upstream proxy integration.",
-				},
-			},
-		},
+		Result:  upstreamResp.Result,
 	}
 }
