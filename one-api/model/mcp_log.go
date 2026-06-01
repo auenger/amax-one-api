@@ -59,17 +59,17 @@ type MCPProviderStats struct {
 	TotalCalls     int64  `json:"total_calls"`
 	SuccessCalls   int64  `json:"success_calls"`
 	FailedCalls    int64  `json:"failed_calls"`
-	AvgDuration    int64  `json:"avg_duration"`    // ms
-	LastCalledAt   int64  `json:"last_called_at"`
+	AvgDuration    float64 `json:"avg_duration"`    // ms
+	LastCalledAt   int64   `json:"last_called_at"`
 }
 
 // MCPToolStats holds aggregated stats for a tool.
 type MCPToolStats struct {
-	ToolName     string `json:"tool_name"`
-	TotalCalls   int64  `json:"total_calls"`
-	SuccessCalls int64  `json:"success_calls"`
-	FailedCalls  int64  `json:"failed_calls"`
-	AvgDuration  int64  `json:"avg_duration"`
+	ToolName     string  `json:"tool_name"`
+	TotalCalls   int64   `json:"total_calls"`
+	SuccessCalls int64   `json:"success_calls"`
+	FailedCalls  int64   `json:"failed_calls"`
+	AvgDuration  float64 `json:"avg_duration"`
 }
 
 // GetMCPProviderStats returns aggregated stats grouped by provider.

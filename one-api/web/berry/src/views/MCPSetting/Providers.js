@@ -34,7 +34,6 @@ import {
   IconRefresh,
   IconTrash,
   IconPlugConnected,
-  IconSync,
   IconBrandSpeedtest,
   IconChevronRight
 } from '@tabler/icons-react';
@@ -316,7 +315,7 @@ export default function MCPProviders() {
                             </Tooltip>
                             <Tooltip title="同步工具">
                               <IconButton size="small" onClick={() => handleSync(row.id)} color="info">
-                                <IconSync size={18} />
+                                <IconRefresh size={18} />
                               </IconButton>
                             </Tooltip>
                             <Tooltip title="编辑">

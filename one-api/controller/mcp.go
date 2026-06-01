@@ -209,11 +209,17 @@ func SyncMCPProvider(c *gin.Context) {
 
 	client := mcpPkg.GlobalUpstreamClients.GetByProviderID(uint(id))
 	if client == nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "provider client not found, may not be connected",
-		})
-		return
+		// Load from DB and create client
+		provider, dbErr := model.GetMCPProviderByID(uint(id))
+		if dbErr != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "provider not found in database",
+			})
+			return
+		}
+		client = mcpPkg.NewUpstreamClient(provider)
+		mcpPkg.GlobalUpstreamClients.Register(client)
 	}
 
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 60*time.Second)

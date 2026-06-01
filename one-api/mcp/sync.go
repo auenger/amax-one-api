@@ -18,8 +18,16 @@ const (
 // SyncTools fetches the tool list from the upstream MCP server and updates
 // the local database cache.
 func (c *UpstreamClient) SyncTools(ctx context.Context) error {
+	// Ensure we are connected before syncing
+	if !c.IsConnected() {
+		if err := c.Connect(ctx); err != nil {
+			return fmt.Errorf("reconnect failed: %w", err)
+		}
+	}
+
 	req := &JSONRPCRequest{
 		JSONRPC: "2.0",
+		ID:      json.RawMessage(`1`),
 		Method:  "tools/list",
 	}
 
@@ -27,7 +35,9 @@ func (c *UpstreamClient) SyncTools(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("tools/list request: %w", err)
 	}
-
+	if resp == nil {
+		return fmt.Errorf("tools/list: empty response from upstream")
+	}
 	if resp.Error != nil {
 		return fmt.Errorf("tools/list error: [%d] %s", resp.Error.Code, resp.Error.Message)
 	}

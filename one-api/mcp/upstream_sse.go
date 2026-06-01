@@ -13,10 +13,8 @@ import (
 )
 
 // sendSSE sends a JSON-RPC request via SSE transport to the upstream MCP server.
-// SSE transport: Connect to the SSE endpoint, receive the message POST URL,
-// POST the request, then read the response from the SSE event stream.
-func sendSSE(ctx context.Context, provider *model.MCPProvider, req *JSONRPCRequest) (*JSONRPCResponse, error) {
-	// Step 1: Establish SSE connection to the upstream server
+func sendSSE(ctx context.Context, provider *model.MCPProvider, sessionID string, req *JSONRPCRequest) (*JSONRPCResponse, error) {
+	// Step 1: Establish SSE connection
 	sseURL := strings.TrimSuffix(provider.BaseURL, "/")
 	if !strings.HasSuffix(sseURL, "/sse") {
 		sseURL += "/sse"
@@ -26,13 +24,15 @@ func sendSSE(ctx context.Context, provider *model.MCPProvider, req *JSONRPCReque
 	if err != nil {
 		return nil, fmt.Errorf("create SSE request: %w", err)
 	}
+	httpReq.Header.Set("Accept", "text/event-stream")
 	if provider.AuthToken != "" {
 		httpReq.Header.Set("Authorization", "Bearer "+provider.AuthToken)
 	}
-	httpReq.Header.Set("Accept", "text/event-stream")
+	if sessionID != "" {
+		httpReq.Header.Set("Mcp-Session-Id", sessionID)
+	}
 
-	client := &http.Client{}
-	resp, err := client.Do(httpReq)
+	resp, err := http.DefaultClient.Do(httpReq)
 	if err != nil {
 		return nil, fmt.Errorf("SSE connect: %w", err)
 	}
@@ -42,6 +42,9 @@ func sendSSE(ctx context.Context, provider *model.MCPProvider, req *JSONRPCReque
 		body, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("SSE connect failed (%d): %s", resp.StatusCode, string(body))
 	}
+
+	// Capture session ID
+	newSessionID := resp.Header.Get("Mcp-Session-Id")
 
 	// Step 2: Read the endpoint event to get the message POST URL
 	scanner := bufio.NewScanner(resp.Body)
@@ -63,7 +66,6 @@ func sendSSE(ctx context.Context, provider *model.MCPProvider, req *JSONRPCReque
 
 	// Step 3: POST the request to the message endpoint
 	if !strings.Contains(messageEndpoint, "://") {
-		// Relative URL — resolve against base
 		base := strings.TrimSuffix(provider.BaseURL, "/")
 		messageEndpoint = base + messageEndpoint
 	}
@@ -77,12 +79,15 @@ func sendSSE(ctx context.Context, provider *model.MCPProvider, req *JSONRPCReque
 	if err != nil {
 		return nil, fmt.Errorf("create POST request: %w", err)
 	}
+	postReq.Header.Set("Content-Type", "application/json")
 	if provider.AuthToken != "" {
 		postReq.Header.Set("Authorization", "Bearer "+provider.AuthToken)
 	}
-	postReq.Header.Set("Content-Type", "application/json")
+	if sessionID != "" {
+		postReq.Header.Set("Mcp-Session-Id", sessionID)
+	}
 
-	postResp, err := client.Do(postReq)
+	postResp, err := http.DefaultClient.Do(postReq)
 	if err != nil {
 		return nil, fmt.Errorf("POST to upstream: %w", err)
 	}
@@ -92,7 +97,6 @@ func sendSSE(ctx context.Context, provider *model.MCPProvider, req *JSONRPCReque
 	for scanner.Scan() {
 		line := scanner.Text()
 		if strings.HasPrefix(line, "event: message") {
-			// Next line(s) will contain the data
 			for scanner.Scan() {
 				dataLine := scanner.Text()
 				if strings.HasPrefix(dataLine, "data: ") {
@@ -101,10 +105,18 @@ func sendSSE(ctx context.Context, provider *model.MCPProvider, req *JSONRPCReque
 					if err := json.Unmarshal([]byte(data), &rpcResp); err != nil {
 						return nil, fmt.Errorf("parse SSE response: %w", err)
 					}
+					if newSessionID != "" {
+						rpcResp.SessionID = newSessionID
+					}
 					return &rpcResp, nil
 				}
 			}
 		}
+	}
+
+	// Notification requests may have no response
+	if req.ID == nil {
+		return nil, nil
 	}
 
 	return nil, fmt.Errorf("SSE: no response received from upstream")

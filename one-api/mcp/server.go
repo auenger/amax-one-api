@@ -24,10 +24,11 @@ type JSONRPCRequest struct {
 }
 
 type JSONRPCResponse struct {
-	JSONRPC string          `json:"jsonrpc"`
-	ID      json.RawMessage `json:"id"`
-	Result  interface{}     `json:"result,omitempty"`
-	Error   *JSONRPCError   `json:"error,omitempty"`
+	JSONRPC   string        `json:"jsonrpc"`
+	ID        json.RawMessage `json:"id"`
+	Result    interface{}   `json:"result,omitempty"`
+	Error     *JSONRPCError `json:"error,omitempty"`
+	SessionID string        `json:"-"` // set by transport, not serialized
 }
 
 type JSONRPCError struct {

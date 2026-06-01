@@ -164,10 +164,83 @@ And 新增工具自动可用，移除的工具标记为禁用
 ```
 
 ### General Checklist
-- [ ] MCPProvider 模型和迁移
-- [ ] MCP Client 连接管理
-- [ ] 工具同步（定时 + 手动）
-- [ ] 工具调用路由和转发
-- [ ] 命名空间前缀处理
-- [ ] 错误处理和上游重连
-- [ ] Provider CRUD API
+- [x] MCPProvider 模型和迁移
+- [x] MCP Client 连接管理
+- [x] 工具同步（定时 + 手动）
+- [x] 工具调用路由和转发
+- [x] 命名空间前缀处理
+- [x] 错误处理和上游重连
+- [x] Provider CRUD API
+
+## Post-Merge Fixes (2026-06-01)
+
+### GLM MCP 兼容性修复
+
+测试 GLM 的三个远程 MCP 服务（联网搜索 `web_search_prime`、网页读取 `web_reader`、开源仓库 `zread`）时发现多个兼容性问题，全部修复。
+
+#### 问题 1: 缺少 Accept 头导致 406 错误
+
+GLM MCP 服务器（基于 Spring WebFlux）强制要求请求头包含 `Accept: application/json, text/event-stream`。
+
+**修复**: `upstream_http.go` — 发送请求时添加 `Accept` 头
+```go
+httpReq.Header.Set("Accept", "application/json, text/event-stream")
+```
+
+#### 问题 2: SSE 响应格式解析失败
+
+GLM 返回 SSE 格式响应（`id:1\nevent:message\ndata:{json}`），而非纯 JSON。原代码直接 `json.Unmarshal` 导致解析失败（empty body）。
+
+**修复**: `upstream_http.go` — 新增 `extractJSONFromResponse()` 和 `extractSSEData()` 函数
+- 检测响应是否为 SSE 格式（包含 `data:` 行）
+- 从 `data:` 行中提取 JSON 内容后再解析
+
+#### 问题 3: 缺少 MCP Session ID 管理
+
+GLM 在 initialize 响应头返回 `Mcp-Session-Id`，后续请求必须携带此头。原代码未捕获和传递 session ID，导致上游拒绝请求。
+
+**修复**: `upstream_client.go` + `upstream_http.go` + `upstream_sse.go`
+- `UpstreamClient` 新增 `sessionID string` 字段
+- `sendStreamableHTTP()` / `sendSSE()` 参数新增 `sessionID`
+- 从 HTTP 响应头 `Mcp-Session-Id` 捕获 session ID
+- 后续请求自动携带 `Mcp-Session-Id` 请求头
+
+#### 问题 4: 缺少 notifications/initialized
+
+MCP 协议规定 initialize 后必须发送 `notifications/initialized` 通知。缺失导致部分服务器不响应后续请求。
+
+**修复**: `upstream_client.go` — `Connect()` 中新增 `sendInitialized()` 调用
+
+#### 问题 5: 请求缺少 ID 导致 nil pointer panic
+
+JSON-RPC 2.0 规定：无 `id` 的请求为 notification（不期望响应）。`initialize`、`tools/list`、`tools/call` 都未设置 ID，被 `sendStreamableHTTP` 当作 notification 返回 `(nil, nil)`，导致 `resp.Error` nil pointer panic。
+
+**修复**: 所有内部上游请求添加 `ID: json.RawMessage("1")`
+
+#### 问题 6: SyncTools 未连接时直接发请求
+
+`SyncTools` 未检查连接状态，在 client 未连接时直接发送 `tools/list` 导致失败。
+
+**修复**: `sync.go` — 开头增加连接检查和自动重连
+```go
+if !c.IsConnected() {
+    if err := c.Connect(ctx); err != nil {
+        return fmt.Errorf("reconnect failed: %w", err)
+    }
+}
+```
+
+#### 问题 7: sync 端点 client 为空时直接报错
+
+`/api/mcp-provider/:id/sync` 找不到 client 时直接返回错误，不尝试从 DB 加载。
+
+**修复**: `controller/mcp.go` — client 为空时从 DB 加载 provider 并注册新 client
+
+### GLM MCP 端点配置参考
+
+| 服务 | base_url | transport |
+|---|---|---|
+| 联网搜索 | `https://open.bigmodel.cn/api/mcp/web_search_prime/mcp` | streamable-http |
+| 网页读取 | `https://open.bigmodel.cn/api/mcp/web_reader/mcp` | streamable-http |
+| 开源仓库 | `https://open.bigmodel.cn/api/mcp/zread/mcp` | streamable-http |
+| 视觉理解 | stdio (`npx @z_ai/mcp-server`) | 不支持（需要本地 Node.js） |

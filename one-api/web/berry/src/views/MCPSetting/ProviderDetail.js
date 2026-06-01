@@ -22,7 +22,6 @@ import {
 } from '@mui/material';
 import {
   IconRefresh,
-  IconSync,
   IconBrandSpeedtest,
   IconArrowLeft,
   IconPlugConnected
@@ -205,7 +204,7 @@ export default function MCPProviderDetail() {
                   >
                     {testing ? '测试中...' : '测试连接'}
                   </Button>
-                  <Button variant="outlined" startIcon={<IconSync />} onClick={handleSync} size="small">
+                  <Button variant="outlined" startIcon={<IconRefresh />} onClick={handleSync} size="small">
                     同步工具
                   </Button>
                 </Stack>

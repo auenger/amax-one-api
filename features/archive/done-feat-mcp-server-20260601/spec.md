@@ -146,9 +146,20 @@ And 能接收服务端推送事件
 ```
 
 ### General Checklist
-- [ ] MCP 协议核心方法实现
-- [ ] SSE 传输支持
-- [ ] Streamable HTTP 传输支持
-- [ ] Token 认证集成
-- [ ] MCPTool 数据模型和迁移
-- [ ] 前端 MCP 设置入口页
+- [x] MCP 协议核心方法实现
+- [x] SSE 传输支持
+- [x] Streamable HTTP 传输支持
+- [x] Token 认证集成
+- [x] MCPTool 数据模型和迁移
+- [x] 前端 MCP 设置入口页
+
+## Post-Merge Fixes (2026-06-01)
+
+### GLM 兼容性修复
+
+**JSONRPCResponse 新增 SessionID 字段** (`server.go`)
+- 新增 `SessionID string \`json:"-"\`` 字段，由 transport 层设置，不序列化到 JSON
+- 用于存储上游 MCP 服务器返回的 `Mcp-Session-Id` 响应头
+
+**前端 IconSync → IconRefresh** (`Providers.js`, `ProviderDetail.js`)
+- `@tabler/icons-react` 不导出 `IconSync`，替换为项目中已有的 `IconRefresh`

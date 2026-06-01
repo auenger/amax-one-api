@@ -19,6 +19,7 @@ type UpstreamClient struct {
 	tools     []UpstreamTool
 	lastSync  time.Time
 	connected bool
+	sessionID string
 }
 
 // UpstreamTool represents a tool discovered from an upstream MCP server.
@@ -99,7 +100,6 @@ func (s *UpstreamClientStore) GetAll() []*UpstreamClient {
 
 // ResolveProvider resolves a prefixed tool name to the upstream client and the
 // original (un-prefixed) tool name.
-// e.g. "glm_web_search" -> (glm_client, "web_search")
 func (s *UpstreamClientStore) ResolveProvider(prefixedName string) (*UpstreamClient, string, bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -118,13 +118,25 @@ func (c *UpstreamClient) Connect(ctx context.Context) error {
 		return fmt.Errorf("upstream MCP provider %s: base URL is empty", c.Provider.Name)
 	}
 
-	// Send initialize request to upstream
-	_, err := c.sendInitialize(ctx)
+	// Send initialize request
+	resp, err := c.sendInitialize(ctx)
 	if err != nil {
 		return fmt.Errorf("upstream MCP provider %s: initialize failed: %w", c.Provider.Name, err)
 	}
 
-	logger.SysLog(fmt.Sprintf("MCP upstream connected: %s (%s)", c.Provider.Name, c.Provider.BaseURL))
+	// Store session ID from response
+	if resp != nil && resp.SessionID != "" {
+		c.mu.Lock()
+		c.sessionID = resp.SessionID
+		c.mu.Unlock()
+	}
+
+	// Send initialized notification (required by MCP protocol)
+	if notifErr := c.sendInitialized(ctx); notifErr != nil {
+		logger.SysError(fmt.Sprintf("MCP upstream %s: initialized notification failed: %v", c.Provider.Name, notifErr))
+	}
+
+	logger.SysLog(fmt.Sprintf("MCP upstream connected: %s (%s) session=%s", c.Provider.Name, c.Provider.BaseURL, c.sessionID))
 
 	c.mu.Lock()
 	c.connected = true
@@ -137,6 +149,7 @@ func (c *UpstreamClient) Connect(ctx context.Context) error {
 		}
 	}
 
+	_ = resp
 	return nil
 }
 
@@ -172,6 +185,7 @@ func (c *UpstreamClient) CallTool(ctx context.Context, toolName string, argument
 
 	req := &JSONRPCRequest{
 		JSONRPC: "2.0",
+		ID:      json.RawMessage(`1`),
 		Method:  "tools/call",
 		Params:  paramsJSON,
 	}
@@ -201,6 +215,7 @@ func (c *UpstreamClient) sendInitialize(ctx context.Context) (*JSONRPCResponse, 
 
 	req := &JSONRPCRequest{
 		JSONRPC: "2.0",
+		ID:      json.RawMessage(`1`),
 		Method:  "initialize",
 		Params:  paramsJSON,
 	}
@@ -208,8 +223,20 @@ func (c *UpstreamClient) sendInitialize(ctx context.Context) (*JSONRPCResponse, 
 	return c.sendRequest(ctx, req)
 }
 
+// sendInitialized sends the required initialized notification after the
+// initialize handshake.
+func (c *UpstreamClient) sendInitialized(ctx context.Context) error {
+	req := &JSONRPCRequest{
+		JSONRPC: "2.0",
+		Method:  "notifications/initialized",
+	}
+
+	_, err := c.sendRequest(ctx, req)
+	return err
+}
+
 // sendRequest sends a JSON-RPC request to the upstream server using the
-// configured transport.
+// configured transport, including the session ID when available.
 func (c *UpstreamClient) sendRequest(ctx context.Context, req *JSONRPCRequest) (*JSONRPCResponse, error) {
 	timeout := 30 * time.Second
 	if deadline, ok := ctx.Deadline(); ok {
@@ -221,11 +248,14 @@ func (c *UpstreamClient) sendRequest(ctx context.Context, req *JSONRPCRequest) (
 	sendCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
+	c.mu.RLock()
+	sid := c.sessionID
+	c.mu.RUnlock()
+
 	switch c.Provider.Transport {
 	case "sse":
-		return sendSSE(sendCtx, c.Provider, req)
+		return sendSSE(sendCtx, c.Provider, sid, req)
 	default:
-		// Default to streamable-http
-		return sendStreamableHTTP(sendCtx, c.Provider, req)
+		return sendStreamableHTTP(sendCtx, c.Provider, sid, req)
 	}
 }
