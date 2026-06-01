@@ -89,7 +89,7 @@ func handleToolsList(_ context.Context, req *JSONRPCRequest, _ *MCPSession) *JSO
 }
 
 // handleToolsCall handles a tool invocation by routing to the appropriate
-// upstream MCP provider based on the tool name prefix.
+// upstream MCP provider or builtin tool based on the provider type.
 func handleToolsCall(ctx context.Context, req *JSONRPCRequest, _ *MCPSession) *JSONRPCResponse {
 	var params struct {
 		Name      string          `json:"name"`
@@ -103,8 +103,6 @@ func handleToolsCall(ctx context.Context, req *JSONRPCRequest, _ *MCPSession) *J
 	tool, err := model.GetMCPToolByName(params.Name)
 	if err != nil {
 		return &JSONRPCResponse{
-			JSONRPC: "2.0",
-			ID:      req.ID,
 			Error: &JSONRPCError{
 				Code:    -32602,
 				Message: "tool not found: " + params.Name,
@@ -113,8 +111,6 @@ func handleToolsCall(ctx context.Context, req *JSONRPCRequest, _ *MCPSession) *J
 	}
 	if !tool.Enabled {
 		return &JSONRPCResponse{
-			JSONRPC: "2.0",
-			ID:      req.ID,
 			Error: &JSONRPCError{
 				Code:    -32602,
 				Message: "tool is disabled: " + params.Name,
@@ -122,19 +118,47 @@ func handleToolsCall(ctx context.Context, req *JSONRPCRequest, _ *MCPSession) *J
 		}
 	}
 
-	// Resolve the upstream provider using the prefix-based router
-	client, originalName, found := GlobalUpstreamClients.ResolveProvider(params.Name)
+	// Look up the provider to determine the routing strategy
+	provider, err := model.GetMCPProviderByID(tool.ProviderID)
+	if err != nil {
+		return &JSONRPCResponse{
+			Error: &JSONRPCError{
+				Code:    -32603,
+				Message: "provider not found for tool: " + params.Name,
+			},
+		}
+	}
+
+	if !provider.Enabled {
+		return &JSONRPCResponse{
+			Error: &JSONRPCError{
+				Code:    -32603,
+				Message: "provider is disabled: " + provider.Name,
+			},
+		}
+	}
+
+	// Route to builtin handler if provider is builtin type
+	if provider.IsBuiltin() {
+		return callBuiltinTool(ctx, provider, params.Arguments)
+	}
+
+	// Route to upstream provider
+	return callUpstreamTool(ctx, provider, tool, params.Name, params.Arguments)
+}
+
+// callUpstreamTool handles tool calls for upstream (external) MCP providers.
+func callUpstreamTool(ctx context.Context, provider *model.MCPProvider, tool *model.MCPTool, toolName string, arguments json.RawMessage) *JSONRPCResponse {
+	client, originalName, found := GlobalUpstreamClients.ResolveProvider(toolName)
 	if !found {
-		// No upstream provider found — check if tool has a provider_id
 		if tool.ProviderID > 0 {
 			client = GlobalUpstreamClients.GetByProviderID(tool.ProviderID)
 			if client != nil {
-				// Strip prefix to get original tool name
 				if client.Provider.ToolPrefix != "" {
 					prefix := client.Provider.ToolPrefix + "_"
-					originalName = strings.TrimPrefix(params.Name, prefix)
+					originalName = strings.TrimPrefix(toolName, prefix)
 				} else {
-					originalName = params.Name
+					originalName = toolName
 				}
 				found = true
 			}
@@ -143,22 +167,16 @@ func handleToolsCall(ctx context.Context, req *JSONRPCRequest, _ *MCPSession) *J
 
 	if !found || client == nil {
 		return &JSONRPCResponse{
-			JSONRPC: "2.0",
-			ID:      req.ID,
 			Error: &JSONRPCError{
 				Code:    -32603,
-				Message: fmt.Sprintf("no upstream provider configured for tool: %s", params.Name),
+				Message: fmt.Sprintf("no upstream provider configured for tool: %s", toolName),
 			},
 		}
 	}
 
-	// Check upstream connectivity
 	if !client.IsConnected() {
-		// Attempt to reconnect
 		if connectErr := client.Connect(ctx); connectErr != nil {
 			return &JSONRPCResponse{
-				JSONRPC: "2.0",
-				ID:      req.ID,
 				Error: &JSONRPCError{
 					Code:    -32603,
 					Message: fmt.Sprintf("upstream provider %s is unavailable: %v", client.Provider.Name, connectErr),
@@ -167,16 +185,14 @@ func handleToolsCall(ctx context.Context, req *JSONRPCRequest, _ *MCPSession) *J
 		}
 	}
 
-	// Forward the tool call to the upstream provider
 	startTime := time.Now()
-	upstreamResp, err := client.CallTool(ctx, originalName, params.Arguments)
+	upstreamResp, err := client.CallTool(ctx, originalName, arguments)
 	duration := time.Since(startTime).Milliseconds()
 
-	// Log the MCP invocation
 	mcpLog := &model.MCPLog{
 		ProviderID:   client.Provider.ID,
 		ProviderName: client.Provider.Name,
-		ToolName:     params.Name,
+		ToolName:     toolName,
 		Duration:     duration,
 	}
 	if err != nil {
@@ -192,8 +208,6 @@ func handleToolsCall(ctx context.Context, req *JSONRPCRequest, _ *MCPSession) *J
 
 	if err != nil {
 		return &JSONRPCResponse{
-			JSONRPC: "2.0",
-			ID:      req.ID,
 			Error: &JSONRPCError{
 				Code:    -32603,
 				Message: fmt.Sprintf("upstream tool call failed for %s (via %s): %v", originalName, client.Provider.Name, err),
@@ -201,18 +215,13 @@ func handleToolsCall(ctx context.Context, req *JSONRPCRequest, _ *MCPSession) *J
 		}
 	}
 
-	// Return the upstream response to the client
 	if upstreamResp.Error != nil {
 		return &JSONRPCResponse{
-			JSONRPC: "2.0",
-			ID:      req.ID,
-			Error:   upstreamResp.Error,
+			Error: upstreamResp.Error,
 		}
 	}
 
 	return &JSONRPCResponse{
-		JSONRPC: "2.0",
-		ID:      req.ID,
-		Result:  upstreamResp.Result,
+		Result: upstreamResp.Result,
 	}
 }

@@ -199,54 +199,55 @@ func SetApiRouter(router *gin.Engine) {
 			skillProjectRoute.PUT("/:id", controller.UpdateSkillProject)
 			skillProjectRoute.DELETE("/:id", controller.DeleteSkillProject)
 		}
-			// Enterprise: Daily request limit
-			selfDailyRoute := userRoute.Group("/")
-			selfDailyRoute.Use(middleware.UserAuth())
-			{
-				selfDailyRoute.GET("/daily-usage", controller.GetSelfDailyLimit)
-			}
-			dailyLimitAdminRoute := userRoute.Group("/")
-			dailyLimitAdminRoute.Use(middleware.AdminAuth())
-			{
-				dailyLimitAdminRoute.PUT("/:id/daily-limit-exempt", controller.UpdateDailyLimitExempt)
-				dailyLimitAdminRoute.POST("/:id/daily-limit-exempt-today", controller.GrantDailyLimitTempExempt)
-			}
-			dailyLimitRoute := apiRouter.Group("/daily-limit")
-			dailyLimitRoute.Use(middleware.AdminAuth())
-			{
-				dailyLimitRoute.GET("/status", controller.GetDailyLimitStatus)
-			}
-			dailyLimitConfigRoute := apiRouter.Group("/daily-limit")
-			dailyLimitConfigRoute.Use(middleware.RootAuth())
-			{
-				dailyLimitConfigRoute.GET("/config", controller.GetDailyLimitConfig)
-				dailyLimitConfigRoute.PUT("/config", controller.UpdateDailyLimitConfig)
-			}
-			// MCP Provider management (admin only)
-			mcpProviderRoute := apiRouter.Group("/mcp-provider")
-			mcpProviderRoute.Use(middleware.AdminAuth())
-			{
-				mcpProviderRoute.GET("/", controller.GetAllMCPProviders)
-				mcpProviderRoute.GET("/:id", controller.GetMCPProvider)
-				mcpProviderRoute.POST("/", controller.AddMCPProvider)
-				mcpProviderRoute.PUT("/", controller.UpdateMCPProvider)
-				mcpProviderRoute.DELETE("/:id", controller.DeleteMCPProvider)
-				mcpProviderRoute.POST("/:id/sync", controller.SyncMCPProvider)
-				mcpProviderRoute.POST("/sync", controller.SyncAllMCPProviders)
-				mcpProviderRoute.POST("/:id/test", controller.TestMCPProvider)
-				mcpProviderRoute.GET("/:id/tools", controller.GetMCPProviderTools)
-			}
-			// MCP Tool management (admin only)
-			mcpToolRoute := apiRouter.Group("/mcp-tool")
-			mcpToolRoute.Use(middleware.AdminAuth())
-			{
-				mcpToolRoute.PUT("/:id", controller.UpdateMCPToolStatus)
-			}
-			// MCP Stats (admin only)
-			mcpStatsRoute := apiRouter.Group("/mcp-stats")
-			mcpStatsRoute.Use(middleware.AdminAuth())
-			{
-				mcpStatsRoute.GET("/", controller.GetMCPStats)
-			}
+		// Enterprise: Daily request limit
+		selfDailyRoute := userRoute.Group("/")
+		selfDailyRoute.Use(middleware.UserAuth())
+		{
+			selfDailyRoute.GET("/daily-usage", controller.GetSelfDailyLimit)
+		}
+		dailyLimitAdminRoute := userRoute.Group("/")
+		dailyLimitAdminRoute.Use(middleware.AdminAuth())
+		{
+			dailyLimitAdminRoute.PUT("/:id/daily-limit-exempt", controller.UpdateDailyLimitExempt)
+			dailyLimitAdminRoute.POST("/:id/daily-limit-exempt-today", controller.GrantDailyLimitTempExempt)
+		}
+		dailyLimitRoute := apiRouter.Group("/daily-limit")
+		dailyLimitRoute.Use(middleware.AdminAuth())
+		{
+			dailyLimitRoute.GET("/status", controller.GetDailyLimitStatus)
+		}
+		dailyLimitConfigRoute := apiRouter.Group("/daily-limit")
+		dailyLimitConfigRoute.Use(middleware.RootAuth())
+		{
+			dailyLimitConfigRoute.GET("/config", controller.GetDailyLimitConfig)
+			dailyLimitConfigRoute.PUT("/config", controller.UpdateDailyLimitConfig)
+		}
+		// MCP Provider management (admin only)
+		mcpProviderRoute := apiRouter.Group("/mcp-provider")
+		mcpProviderRoute.Use(middleware.AdminAuth())
+		{
+			mcpProviderRoute.GET("/", controller.GetAllMCPProviders)
+			mcpProviderRoute.GET("/:id", controller.GetMCPProvider)
+			mcpProviderRoute.POST("/", controller.AddMCPProvider)
+			mcpProviderRoute.PUT("/", controller.UpdateMCPProvider)
+			mcpProviderRoute.DELETE("/:id", controller.DeleteMCPProvider)
+			mcpProviderRoute.POST("/:id/sync", controller.SyncMCPProvider)
+			mcpProviderRoute.POST("/sync", controller.SyncAllMCPProviders)
+			mcpProviderRoute.POST("/:id/test", controller.TestMCPProvider)
+			mcpProviderRoute.GET("/:id/tools", controller.GetMCPProviderTools)
+			mcpProviderRoute.GET("/vision-channels", controller.GetVisionChannels)
+		}
+		// MCP Tool management (admin only)
+		mcpToolRoute := apiRouter.Group("/mcp-tool")
+		mcpToolRoute.Use(middleware.AdminAuth())
+		{
+			mcpToolRoute.PUT("/:id", controller.UpdateMCPToolStatus)
+		}
+		// MCP Stats (admin only)
+		mcpStatsRoute := apiRouter.Group("/mcp-stats")
+		mcpStatsRoute.Use(middleware.AdminAuth())
+		{
+			mcpStatsRoute.GET("/", controller.GetMCPStats)
+		}
 	}
 }

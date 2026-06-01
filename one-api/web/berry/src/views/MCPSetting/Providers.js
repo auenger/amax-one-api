@@ -27,7 +27,9 @@ import {
   InputLabel,
   Tooltip,
   LinearProgress,
-  Link
+  Link,
+  FormControlLabel,
+  Checkbox
 } from '@mui/material';
 import {
   IconPlus,
@@ -35,12 +37,37 @@ import {
   IconTrash,
   IconPlugConnected,
   IconBrandSpeedtest,
-  IconChevronRight
+  IconChevronRight,
+  IconEye
 } from '@tabler/icons-react';
 import AdminContainer from 'ui-component/AdminContainer';
 import { useNavigate } from 'react-router';
 
 const transportOptions = ['streamable-http', 'sse'];
+const providerTypes = [
+  { value: 'upstream', label: '外部代理' },
+  { value: 'builtin', label: '内置视觉理解' }
+];
+
+const defaultFormData = {
+  name: '',
+  display_name: '',
+  type: 'upstream',
+  base_url: '',
+  auth_token: '',
+  transport: 'streamable-http',
+  tool_prefix: '',
+  group: '',
+  auto_sync: true,
+  enabled: true,
+  builtin_config: JSON.stringify({
+    tool_type: 'vision',
+    channel_id: 0,
+    model: '',
+    system_prompt: '',
+    max_tokens: 4096
+  })
+};
 
 export default function MCPProviders() {
   const navigate = useNavigate();
@@ -48,17 +75,9 @@ export default function MCPProviders() {
   const [loading, setLoading] = useState(false);
   const [openModal, setOpenModal] = useState(false);
   const [editProvider, setEditProvider] = useState(null);
-  const [formData, setFormData] = useState({
-    name: '',
-    display_name: '',
-    base_url: '',
-    auth_token: '',
-    transport: 'streamable-http',
-    tool_prefix: '',
-    group: '',
-    auto_sync: true,
-    enabled: true
-  });
+  const [formData, setFormData] = useState({ ...defaultFormData });
+  const [visionChannels, setVisionChannels] = useState([]);
+  const [selectedChannelModels, setSelectedChannelModels] = useState([]);
 
   const loadProviders = useCallback(async () => {
     setLoading(true);
@@ -76,38 +95,64 @@ export default function MCPProviders() {
     setLoading(false);
   }, []);
 
+  const loadVisionChannels = useCallback(async () => {
+    try {
+      const res = await API.get('/api/mcp-provider/vision-channels');
+      const { success, data } = res.data;
+      if (success) {
+        setVisionChannels(data || []);
+      }
+    } catch (err) {
+      // silently fail - vision channels are optional
+    }
+  }, []);
+
   useEffect(() => {
     loadProviders();
-  }, [loadProviders]);
+    loadVisionChannels();
+  }, [loadProviders, loadVisionChannels]);
 
   const handleOpenAdd = () => {
     setEditProvider(null);
-    setFormData({
-      name: '',
-      display_name: '',
-      base_url: '',
-      auth_token: '',
-      transport: 'streamable-http',
-      tool_prefix: '',
-      group: '',
-      auto_sync: true,
-      enabled: true
-    });
+    setFormData({ ...defaultFormData });
+    setSelectedChannelModels([]);
     setOpenModal(true);
   };
 
   const handleOpenEdit = (provider) => {
     setEditProvider(provider);
+    const isBuiltin = provider.type === 'builtin';
+    let builtinConfig = {
+      tool_type: 'vision',
+      channel_id: 0,
+      model: '',
+      system_prompt: '',
+      max_tokens: 4096
+    };
+    if (isBuiltin && provider.builtin_config) {
+      try {
+        builtinConfig = JSON.parse(provider.builtin_config);
+      } catch (e) { /* use default */ }
+    }
+
+    // Set channel models for editing
+    if (builtinConfig.channel_id) {
+      const ch = visionChannels.find((c) => c.id === builtinConfig.channel_id);
+      setSelectedChannelModels(ch ? ch.models : []);
+    }
+
     setFormData({
       name: provider.name,
       display_name: provider.display_name || '',
-      base_url: provider.base_url,
+      type: provider.type || 'upstream',
+      base_url: provider.base_url || '',
       auth_token: provider.auth_token || '',
       transport: provider.transport || 'streamable-http',
       tool_prefix: provider.tool_prefix || '',
       group: provider.group || '',
       auto_sync: provider.auto_sync,
-      enabled: provider.enabled
+      enabled: provider.enabled,
+      builtin_config: JSON.stringify(builtinConfig)
     });
     setOpenModal(true);
   };
@@ -115,6 +160,28 @@ export default function MCPProviders() {
   const handleCloseModal = () => {
     setOpenModal(false);
     setEditProvider(null);
+    setSelectedChannelModels([]);
+  };
+
+  const getBuiltinConfig = () => {
+    try {
+      return JSON.parse(formData.builtin_config);
+    } catch {
+      return { tool_type: 'vision', channel_id: 0, model: '', system_prompt: '', max_tokens: 4096 };
+    }
+  };
+
+  const updateBuiltinConfig = (field, value) => {
+    const config = getBuiltinConfig();
+    config[field] = value;
+    setFormData({ ...formData, builtin_config: JSON.stringify(config) });
+  };
+
+  const handleChannelChange = (channelId) => {
+    const ch = visionChannels.find((c) => c.id === channelId);
+    setSelectedChannelModels(ch ? ch.models : []);
+    updateBuiltinConfig('channel_id', channelId);
+    updateBuiltinConfig('model', '');
   };
 
   const handleSubmit = async () => {
@@ -122,9 +189,23 @@ export default function MCPProviders() {
       showError('供应商名称不能为空');
       return;
     }
-    if (!formData.base_url) {
+
+    const isBuiltin = formData.type === 'builtin';
+    if (!isBuiltin && !formData.base_url) {
       showError('Base URL 不能为空');
       return;
+    }
+
+    if (isBuiltin) {
+      const config = getBuiltinConfig();
+      if (!config.channel_id) {
+        showError('请选择渠道');
+        return;
+      }
+      if (!config.model) {
+        showError('请选择模型');
+        return;
+      }
     }
 
     try {
@@ -163,13 +244,17 @@ export default function MCPProviders() {
     }
   };
 
-  const handleTest = async (id) => {
-    showInfo('正在测试连接...');
+  const handleTest = async (provider) => {
+    if (provider.type === 'builtin') {
+      showInfo('正在测试视觉理解工具...');
+    } else {
+      showInfo('正在测试连接...');
+    }
     try {
-      const res = await API.post(`/api/mcp-provider/${id}/test`);
+      const res = await API.post(`/api/mcp-provider/${provider.id}/test`);
       const { success, message, data } = res.data;
       if (success) {
-        showSuccess(`连接成功！延迟 ${data.latency}ms，发现 ${data.tools_count} 个工具`);
+        showSuccess(`测试成功！延迟 ${data.latency}ms`);
       } else {
         showError(message);
       }
@@ -217,6 +302,9 @@ export default function MCPProviders() {
     return new Date(ts * 1000).toLocaleString();
   };
 
+  const isBuiltin = formData.type === 'builtin';
+  const builtinConfig = getBuiltinConfig();
+
   return (
     <>
       <Stack direction="row" alignItems="center" justifyContent="space-between" mb={2.5}>
@@ -249,12 +337,12 @@ export default function MCPProviders() {
                     <TableRow>
                       <TableCell>ID</TableCell>
                       <TableCell>名称</TableCell>
+                      <TableCell>类型</TableCell>
                       <TableCell>传输方式</TableCell>
                       <TableCell>工具前缀</TableCell>
                       <TableCell>状态</TableCell>
                       <TableCell>自动同步</TableCell>
                       <TableCell>上次同步</TableCell>
-                      <TableCell>用户组</TableCell>
                       <TableCell align="right">操作</TableCell>
                     </TableRow>
                   </TableHead>
@@ -264,7 +352,11 @@ export default function MCPProviders() {
                         <TableCell>{row.id}</TableCell>
                         <TableCell>
                           <Stack direction="row" alignItems="center" spacing={1}>
-                            <IconPlugConnected size={16} />
+                            {row.type === 'builtin' ? (
+                              <IconEye size={16} />
+                            ) : (
+                              <IconPlugConnected size={16} />
+                            )}
                             <Link
                               component="button"
                               variant="body2"
@@ -276,7 +368,19 @@ export default function MCPProviders() {
                           </Stack>
                         </TableCell>
                         <TableCell>
-                          <Chip label={row.transport} size="small" variant="outlined" />
+                          <Chip
+                            label={row.type === 'builtin' ? '内置' : '外部'}
+                            size="small"
+                            color={row.type === 'builtin' ? 'secondary' : 'default'}
+                            variant="outlined"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          {row.type === 'builtin' ? (
+                            <Typography variant="body2" color="text.secondary">-</Typography>
+                          ) : (
+                            <Chip label={row.transport} size="small" variant="outlined" />
+                          )}
                         </TableCell>
                         <TableCell>
                           <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
@@ -292,32 +396,35 @@ export default function MCPProviders() {
                           />
                         </TableCell>
                         <TableCell>
-                          <Chip
-                            label={row.auto_sync ? '自动' : '手动'}
-                            size="small"
-                            color={row.auto_sync ? 'primary' : 'default'}
-                          />
+                          {row.type === 'builtin' ? (
+                            <Typography variant="body2" color="text.secondary">-</Typography>
+                          ) : (
+                            <Chip
+                              label={row.auto_sync ? '自动' : '手动'}
+                              size="small"
+                              color={row.auto_sync ? 'primary' : 'default'}
+                            />
+                          )}
                         </TableCell>
                         <TableCell>
                           <Typography variant="caption" color="text.secondary">
                             {formatTime(row.last_sync_at)}
                           </Typography>
                         </TableCell>
-                        <TableCell>
-                          <Typography variant="body2">{row.group || '全部'}</Typography>
-                        </TableCell>
                         <TableCell align="right">
                           <Stack direction="row" spacing={0.5} justifyContent="flex-end">
-                            <Tooltip title="测试连接">
-                              <IconButton size="small" onClick={() => handleTest(row.id)} color="primary">
+                            <Tooltip title="测试">
+                              <IconButton size="small" onClick={() => handleTest(row)} color="primary">
                                 <IconBrandSpeedtest size={18} />
                               </IconButton>
                             </Tooltip>
-                            <Tooltip title="同步工具">
-                              <IconButton size="small" onClick={() => handleSync(row.id)} color="info">
-                                <IconRefresh size={18} />
-                              </IconButton>
-                            </Tooltip>
+                            {row.type !== 'builtin' && (
+                              <Tooltip title="同步工具">
+                                <IconButton size="small" onClick={() => handleSync(row.id)} color="info">
+                                  <IconRefresh size={18} />
+                                </IconButton>
+                              </Tooltip>
+                            )}
                             <Tooltip title="编辑">
                               <IconButton size="small" onClick={() => handleOpenEdit(row)}>
                                 <IconChevronRight size={18} />
@@ -361,51 +468,139 @@ export default function MCPProviders() {
               placeholder="例如: 智谱 GLM"
               fullWidth
             />
-            <TextField
-              label="Base URL"
-              value={formData.base_url}
-              onChange={(e) => setFormData({ ...formData, base_url: e.target.value })}
-              placeholder="上游 MCP Server URL"
-              required
-              fullWidth
-            />
-            <TextField
-              label="Auth Token"
-              value={formData.auth_token}
-              onChange={(e) => setFormData({ ...formData, auth_token: e.target.value })}
-              placeholder="上游认证凭据（可选）"
-              type="password"
-              fullWidth
-            />
             <FormControl fullWidth>
-              <InputLabel>传输方式</InputLabel>
+              <InputLabel>类型</InputLabel>
               <Select
-                value={formData.transport}
-                label="传输方式"
-                onChange={(e) => setFormData({ ...formData, transport: e.target.value })}
+                value={formData.type}
+                label="类型"
+                onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                disabled={!!editProvider}
               >
-                {transportOptions.map((opt) => (
-                  <MenuItem key={opt} value={opt}>
-                    {opt}
+                {providerTypes.map((opt) => (
+                  <MenuItem key={opt.value} value={opt.value}>
+                    {opt.label}
                   </MenuItem>
                 ))}
               </Select>
             </FormControl>
+
+            {!isBuiltin ? (
+              <>
+                {/* Upstream provider fields */}
+                <TextField
+                  label="Base URL"
+                  value={formData.base_url}
+                  onChange={(e) => setFormData({ ...formData, base_url: e.target.value })}
+                  placeholder="上游 MCP Server URL"
+                  required
+                  fullWidth
+                />
+                <TextField
+                  label="Auth Token"
+                  value={formData.auth_token}
+                  onChange={(e) => setFormData({ ...formData, auth_token: e.target.value })}
+                  placeholder="上游认证凭据（可选）"
+                  type="password"
+                  fullWidth
+                />
+                <FormControl fullWidth>
+                  <InputLabel>传输方式</InputLabel>
+                  <Select
+                    value={formData.transport}
+                    label="传输方式"
+                    onChange={(e) => setFormData({ ...formData, transport: e.target.value })}
+                  >
+                    {transportOptions.map((opt) => (
+                      <MenuItem key={opt} value={opt}>
+                        {opt}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                <TextField
+                  label="用户组"
+                  value={formData.group}
+                  onChange={(e) => setFormData({ ...formData, group: e.target.value })}
+                  placeholder="可访问的用户组（留空=全部）"
+                  fullWidth
+                />
+              </>
+            ) : (
+              <>
+                {/* Builtin vision tool fields */}
+                <FormControl fullWidth>
+                  <InputLabel>渠道</InputLabel>
+                  <Select
+                    value={builtinConfig.channel_id || ''}
+                    label="渠道"
+                    onChange={(e) => handleChannelChange(Number(e.target.value))}
+                  >
+                    <MenuItem value="" disabled>
+                      选择支持多模态的渠道
+                    </MenuItem>
+                    {visionChannels.map((ch) => (
+                      <MenuItem key={ch.id} value={ch.id}>
+                        {ch.name} (ID: {ch.id})
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                <FormControl fullWidth disabled={selectedChannelModels.length === 0}>
+                  <InputLabel>模型</InputLabel>
+                  <Select
+                    value={builtinConfig.model || ''}
+                    label="模型"
+                    onChange={(e) => updateBuiltinConfig('model', e.target.value)}
+                  >
+                    <MenuItem value="" disabled>
+                      选择模型
+                    </MenuItem>
+                    {selectedChannelModels.map((m) => (
+                      <MenuItem key={m} value={m}>
+                        {m}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                <TextField
+                  label="System Prompt（可选）"
+                  value={builtinConfig.system_prompt || ''}
+                  onChange={(e) => updateBuiltinConfig('system_prompt', e.target.value)}
+                  placeholder="You are a helpful vision assistant."
+                  fullWidth
+                  multiline
+                  rows={2}
+                />
+                <TextField
+                  label="Max Tokens"
+                  value={builtinConfig.max_tokens || 4096}
+                  onChange={(e) => updateBuiltinConfig('max_tokens', parseInt(e.target.value) || 4096)}
+                  type="number"
+                  fullWidth
+                />
+              </>
+            )}
+
             <TextField
               label="工具前缀"
               value={formData.tool_prefix}
               onChange={(e) => setFormData({ ...formData, tool_prefix: e.target.value })}
               placeholder="默认与名称相同"
               fullWidth
-              helperText="工具名前缀，例如 glm → glm_web_search"
+              helperText={isBuiltin ? "工具名前缀，例如 vision → vision_vision_analyze" : "工具名前缀，例如 glm → glm_web_search"}
             />
-            <TextField
-              label="用户组"
-              value={formData.group}
-              onChange={(e) => setFormData({ ...formData, group: e.target.value })}
-              placeholder="可访问的用户组（留空=全部）"
-              fullWidth
-            />
+            <Box>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={formData.auto_sync}
+                    onChange={(e) => setFormData({ ...formData, auto_sync: e.target.checked })}
+                  />
+                }
+                label="自动同步工具"
+                sx={{ display: isBuiltin ? 'none' : 'flex' }}
+              />
+            </Box>
           </Stack>
         </DialogContent>
         <DialogActions>

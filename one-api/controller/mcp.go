@@ -2,8 +2,10 @@ package controller
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -65,7 +67,6 @@ func AddMCPProvider(c *gin.Context) {
 		return
 	}
 
-	// Validate required fields
 	if provider.Name == "" {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
@@ -73,6 +74,77 @@ func AddMCPProvider(c *gin.Context) {
 		})
 		return
 	}
+
+	// Set defaults
+	if provider.Type == "" {
+		provider.Type = "upstream"
+	}
+
+	if provider.IsBuiltin() {
+		// Validate builtin config
+		config, err := provider.ParseBuiltinConfig()
+		if err != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "invalid builtin_config: " + err.Error(),
+			})
+			return
+		}
+		if config.ChannelID <= 0 {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "builtin_config.channel_id is required",
+			})
+			return
+		}
+		if config.Model == "" {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "builtin_config.model is required",
+			})
+			return
+		}
+		// Validate channel exists and is enabled
+		channel, err := model.GetChannelById(config.ChannelID, true)
+		if err != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": fmt.Sprintf("channel %d not found", config.ChannelID),
+			})
+			return
+		}
+		if channel.Status != model.ChannelStatusEnabled {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": fmt.Sprintf("channel %d (%s) is not enabled", channel.Id, channel.Name),
+			})
+			return
+		}
+		// Set defaults for builtin provider
+		if provider.ToolPrefix == "" {
+			provider.ToolPrefix = provider.Name
+		}
+
+		if err := model.CreateMCPProvider(&provider); err != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": err.Error(),
+			})
+			return
+		}
+
+		// Register builtin tools
+		mcpPkg.InitBuiltinProviders()
+
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"message": "",
+			"data":    provider,
+		})
+		return
+	}
+
+	// Upstream provider (existing logic)
 	if provider.BaseURL == "" {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
@@ -81,7 +153,6 @@ func AddMCPProvider(c *gin.Context) {
 		return
 	}
 
-	// Set defaults
 	if provider.Transport == "" {
 		provider.Transport = "streamable-http"
 	}
@@ -97,11 +168,9 @@ func AddMCPProvider(c *gin.Context) {
 		return
 	}
 
-	// Create and register the upstream client
 	client := mcpPkg.NewUpstreamClient(&provider)
 	mcpPkg.GlobalUpstreamClients.Register(client)
 
-	// Try to connect in background
 	go func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
@@ -128,7 +197,44 @@ func UpdateMCPProvider(c *gin.Context) {
 		return
 	}
 
-	// Clean up old client
+	// Set defaults
+	if provider.Type == "" {
+		provider.Type = "upstream"
+	}
+
+	if provider.IsBuiltin() {
+		// Builtin provider: unregister old tools, update, re-register
+		oldProvider, _ := model.GetMCPProviderByID(provider.ID)
+		if oldProvider != nil && oldProvider.IsBuiltin() {
+			mcpPkg.UnregisterBuiltinTools(oldProvider)
+		}
+		if oldProvider != nil && !oldProvider.IsBuiltin() {
+			// Type changed from upstream to builtin: cleanup upstream client
+			mcpPkg.GlobalUpstreamClients.Unregister(provider.ID)
+		}
+
+		if err := model.UpdateMCPProvider(&provider); err != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": err.Error(),
+			})
+			return
+		}
+
+		// Re-register builtin tools
+		updatedProvider, _ := model.GetMCPProviderByID(provider.ID)
+		if updatedProvider != nil && updatedProvider.Enabled {
+			mcpPkg.RegisterBuiltinTools(updatedProvider)
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"message": "",
+		})
+		return
+	}
+
+	// Upstream provider (existing logic)
 	oldClient := mcpPkg.GlobalUpstreamClients.GetByProviderID(provider.ID)
 	if oldClient != nil {
 		mcpPkg.GlobalUpstreamClients.Unregister(provider.ID)
@@ -142,11 +248,9 @@ func UpdateMCPProvider(c *gin.Context) {
 		return
 	}
 
-	// Create and register new client with updated config
 	client := mcpPkg.NewUpstreamClient(&provider)
 	mcpPkg.GlobalUpstreamClients.Register(client)
 
-	// Reconnect in background
 	go func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
@@ -172,16 +276,18 @@ func DeleteMCPProvider(c *gin.Context) {
 		return
 	}
 
-	// Unregister the upstream client
-	mcpPkg.GlobalUpstreamClients.Unregister(uint(id))
+	provider, _ := model.GetMCPProviderByID(uint(id))
+	if provider != nil && provider.IsBuiltin() {
+		mcpPkg.UnregisterBuiltinTools(provider)
+	} else {
+		mcpPkg.GlobalUpstreamClients.Unregister(uint(id))
+	}
 
-	// Delete tools associated with this provider
 	tools, _ := model.GetMCPToolsByProviderID(uint(id))
 	for _, tool := range tools {
 		_ = model.DeleteMCPTool(tool.ID)
 	}
 
-	// Delete the provider
 	if err := model.DeleteMCPProvider(uint(id)); err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
@@ -257,7 +363,7 @@ func SyncAllMCPProviders(c *gin.Context) {
 	})
 }
 
-// TestMCPProvider tests the connectivity to an upstream MCP provider.
+// TestMCPProvider tests the connectivity to an upstream MCP provider or builtin tool.
 func TestMCPProvider(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -268,17 +374,23 @@ func TestMCPProvider(c *gin.Context) {
 		return
 	}
 
+	provider, dbErr := model.GetMCPProviderByID(uint(id))
+	if dbErr != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "provider not found",
+		})
+		return
+	}
+
+	if provider.IsBuiltin() {
+		testBuiltinProvider(c, provider)
+		return
+	}
+
+	// Upstream provider test (existing logic)
 	client := mcpPkg.GlobalUpstreamClients.GetByProviderID(uint(id))
 	if client == nil {
-		// Try loading from DB and creating a temporary client
-		provider, dbErr := model.GetMCPProviderByID(uint(id))
-		if dbErr != nil {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "provider not found",
-			})
-			return
-		}
 		client = mcpPkg.NewUpstreamClient(provider)
 	}
 
@@ -301,7 +413,6 @@ func TestMCPProvider(c *gin.Context) {
 		return
 	}
 
-	// Register the client if not already
 	if mcpPkg.GlobalUpstreamClients.GetByProviderID(uint(id)) == nil {
 		mcpPkg.GlobalUpstreamClients.Register(client)
 	}
@@ -311,10 +422,139 @@ func TestMCPProvider(c *gin.Context) {
 		"success": true,
 		"message": "",
 		"data": gin.H{
-			"connected":    true,
-			"latency":      latency,
-			"tools_count":  len(tools),
+			"connected":   true,
+			"latency":     latency,
+			"tools_count": len(tools),
 		},
+	})
+}
+
+// testBuiltinProvider tests a builtin provider by sending a test image analysis.
+func testBuiltinProvider(c *gin.Context, provider *model.MCPProvider) {
+	config, err := provider.ParseBuiltinConfig()
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "invalid builtin config: " + err.Error(),
+		})
+		return
+	}
+
+	channel, err := model.GetChannelById(config.ChannelID, true)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": fmt.Sprintf("channel %d not found", config.ChannelID),
+		})
+		return
+	}
+	if channel.Status != model.ChannelStatusEnabled {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": fmt.Sprintf("channel %d (%s) is disabled", channel.Id, channel.Name),
+		})
+		return
+	}
+
+	if mcpPkg.VisionRelayFunc == nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "vision relay not initialized",
+		})
+		return
+	}
+
+	// Use a minimal test request
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 60*time.Second)
+	defer cancel()
+
+	start := time.Now()
+	_, callErr := mcpPkg.VisionRelayFunc(ctx, config.ChannelID, config.Model, "", 0,
+		"https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/PNG_transparency_demonstration_1.png/280px-PNG_transparency_demonstration_1.png",
+		"Describe this image in one word.")
+	latency := time.Since(start).Milliseconds()
+
+	if callErr != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "测试失败: " + callErr.Error(),
+			"data": gin.H{
+				"connected": false,
+				"latency":   latency,
+			},
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data": gin.H{
+			"connected": true,
+			"latency":   latency,
+		},
+	})
+}
+
+// GetVisionChannels returns channels that support multimodal (vision) models.
+func GetVisionChannels(c *gin.Context) {
+	channels, err := model.GetAllChannels(0, 0, "id asc")
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	type ChannelOption struct {
+		ID     int      `json:"id"`
+		Name   string   `json:"name"`
+		Type   int      `json:"type"`
+		Models []string `json:"models"`
+	}
+
+	result := make([]ChannelOption, 0)
+	visionKeywords := []string{"vision", "gpt-4o", "gpt-4-turbo", "claude-3", "gemini", "qwen-vl", "glm-4v"}
+
+	for _, ch := range channels {
+		if ch.Status != model.ChannelStatusEnabled {
+			continue
+		}
+		var models []string
+		for _, m := range strings.Split(ch.Models, ",") {
+			m = strings.TrimSpace(m)
+			if m != "" {
+				models = append(models, m)
+			}
+		}
+		hasVision := false
+		for _, m := range models {
+			mLower := strings.ToLower(m)
+			for _, kw := range visionKeywords {
+				if strings.Contains(mLower, kw) {
+					hasVision = true
+					break
+				}
+			}
+			if hasVision {
+				break
+			}
+		}
+		if hasVision {
+			result = append(result, ChannelOption{
+				ID:     ch.Id,
+				Name:   ch.Name,
+				Type:   ch.Type,
+				Models: models,
+			})
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data":    result,
 	})
 }
 

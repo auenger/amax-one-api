@@ -154,9 +154,10 @@ func StartSyncScheduler(ctx context.Context) {
 }
 
 // InitUpstreamClients loads all enabled MCP providers from the database,
-// creates upstream clients, and connects them.
+// creates upstream clients, and connects them. Builtin providers are handled
+// separately by InitBuiltinProviders.
 func InitUpstreamClients(ctx context.Context) {
-	providers, err := model.GetEnabledMCPProviders()
+	providers, err := model.GetUpstreamMCPProviders()
 	if err != nil {
 		logger.SysError("MCP: failed to load providers: " + err.Error())
 		return

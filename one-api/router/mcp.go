@@ -1,6 +1,9 @@
 package router
 
 import (
+	"context"
+	"time"
+
 	"github.com/gin-gonic/gin"
 	mcpPkg "github.com/songquanpeng/one-api/mcp"
 	"github.com/songquanpeng/one-api/middleware"
@@ -23,4 +26,17 @@ func SetMCPRouter(router *gin.Engine) {
 		mcpV1.GET("/sse", mcpPkg.HandleSSEConnection)
 		mcpV1.POST("/sse", mcpPkg.HandleSSEMessage)
 	}
+
+	// Initialize MCP providers on startup
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+		defer cancel()
+
+		// Initialize upstream providers
+		mcpPkg.InitUpstreamClients(ctx)
+		mcpPkg.StartSyncScheduler(ctx)
+
+		// Initialize builtin providers
+		mcpPkg.InitBuiltinProviders()
+	}()
 }
