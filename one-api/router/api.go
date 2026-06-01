@@ -222,5 +222,17 @@ func SetApiRouter(router *gin.Engine) {
 				dailyLimitConfigRoute.GET("/config", controller.GetDailyLimitConfig)
 				dailyLimitConfigRoute.PUT("/config", controller.UpdateDailyLimitConfig)
 			}
+			// MCP Provider management (admin only)
+			mcpProviderRoute := apiRouter.Group("/mcp-provider")
+			mcpProviderRoute.Use(middleware.AdminAuth())
+			{
+				mcpProviderRoute.GET("/", controller.GetAllMCPProviders)
+				mcpProviderRoute.GET("/:id", controller.GetMCPProvider)
+				mcpProviderRoute.POST("/", controller.AddMCPProvider)
+				mcpProviderRoute.PUT("/", controller.UpdateMCPProvider)
+				mcpProviderRoute.DELETE("/:id", controller.DeleteMCPProvider)
+				mcpProviderRoute.POST("/:id/sync", controller.SyncMCPProvider)
+				mcpProviderRoute.POST("/sync", controller.SyncAllMCPProviders)
+			}
 	}
 }
