@@ -1,8 +1,46 @@
 meta:
-  last_updated: '2026-05-29'
+  last_updated: '2026-06-01'
   version: 1
-  total_completed: 52
+  total_completed: 53
 records:
+  - id: feat-mcp-server
+    name: MCP Server 协议端点
+    completed: '2026-06-01'
+    tag: feat-mcp-server-20260601
+    merge_commit: b56a1aa
+    merged_to: main
+    branch_deleted: true
+    branch_name: feature/mcp-server
+    worktree_deleted: true
+    worktree_path: ../aihub-mcp-server
+    keywords:
+    - mcp
+    - server
+    - protocol
+    - endpoint
+    - json-rpc
+    - sse
+    - streamable-http
+    - tools
+    - initialize
+    - token-auth
+    category: backend
+    value_points: 1
+    related_features:
+    - feat-mcp-proxy
+    - feat-glm-coding-plan
+    conflicts:
+      had_conflict: false
+      conflict_files: []
+    verification:
+      status: passed
+      scenarios_total: 4
+      scenarios_passed: 4
+    stats:
+      started: '2026-06-01'
+      duration: same-day
+      commits: 1
+      files_changed: 11
   - id: feat-daily-request-limit
     name: 每日请求次数限额
     completed: '2026-05-29'

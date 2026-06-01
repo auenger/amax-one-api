@@ -10,6 +10,14 @@
 - **Children**: []
 - **Created**: 2026-05-27
 
+## Merge Record
+- **Completed**: 2026-06-01
+- **Merged Branch**: feature/mcp-server
+- **Merge Commit**: b56a1aa
+- **Archive Tag**: feat-mcp-server-20260601
+- **Conflicts**: none
+- **Verification**: passed (4/4 scenarios)
+- **Stats**: 11 files changed, 758 insertions, 1 commit
 ## Description
 
 实现 AIHub 的 MCP Server 协议端点，使外部 MCP 客户端（Claude Code、Cursor 等）可以将 AIHub 配置为 MCP Server。支持 MCP 协议核心方法（initialize、tools/list、tools/call），通过 Streamable HTTP 和 SSE 传输。
