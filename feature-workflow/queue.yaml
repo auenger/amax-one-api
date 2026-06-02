@@ -37,6 +37,15 @@ pending:
   value_points: 2
 blocked: []
 completed:
+- id: feat-mcp-pages-enhance
+  name: MCP 页面增强（工具列表 + 调用明细 + 配置页优化）
+  priority: 75
+  size: M
+  depends_on: []
+  added: '2026-06-02'
+  completed_at: '2026-06-02'
+  archive_path: features/archive/done-feat-mcp-pages-enhance-20260602
+  value_points: 3
 - id: feat-docker-minimax-mcp
   name: Docker 内置 MCP 服务（Minimax + 智谱）
   priority: 80

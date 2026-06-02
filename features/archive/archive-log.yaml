@@ -1,8 +1,34 @@
 meta:
   last_updated: '2026-06-02'
   version: 1
-  total_completed: 58
+  total_completed: 59
 records:
+  - id: feat-mcp-pages-enhance
+    name: MCP 页面增强（工具列表 + 调用明细 + 配置页优化）
+    completed: '2026-06-02'
+    tag: feat-mcp-pages-enhance-20260602
+    merge_commit: f0e7776
+    merged_to: main
+    branch_deleted: true
+    branch_name: feature/mcp-pages-enhance
+    worktree_deleted: true
+    worktree_path: ../aihub-mcp-pages-enhance
+    keywords: [mcp, tools, tool-list, call-logs, server-config, stats, menu, permissions, user-auth, dynamic-url, claude-code, streamable-http, sse]
+    category: fullstack
+    value_points: 3
+    related_features: [feat-mcp-server, feat-mcp-management, feat-mcp-vision-tool, feat-mcp-upstream-proxy]
+    conflicts:
+      had_conflict: false
+      conflict_files: []
+    verification:
+      status: skipped
+      scenarios_total: 4
+      scenarios_passed: 0
+    stats:
+      started: '2026-06-02'
+      duration: same-day
+      commits: 1
+      files_changed: 10
   - id: feat-docker-minimax-mcp
     name: Docker 内置 MCP 服务（Minimax + 智谱）
     completed: '2026-06-02'
