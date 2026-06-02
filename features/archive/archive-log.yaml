@@ -1,8 +1,34 @@
 meta:
-  last_updated: '2026-06-01'
+  last_updated: '2026-06-02'
   version: 1
-  total_completed: 56
+  total_completed: 57
 records:
+  - id: feat-minimax-limit-api-compat
+    name: MiniMax Limit API 兼容性修复
+    completed: '2026-06-02'
+    tag: feat-minimax-limit-api-compat-20260602
+    merge_commit: 3fedadd
+    merged_to: main
+    branch_deleted: true
+    branch_name: feature/minimax-limit-api-compat
+    worktree_deleted: true
+    worktree_path: ../aihub-minimax-limit-api-compat
+    keywords: [minimax, quota, api, compat, remaining-percent, remains-time, channel-quota]
+    category: backend
+    value_points: 1
+    related_features: [feat-minimax-limit-display, feat-minimax-quota-exhaustion]
+    conflicts:
+      had_conflict: false
+      conflict_files: []
+    verification:
+      status: passed
+      scenarios_total: 3
+      scenarios_passed: 3
+    stats:
+      started: '2026-06-02'
+      duration: same_day
+      commits: 1
+      files_changed: 1
   - id: feat-mcp-vision-tool
     name: 内置视觉理解 MCP Tool
     completed: '2026-06-01'

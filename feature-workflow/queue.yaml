@@ -1,6 +1,5 @@
 meta:
-  last_updated: '2026-06-01'
-  total_features: 82
+  last_updated: '2026-06-02'
 active: []
 pending:
 - id: feat-skill-market-ux
@@ -38,6 +37,15 @@ pending:
   value_points: 2
 blocked: []
 completed:
+- id: feat-minimax-limit-api-compat
+  name: MiniMax Limit API 兼容性修复
+  priority: 80
+  size: S
+  depends_on: []
+  added: '2026-06-02'
+  completed_at: '2026-06-02'
+  archive_path: features/archive/done-feat-minimax-limit-api-compat-20260602
+  value_points: 1
 - id: feat-mcp-vision-tool
   name: 内置视觉理解 MCP Tool
   priority: 75
