@@ -138,8 +138,7 @@ const panel = {
       type: 'item',
       url: '/panel/timing',
       icon: icons.IconClock,
-      breadcrumbs: false,
-      isAdmin: true
+      breadcrumbs: false
     },
     {
       id: 'downgrade',
