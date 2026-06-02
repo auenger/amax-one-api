@@ -119,6 +119,12 @@ docker compose -f docker-compose.prod.yml up -d
 | `SESSION_SECRET`    | 是  | Session 加密密钥          |
 | `THEME`             | 否  | 前端主题，默认 `berry`       |
 | `TZ`                | 否  | 时区，默认 `Asia/Shanghai` |
+| `MINIMAX_API_KEY`   | 否  | Minimax API Key，设置后自动启动 Minimax MCP 服务 |
+| `MINIMAX_API_HOST`  | 否  | Minimax API 区域，默认 `https://api.minimaxi.com` |
+| `MINIMAX_MCP_PORT`  | 否  | Minimax MCP 端口，默认 `8765` |
+| `Z_AI_API_KEY`      | 否  | 智谱 API Key，设置后自动启动智谱 MCP 服务 |
+| `Z_AI_MODE`         | 否  | 智谱模式，默认 `ZHIPU` |
+| `Z_AI_MCP_PORT`     | 否  | 智谱 MCP 端口，默认 `8766` |
 
 ## 注意事项
 
@@ -128,4 +134,29 @@ docker compose -f docker-compose.prod.yml up -d
 
 * Redis 用于并发追踪和配额缓存，Redis 不可用会导致并发监控功能降级，不影响核心代理转发
 
-⠀
+## 内置 MCP 服务
+
+Docker 镜像内置了 Minimax MCP 和智谱 MCP 服务，通过环境变量控制启停：设置了对应的 API Key 就自动启动，不设置则不启动。
+
+### 启用 MCP
+
+在 `docker-compose.prod.yml` 中添加环境变量：
+
+```yaml
+environment:
+  # Minimax MCP（提供 web_search、understand_image 工具）
+  - MINIMAX_API_KEY=sk-cp-xxx
+  # 智谱 MCP（提供 web_search、image_analyze 等工具）
+  - Z_AI_API_KEY=xxx.xxx
+```
+
+### 在 MCP 供应商页面配置
+
+MCP 服务启动后，在管理后台「MCP 设置」页面添加供应商：
+
+| 供应商   | Base URL              | 传输方式 |
+| -------- | --------------------- | -------- |
+| Minimax  | `http://localhost:8765/sse` | SSE      |
+| 智谱     | `http://localhost:8766/sse` | SSE      |
+
+添加后点击「同步」即可注册对应的工具。

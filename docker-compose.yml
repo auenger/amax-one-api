@@ -46,6 +46,8 @@ services:
     restart: unless-stopped
     ports:
       - '3000:3000'
+      - '8765:8765'
+      - '8766:8766'
     environment:
       SQL_DSN: postgres://aihub:aihub@postgres:5432/aihub?sslmode=disable
       REDIS_CONN_STRING: redis://redis:6379
@@ -56,6 +58,13 @@ services:
       CHANNEL_DISABLE_THRESHOLD: 5
       INITIAL_ROOT_TOKEN: sk-aihub-root-token-change-me
       THEME: berry
+      # MCP services (optional, only start when API key is set)
+      MINIMAX_API_KEY: ${MINIMAX_API_KEY:-}
+      MINIMAX_API_HOST: ${MINIMAX_API_HOST:-https://api.minimaxi.com}
+      MINIMAX_MCP_PORT: ${MINIMAX_MCP_PORT:-8765}
+      Z_AI_API_KEY: ${Z_AI_API_KEY:-}
+      Z_AI_MODE: ${Z_AI_MODE:-ZHIPU}
+      Z_AI_MCP_PORT: ${Z_AI_MCP_PORT:-8766}
     depends_on:
       postgres:
         condition: service_healthy
