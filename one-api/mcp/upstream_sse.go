@@ -12,9 +12,16 @@ import (
 	"github.com/songquanpeng/one-api/model"
 )
 
-// sendSSE sends a JSON-RPC request via SSE transport to the upstream MCP server.
-func sendSSE(ctx context.Context, provider *model.MCPProvider, sessionID string, req *JSONRPCRequest) (*JSONRPCResponse, error) {
-	// Step 1: Establish SSE connection
+// sseConn holds a persistent SSE connection and its associated state.
+type sseConn struct {
+	closer          io.Closer
+	scanner         *bufio.Scanner
+	messageEndpoint string
+	sessionID       string
+}
+
+// connectSSE establishes a persistent SSE connection and returns the connection state.
+func connectSSE(ctx context.Context, provider *model.MCPProvider, sessionID string) (*sseConn, error) {
 	sseURL := strings.TrimSuffix(provider.BaseURL, "/")
 	if !strings.HasSuffix(sseURL, "/sse") {
 		sseURL += "/sse"
@@ -36,17 +43,15 @@ func sendSSE(ctx context.Context, provider *model.MCPProvider, sessionID string,
 	if err != nil {
 		return nil, fmt.Errorf("SSE connect: %w", err)
 	}
-	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
+		resp.Body.Close()
 		return nil, fmt.Errorf("SSE connect failed (%d): %s", resp.StatusCode, string(body))
 	}
 
-	// Capture session ID
 	newSessionID := resp.Header.Get("Mcp-Session-Id")
 
-	// Step 2: Read the endpoint event to get the message POST URL
 	scanner := bufio.NewScanner(resp.Body)
 	var messageEndpoint string
 	for scanner.Scan() {
@@ -61,21 +66,37 @@ func sendSSE(ctx context.Context, provider *model.MCPProvider, sessionID string,
 	}
 
 	if messageEndpoint == "" {
+		resp.Body.Close()
 		return nil, fmt.Errorf("SSE: no message endpoint received from upstream")
 	}
 
-	// Step 3: POST the request to the message endpoint
 	if !strings.Contains(messageEndpoint, "://") {
 		base := strings.TrimSuffix(provider.BaseURL, "/")
+		base = strings.TrimSuffix(base, "/sse")
 		messageEndpoint = base + messageEndpoint
 	}
 
+	return &sseConn{
+		closer:          resp.Body,
+		scanner:         scanner,
+		messageEndpoint: messageEndpoint,
+		sessionID:       newSessionID,
+	}, nil
+}
+
+// close closes the SSE connection.
+func (c *sseConn) close() {
+	c.closer.Close()
+}
+
+// postAndRead sends a JSON-RPC request via POST and reads the response from the SSE stream.
+func (c *sseConn) postAndRead(ctx context.Context, provider *model.MCPProvider, req *JSONRPCRequest) (*JSONRPCResponse, error) {
 	reqBody, err := json.Marshal(req)
 	if err != nil {
 		return nil, fmt.Errorf("marshal request: %w", err)
 	}
 
-	postReq, err := http.NewRequestWithContext(ctx, "POST", messageEndpoint, strings.NewReader(string(reqBody)))
+	postReq, err := http.NewRequestWithContext(ctx, "POST", c.messageEndpoint, strings.NewReader(string(reqBody)))
 	if err != nil {
 		return nil, fmt.Errorf("create POST request: %w", err)
 	}
@@ -83,8 +104,8 @@ func sendSSE(ctx context.Context, provider *model.MCPProvider, sessionID string,
 	if provider.AuthToken != "" {
 		postReq.Header.Set("Authorization", "Bearer "+provider.AuthToken)
 	}
-	if sessionID != "" {
-		postReq.Header.Set("Mcp-Session-Id", sessionID)
+	if c.sessionID != "" {
+		postReq.Header.Set("Mcp-Session-Id", c.sessionID)
 	}
 
 	postResp, err := http.DefaultClient.Do(postReq)
@@ -93,20 +114,28 @@ func sendSSE(ctx context.Context, provider *model.MCPProvider, sessionID string,
 	}
 	defer postResp.Body.Close()
 
-	// Step 4: Read the response from the SSE stream
-	for scanner.Scan() {
-		line := scanner.Text()
+	// Notifications (no ID) don't get a response via SSE
+	if req.ID == nil {
+		return nil, nil
+	}
+
+	for c.scanner.Scan() {
+		line := c.scanner.Text()
 		if strings.HasPrefix(line, "event: message") {
-			for scanner.Scan() {
-				dataLine := scanner.Text()
+			for c.scanner.Scan() {
+				dataLine := c.scanner.Text()
 				if strings.HasPrefix(dataLine, "data: ") {
 					data := strings.TrimPrefix(dataLine, "data: ")
+					// Skip server-initiated notifications (e.g. "SSE Connection established")
+					if strings.Contains(data, `"method":`) && !strings.Contains(data, `"id":`) {
+						break // back to outer loop for next event
+					}
 					var rpcResp JSONRPCResponse
 					if err := json.Unmarshal([]byte(data), &rpcResp); err != nil {
 						return nil, fmt.Errorf("parse SSE response: %w", err)
 					}
-					if newSessionID != "" {
-						rpcResp.SessionID = newSessionID
+					if c.sessionID != "" {
+						rpcResp.SessionID = c.sessionID
 					}
 					return &rpcResp, nil
 				}
@@ -114,10 +143,72 @@ func sendSSE(ctx context.Context, provider *model.MCPProvider, sessionID string,
 		}
 	}
 
-	// Notification requests may have no response
-	if req.ID == nil {
-		return nil, nil
+	return nil, fmt.Errorf("SSE: no response received from upstream")
+}
+
+// sendSSEPersistent sends a JSON-RPC request using a persistent SSE connection
+// stored on the UpstreamClient. It connects if needed, and reuses the connection
+// for subsequent requests (initialize → initialized → tools/list → tools/call).
+func (c *UpstreamClient) sendSSEPersistent(ctx context.Context, req *JSONRPCRequest) (*JSONRPCResponse, error) {
+	c.sseMu.Lock()
+	defer c.sseMu.Unlock()
+
+	if c.sseConn == nil {
+		sid := ""
+		conn, err := connectSSE(ctx, c.Provider, sid)
+		if err != nil {
+			return nil, err
+		}
+		c.sseConn = conn
 	}
 
-	return nil, fmt.Errorf("SSE: no response received from upstream")
+	resp, err := c.sseConn.postAndRead(ctx, c.Provider, req)
+	if err != nil {
+		// Connection broken, close and retry once
+		c.sseConn.close()
+		c.sseConn = nil
+
+		conn, connErr := connectSSE(ctx, c.Provider, "")
+		if connErr != nil {
+			return nil, fmt.Errorf("reconnect failed: %w (original: %v)", connErr, err)
+		}
+		c.sseConn = conn
+
+		resp, err = c.sseConn.postAndRead(ctx, c.Provider, req)
+		if err != nil {
+			c.sseConn.close()
+			c.sseConn = nil
+			return nil, err
+		}
+	}
+
+	// Update session ID
+	if resp != nil && resp.SessionID != "" {
+		c.mu.Lock()
+		c.sessionID = resp.SessionID
+		c.mu.Unlock()
+	}
+
+	return resp, nil
+}
+
+// CloseSSE closes any persistent SSE connection.
+func (c *UpstreamClient) CloseSSE() {
+	c.sseMu.Lock()
+	defer c.sseMu.Unlock()
+	if c.sseConn != nil {
+		c.sseConn.close()
+		c.sseConn = nil
+	}
+}
+
+// sendSSE sends a one-shot SSE request (used for non-persistent connections).
+func sendSSE(ctx context.Context, provider *model.MCPProvider, sessionID string, req *JSONRPCRequest) (*JSONRPCResponse, error) {
+	conn, err := connectSSE(ctx, provider, sessionID)
+	if err != nil {
+		return nil, err
+	}
+	defer conn.close()
+
+	return conn.postAndRead(ctx, provider, req)
 }

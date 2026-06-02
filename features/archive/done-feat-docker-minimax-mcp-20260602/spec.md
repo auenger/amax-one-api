@@ -31,6 +31,8 @@
 | minimax-coding-plan-mcp | Python/uvx | stdio→SSE | `npx mcp-proxy --port 8765 -- uvx minimax-coding-plan-mcp` | 8765 |
 | @z_ai/mcp-server (智谱) | Node/npx | stdio→SSE | `npx mcp-proxy --port 8766 -- npx -y @z_ai/mcp-server` | 8766 |
 
+**注意**: 最初方案使用 supergateway，测试中发现 supergateway 在 SSE 客户端断开重连时崩溃（`Already connected to a transport`）。改用 `mcp-proxy`（v6.5.1）解决多连接/重连稳定性问题。两个 MCP 统一使用 stdio→SSE 桥接模式。
+
 ### 提供的工具
 - **Minimax**: `web_search`（网络搜索）、`understand_image`（图片理解）
 - **智谱**: `web_search`、`image_analyze` 等工具
@@ -200,3 +202,9 @@ Then 镜像不超过 300MB（alpine 基底 + Python + Node + 包缓存）
 - **Conflicts**: none
 - **Verification**: passed (code analysis, 5/5 Gherkin scenarios)
 - **Files Changed**: 6 (entrypoint.sh, Dockerfile.slim, docker-compose.yml, docker-compose.prod.yml, .env.example, DEPLOY.md)
+
+### Post-Merge Fixes
+1. **supergateway→mcp-proxy 替换**: supergateway 在 SSE 断开重连时崩溃，改用 mcp-proxy (v6.5.1)
+2. **SSE 持久连接**: 重构 upstream_sse.go，所有请求复用同一个 SSE 连接（initialize→initialized→tools/list），避免 mcp-proxy 为每个连接创建新 stdio 进程
+3. **通知消息跳过**: postAndRead 跳过 mcp-proxy 发送的 `"SSE Connection established"` 通知，只读取带 `id` 的 JSON-RPC 响应
+4. **Base URL 路径修复**: sendSSE 构建 message endpoint 时正确剥离 `/sse` 后缀

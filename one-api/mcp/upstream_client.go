@@ -20,6 +20,9 @@ type UpstreamClient struct {
 	lastSync  time.Time
 	connected bool
 	sessionID string
+
+	sseMu   sync.Mutex
+	sseConn *sseConn
 }
 
 // UpstreamTool represents a tool discovered from an upstream MCP server.
@@ -192,6 +195,7 @@ func (c *UpstreamClient) CallTool(ctx context.Context, toolName string, argument
 
 	resp, err := c.sendRequest(ctx, req)
 	if err != nil {
+		c.CloseSSE()
 		c.mu.Lock()
 		c.connected = false
 		c.mu.Unlock()
@@ -254,7 +258,7 @@ func (c *UpstreamClient) sendRequest(ctx context.Context, req *JSONRPCRequest) (
 
 	switch c.Provider.Transport {
 	case "sse":
-		return sendSSE(sendCtx, c.Provider, sid, req)
+		return c.sendSSEPersistent(sendCtx, req)
 	default:
 		return sendStreamableHTTP(sendCtx, c.Provider, sid, req)
 	}
