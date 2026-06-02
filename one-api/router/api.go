@@ -248,6 +248,14 @@ func SetApiRouter(router *gin.Engine) {
 		mcpStatsRoute.Use(middleware.AdminAuth())
 		{
 			mcpStatsRoute.GET("/", controller.GetMCPStats)
+			mcpStatsRoute.GET("/logs", controller.GetMCPLogDetails)
+		}
+		// MCP public routes (user auth)
+		mcpPublicRoute := apiRouter.Group("/mcp-public")
+		mcpPublicRoute.Use(middleware.UserAuth())
+		{
+			mcpPublicRoute.GET("/tools", controller.GetPublicMCPTools)
+			mcpPublicRoute.GET("/server-config", controller.GetMCPServerConfig)
 		}
 		// Model metadata management (admin only)
 		modelMetaRoute := apiRouter.Group("/model-meta")

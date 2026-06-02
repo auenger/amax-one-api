@@ -19,6 +19,7 @@ const MCPSetting = Loadable(lazy(() => import('views/MCPSetting')));
 const MCPProviders = Loadable(lazy(() => import('views/MCPSetting/Providers')));
 const MCPProviderDetail = Loadable(lazy(() => import('views/MCPSetting/ProviderDetail')));
 const MCPStats = Loadable(lazy(() => import('views/MCPSetting/Stats')));
+const MCPTools = Loadable(lazy(() => import('views/MCPSetting/Tools')));
 const MCPModelMeta = Loadable(lazy(() => import('views/MCPSetting/ModelMeta')));
 const NotFoundView = Loadable(lazy(() => import('views/Error')));
 
@@ -90,6 +91,10 @@ const MainRoutes = {
     {
       path: 'mcp/stats',
       element: <MCPStats />
+    },
+    {
+      path: 'mcp/tools',
+      element: <MCPTools />
     },
     {
       path: 'mcp/model-meta',

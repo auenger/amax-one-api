@@ -57,28 +57,38 @@ const panel = {
       title: 'MCP',
       type: 'collapse',
       icon: icons.IconPlugConnected,
-      isAdmin: true,
+      isAdmin: false,
       children: [
+        {
+          id: 'mcp-tools',
+          title: '工具列表',
+          type: 'item',
+          url: '/panel/mcp/tools',
+          breadcrumbs: false
+        },
         {
           id: 'mcp-providers',
           title: '供应商',
           type: 'item',
           url: '/panel/mcp/providers',
-          breadcrumbs: false
+          breadcrumbs: false,
+          isAdmin: true
         },
         {
           id: 'mcp-stats',
           title: '使用统计',
           type: 'item',
           url: '/panel/mcp/stats',
-          breadcrumbs: false
+          breadcrumbs: false,
+          isAdmin: true
         },
         {
           id: 'mcp-model-meta',
           title: '模型标记',
           type: 'item',
           url: '/panel/mcp/model-meta',
-          breadcrumbs: false
+          breadcrumbs: false,
+          isAdmin: true
         },
         {
           id: 'mcp-server',

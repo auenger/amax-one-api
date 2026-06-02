@@ -11,6 +11,9 @@ type MCPLog struct {
 	ResponseStatus int    `json:"response_status"` // HTTP-like status: 200=success, 500=error
 	Duration       int64  `json:"duration"`        // milliseconds
 	ErrorMessage   string `json:"error_message" gorm:"type:text"`
+	UserID         int    `json:"user_id" gorm:"index"`
+	UserName       string `json:"user_name" gorm:"size:128"`
+	TokenID        int    `json:"token_id"`
 	CreatedAt      int64  `json:"created_at" gorm:"bigint;index"`
 }
 
@@ -50,6 +53,30 @@ func GetMCPLogsByTimeRange(startTimestamp, endTimestamp int64) ([]MCPLog, error)
 	}
 	err := query.Order("id desc").Limit(1000).Find(&logs).Error
 	return logs, err
+}
+
+// GetMCPLogsWithUser returns paginated logs with user info, filtered by optional parameters.
+func GetMCPLogsWithUser(page, pageSize int, startTimestamp, endTimestamp int64, userName, toolName string) ([]MCPLog, int64, error) {
+	var logs []MCPLog
+	var total int64
+	query := DB.Model(&MCPLog{})
+	if startTimestamp > 0 {
+		query = query.Where("created_at >= ?", startTimestamp)
+	}
+	if endTimestamp > 0 {
+		query = query.Where("created_at <= ?", endTimestamp)
+	}
+	if userName != "" {
+		query = query.Where("user_name LIKE ?", "%"+userName+"%")
+	}
+	if toolName != "" {
+		query = query.Where("tool_name LIKE ?", "%"+toolName+"%")
+	}
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	err := query.Order("id desc").Offset((page - 1) * pageSize).Limit(pageSize).Find(&logs).Error
+	return logs, total, err
 }
 
 // MCPProviderStats holds aggregated stats for a provider.

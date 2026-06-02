@@ -90,7 +90,7 @@ func handleToolsList(_ context.Context, req *JSONRPCRequest, _ *MCPSession) *JSO
 
 // handleToolsCall handles a tool invocation by routing to the appropriate
 // upstream MCP provider or builtin tool based on the provider type.
-func handleToolsCall(ctx context.Context, req *JSONRPCRequest, _ *MCPSession) *JSONRPCResponse {
+func handleToolsCall(ctx context.Context, req *JSONRPCRequest, session *MCPSession) *JSONRPCResponse {
 	var params struct {
 		Name      string          `json:"name"`
 		Arguments json.RawMessage `json:"arguments,omitempty"`
@@ -144,11 +144,11 @@ func handleToolsCall(ctx context.Context, req *JSONRPCRequest, _ *MCPSession) *J
 	}
 
 	// Route to upstream provider
-	return callUpstreamTool(ctx, provider, tool, params.Name, params.Arguments)
+	return callUpstreamTool(ctx, provider, tool, params.Name, params.Arguments, session)
 }
 
 // callUpstreamTool handles tool calls for upstream (external) MCP providers.
-func callUpstreamTool(ctx context.Context, provider *model.MCPProvider, tool *model.MCPTool, toolName string, arguments json.RawMessage) *JSONRPCResponse {
+func callUpstreamTool(ctx context.Context, provider *model.MCPProvider, tool *model.MCPTool, toolName string, arguments json.RawMessage, session *MCPSession) *JSONRPCResponse {
 	client, originalName, found := GlobalUpstreamClients.ResolveProvider(toolName)
 	if !found {
 		if tool.ProviderID > 0 {
@@ -194,6 +194,16 @@ func callUpstreamTool(ctx context.Context, provider *model.MCPProvider, tool *mo
 		ProviderName: client.Provider.Name,
 		ToolName:     toolName,
 		Duration:     duration,
+	}
+	if session != nil {
+		mcpLog.UserID = session.UserID
+		mcpLog.TokenID = session.TokenID
+		// Resolve username from DB
+		if session.UserID > 0 {
+			if user, err := model.GetUserById(session.UserID, false); err == nil {
+				mcpLog.UserName = user.Username
+			}
+		}
 	}
 	if err != nil {
 		mcpLog.ResponseStatus = 500

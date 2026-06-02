@@ -678,3 +678,122 @@ func GetMCPStats(c *gin.Context) {
 		},
 	})
 }
+
+// GetPublicMCPTools returns all enabled MCP tools for all logged-in users.
+func GetPublicMCPTools(c *gin.Context) {
+	tools, err := model.GetMCPTools()
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	type PublicTool struct {
+		ID           uint   `json:"id"`
+		Name         string `json:"name"`
+		DisplayName  string `json:"display_name"`
+		Description  string `json:"description"`
+		InputSchema  string `json:"input_schema"`
+		ProviderID   uint   `json:"provider_id"`
+		ProviderName string `json:"provider_name"`
+		Enabled      bool   `json:"enabled"`
+	}
+
+	result := make([]PublicTool, 0, len(tools))
+	for _, t := range tools {
+		providerName := ""
+		if t.ProviderID > 0 {
+			if p, err := model.GetMCPProviderByID(t.ProviderID); err == nil {
+				providerName = p.Name
+			}
+		}
+		result = append(result, PublicTool{
+			ID:           t.ID,
+			Name:         t.Name,
+			DisplayName:  t.DisplayName,
+			Description:  t.Description,
+			InputSchema:  t.InputSchema,
+			ProviderID:   t.ProviderID,
+			ProviderName: providerName,
+			Enabled:      t.Enabled,
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data":    result,
+	})
+}
+
+// GetMCPLogDetails returns paginated MCP call logs with user info.
+func GetMCPLogDetails(c *gin.Context) {
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 || pageSize > 100 {
+		pageSize = 20
+	}
+
+	var startTimestamp, endTimestamp int64
+	if s := c.Query("start"); s != "" {
+		startTimestamp, _ = strconv.ParseInt(s, 10, 64)
+	}
+	if e := c.Query("end"); e != "" {
+		endTimestamp, _ = strconv.ParseInt(e, 10, 64)
+	}
+	userName := c.Query("user_name")
+	toolName := c.Query("tool_name")
+
+	logs, total, err := model.GetMCPLogsWithUser(page, pageSize, startTimestamp, endTimestamp, userName, toolName)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data": gin.H{
+			"logs":      logs,
+			"total":     total,
+			"page":      page,
+			"page_size": pageSize,
+		},
+	})
+}
+
+// GetMCPServerConfig returns dynamic server connection config.
+func GetMCPServerConfig(c *gin.Context) {
+	scheme := "http"
+	host := c.Request.Host
+
+	// Respect reverse proxy headers
+	if proto := c.GetHeader("X-Forwarded-Proto"); proto != "" {
+		scheme = proto
+	} else if c.Request.TLS != nil {
+		scheme = "https"
+	}
+	if fwdHost := c.GetHeader("X-Forwarded-Host"); fwdHost != "" {
+		host = fwdHost
+	}
+
+	baseURL := fmt.Sprintf("%s://%s", scheme, host)
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data": gin.H{
+			"streamable_http_url": baseURL + "/mcp/v1/message",
+			"sse_url":             baseURL + "/mcp/v1/sse",
+			"base_url":            baseURL,
+		},
+	})
+}
