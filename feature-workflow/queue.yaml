@@ -37,6 +37,15 @@ pending:
   value_points: 2
 blocked: []
 completed:
+- id: feat-docker-minimax-mcp
+  name: Docker 内置 MCP 服务（Minimax + 智谱）
+  priority: 80
+  size: M
+  depends_on: []
+  added: '2026-06-02'
+  completed_at: '2026-06-02'
+  archive_path: features/archive/done-feat-docker-minimax-mcp-20260602
+  value_points: 2
 - id: feat-minimax-limit-api-compat
   name: MiniMax Limit API 兼容性修复
   priority: 80

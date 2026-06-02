@@ -1,8 +1,34 @@
 meta:
   last_updated: '2026-06-02'
   version: 1
-  total_completed: 57
+  total_completed: 58
 records:
+  - id: feat-docker-minimax-mcp
+    name: Docker 内置 MCP 服务（Minimax + 智谱）
+    completed: '2026-06-02'
+    tag: feat-docker-minimax-mcp-20260602
+    merge_commit: merged
+    merged_to: main
+    branch_deleted: true
+    branch_name: feature/docker-minimax-mcp
+    worktree_deleted: true
+    worktree_path: ../aihub-docker-minimax-mcp
+    keywords: [docker, mcp, minimax, zhipu, sse, supergateway, entrypoint, alpine, uvx, npx]
+    category: infra
+    value_points: 2
+    related_features: [feat-mcp-vision-tool, feat-mcp-management, feat-mcp-upstream-proxy]
+    conflicts:
+      had_conflict: false
+      conflict_files: []
+    verification:
+      status: passed
+      scenarios_total: 5
+      scenarios_passed: 5
+    stats:
+      started: '2026-06-02'
+      duration: same-day
+      commits: 1
+      files_changed: 6
   - id: feat-minimax-limit-api-compat
     name: MiniMax Limit API 兼容性修复
     completed: '2026-06-02'
