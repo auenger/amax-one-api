@@ -10,6 +10,17 @@ import { isAdmin } from 'utils/common';
 const MenuList = () => {
   const userIsAdmin = isAdmin();
 
+  const filterMenu = (items) => {
+    return items
+      .filter((item) => !item.isAdmin || userIsAdmin)
+      .map((item) => {
+        if (item.children && item.children.length > 0) {
+          return { ...item, children: filterMenu(item.children) };
+        }
+        return item;
+      });
+  };
+
   return (
     <>
       {menuItem.items.map((item) => {
@@ -21,7 +32,7 @@ const MenuList = () => {
           );
         }
 
-        const filteredChildren = item.children.filter((child) => !child.isAdmin || userIsAdmin);
+        const filteredChildren = filterMenu(item.children);
 
         if (filteredChildren.length === 0) {
           return null;
