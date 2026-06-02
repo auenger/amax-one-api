@@ -58,13 +58,27 @@ type MinimaxBaseResp struct {
 type MinimaxRemainsResponse struct {
 	BaseResp     MinimaxBaseResp `json:"base_resp"`
 	ModelRemains []struct {
-		ModelName                   string `json:"model_name"`
-		CurrentIntervalTotalCount   int64  `json:"current_interval_total_count"`
-		CurrentIntervalUsageCount   int64  `json:"current_interval_usage_count"`
-		CurrentWeeklyTotalCount     int64  `json:"current_weekly_total_count"`
-		CurrentWeeklyUsageCount     int64  `json:"current_weekly_usage_count"`
-		EndTime                     int64  `json:"end_time"`
-		WeeklyEndTime               int64  `json:"weekly_end_time"`
+		ModelName string `json:"model_name"`
+
+		// Legacy fields (total/usage count, still present but may return 0 for "general" model)
+		CurrentIntervalTotalCount int64 `json:"current_interval_total_count"`
+		CurrentIntervalUsageCount int64 `json:"current_interval_usage_count"`
+		CurrentWeeklyTotalCount   int64 `json:"current_weekly_total_count"`
+		CurrentWeeklyUsageCount   int64 `json:"current_weekly_usage_count"`
+		EndTime                   int64 `json:"end_time"`
+		WeeklyEndTime             int64 `json:"weekly_end_time"`
+
+		// New fields (2026-06): remaining percent & time provided directly by API
+		StartTime                         int64 `json:"start_time"`
+		RemainsTime                       int64 `json:"remains_time"`           // seconds
+		WeeklyStartTime                   int64 `json:"weekly_start_time"`
+		WeeklyRemainsTime                 int64 `json:"weekly_remains_time"`    // seconds
+		CurrentIntervalStatus             int   `json:"current_interval_status"`
+		CurrentIntervalRemainingPercent   int   `json:"current_interval_remaining_percent"` // 0-100
+		CurrentWeeklyStatus               int   `json:"current_weekly_status"`
+		CurrentWeeklyRemainingPercent     int   `json:"current_weekly_remaining_percent"`   // 0-100
+		IntervalBoostPermille             int   `json:"interval_boost_permille"`
+		WeeklyBoostPermille               int   `json:"weekly_boost_permille"`
 	} `json:"model_remains"`
 }
 
@@ -164,8 +178,25 @@ func queryMinimaxQuota(ch *model.Channel) *model.ChannelQuota {
 	if len(resp.ModelRemains) > 0 {
 		remain := resp.ModelRemains[0]
 
-		// Interval window (5h) — usage_count is remaining, not used
-		if remain.CurrentIntervalTotalCount > 0 {
+		// Interval window (5h)
+		// Prefer new API fields (remaining_percent + remains_time) when available.
+		// Fallback to legacy total_count/usage_count calculation.
+		if remain.CurrentIntervalRemainingPercent > 0 || remain.RemainsTime > 0 {
+			// New API path: remaining_percent is 0-100, usedPercent = 100 - remaining
+			usedPercent := 100.0 - float64(remain.CurrentIntervalRemainingPercent)
+			remainingMs := remain.RemainsTime * 1000 // seconds → milliseconds
+			if remainingMs < 0 {
+				remainingMs = 0
+			}
+			resetAt := remain.StartTime + remain.RemainsTime*1000
+			quota.Windows = append(quota.Windows, model.QuotaWindow{
+				Label:       "5h",
+				UsedPercent: usedPercent,
+				RemainingMs: remainingMs,
+				ResetAt:     resetAt,
+			})
+		} else if remain.CurrentIntervalTotalCount > 0 {
+			// Legacy path: usage_count is remaining, not used
 			usedPercent := float64(remain.CurrentIntervalTotalCount-remain.CurrentIntervalUsageCount) / float64(remain.CurrentIntervalTotalCount) * 100
 			remainingMs := remain.EndTime - nowMs
 			if remainingMs < 0 {
@@ -179,8 +210,21 @@ func queryMinimaxQuota(ch *model.Channel) *model.ChannelQuota {
 			})
 		}
 
-		// Weekly window
-		if remain.CurrentWeeklyTotalCount > 0 {
+		// Weekly window — same pattern
+		if remain.CurrentWeeklyRemainingPercent > 0 || remain.WeeklyRemainsTime > 0 {
+			weeklyPercent := 100.0 - float64(remain.CurrentWeeklyRemainingPercent)
+			weeklyRemainingMs := remain.WeeklyRemainsTime * 1000
+			if weeklyRemainingMs < 0 {
+				weeklyRemainingMs = 0
+			}
+			weeklyResetAt := remain.WeeklyStartTime + remain.WeeklyRemainsTime*1000
+			quota.Windows = append(quota.Windows, model.QuotaWindow{
+				Label:       "weekly",
+				UsedPercent: weeklyPercent,
+				RemainingMs: weeklyRemainingMs,
+				ResetAt:     weeklyResetAt,
+			})
+		} else if remain.CurrentWeeklyTotalCount > 0 {
 			weeklyPercent := float64(remain.CurrentWeeklyTotalCount-remain.CurrentWeeklyUsageCount) / float64(remain.CurrentWeeklyTotalCount) * 100
 			weeklyRemainingMs := remain.WeeklyEndTime - nowMs
 			if weeklyRemainingMs < 0 {
