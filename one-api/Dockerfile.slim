@@ -6,8 +6,8 @@ RUN apk add --no-cache ca-certificates tzdata python3 py3-pip nodejs npm
 RUN pip install --no-cache-dir --break-system-packages uv && \
     uv tool install minimax-coding-plan-mcp
 
-# Pre-cache supergateway and zai-mcp-server
-RUN npm install -g supergateway @z_ai/mcp-server
+# Pre-cache mcp-proxy and zai-mcp-server
+RUN npm install -g mcp-proxy @z_ai/mcp-server
 
 COPY bin/one-api-linux /opt/aihub/one-api
 COPY entrypoint.sh /opt/aihub/entrypoint.sh

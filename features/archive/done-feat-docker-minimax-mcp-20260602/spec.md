@@ -28,8 +28,8 @@
 
 | MCP Server | 运行时 | 传输 | 启动方式 | 内部端口 |
 |---|---|---|---|---|
-| minimax-coding-plan-mcp | Python/uvx | 原生 SSE | `uvx minimax-coding-plan-mcp --sse --port 8765` | 8765 |
-| @z_ai/mcp-server (智谱) | Node/npx | stdio | `npx supergateway --stdio "npx -y @z_ai/mcp-server" --port 8766` | 8766 |
+| minimax-coding-plan-mcp | Python/uvx | stdio→SSE | `npx mcp-proxy --port 8765 -- uvx minimax-coding-plan-mcp` | 8765 |
+| @z_ai/mcp-server (智谱) | Node/npx | stdio→SSE | `npx mcp-proxy --port 8766 -- npx -y @z_ai/mcp-server` | 8766 |
 
 ### 提供的工具
 - **Minimax**: `web_search`（网络搜索）、`understand_image`（图片理解）
@@ -46,8 +46,8 @@
 ```
 Docker Container
 ├── one-api (:3000)
-├── minimax-mcp SSE (:8765)        ← 如果 MINIMAX_API_KEY 已设置
-└── zai-mcp SSE via supergateway (:8766) ← 如果 Z_AI_API_KEY 已设置
+├── minimax-mcp SSE via mcp-proxy (:8765)  ← 如果 MINIMAX_API_KEY 已设置
+└── zai-mcp SSE via mcp-proxy (:8766)     ← 如果 Z_AI_API_KEY 已设置
 ```
 
 ### 环境变量
