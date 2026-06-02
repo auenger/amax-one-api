@@ -64,7 +64,7 @@ const defaultFormData = {
     tool_type: 'vision',
     channel_id: 0,
     model: '',
-    system_prompt: '',
+    system_prompt: '你是一个专业的图像理解助手。请详细分析用户提供的图片，准确描述图片内容，回答用户的问题。如果图片模糊或无法识别，请说明原因。',
     max_tokens: 4096
   })
 };
@@ -78,6 +78,7 @@ export default function MCPProviders() {
   const [formData, setFormData] = useState({ ...defaultFormData });
   const [visionChannels, setVisionChannels] = useState([]);
   const [selectedChannelModels, setSelectedChannelModels] = useState([]);
+  const [multimodalSet, setMultimodalSet] = useState(new Set());
 
   const loadProviders = useCallback(async () => {
     setLoading(true);
@@ -107,10 +108,23 @@ export default function MCPProviders() {
     }
   }, []);
 
+  const loadMultimodalSet = useCallback(async () => {
+    try {
+      const res = await API.get('/api/model-meta/');
+      const { success, data } = res.data;
+      if (success && data) {
+        setMultimodalSet(new Set(data.filter((m) => m.multimodal).map((m) => m.model_name)));
+      }
+    } catch (err) {
+      // silently fail
+    }
+  }, []);
+
   useEffect(() => {
     loadProviders();
     loadVisionChannels();
-  }, [loadProviders, loadVisionChannels]);
+    loadMultimodalSet();
+  }, [loadProviders, loadVisionChannels, loadMultimodalSet]);
 
   const handleOpenAdd = () => {
     setEditProvider(null);
@@ -126,7 +140,7 @@ export default function MCPProviders() {
       tool_type: 'vision',
       channel_id: 0,
       model: '',
-      system_prompt: '',
+      system_prompt: '你是一个专业的图像理解助手。请详细分析用户提供的图片，准确描述图片内容，回答用户的问题。如果图片模糊或无法识别，请说明原因。',
       max_tokens: 4096
     };
     if (isBuiltin && provider.builtin_config) {
@@ -180,8 +194,10 @@ export default function MCPProviders() {
   const handleChannelChange = (channelId) => {
     const ch = visionChannels.find((c) => c.id === channelId);
     setSelectedChannelModels(ch ? ch.models : []);
-    updateBuiltinConfig('channel_id', channelId);
-    updateBuiltinConfig('model', '');
+    const config = getBuiltinConfig();
+    config.channel_id = channelId;
+    config.model = '';
+    setFormData({ ...formData, builtin_config: JSON.stringify(config) });
   };
 
   const handleSubmit = async () => {
@@ -557,7 +573,12 @@ export default function MCPProviders() {
                     </MenuItem>
                     {selectedChannelModels.map((m) => (
                       <MenuItem key={m} value={m}>
-                        {m}
+                        <Stack direction="row" alignItems="center" spacing={1}>
+                          <span>{m}</span>
+                          {multimodalSet.has(m.toLowerCase()) && (
+                            <Chip label="多模态" size="small" color="success" sx={{ height: 18, fontSize: '0.65rem' }} />
+                          )}
+                        </Stack>
                       </MenuItem>
                     ))}
                   </Select>

@@ -498,7 +498,7 @@ func testBuiltinProvider(c *gin.Context, provider *model.MCPProvider) {
 
 // GetVisionChannels returns channels that support multimodal (vision) models.
 func GetVisionChannels(c *gin.Context) {
-	channels, err := model.GetAllChannels(0, 0, "id asc")
+	channels, err := model.GetAllChannels(0, 0, "all")
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
@@ -514,39 +514,36 @@ func GetVisionChannels(c *gin.Context) {
 		Models []string `json:"models"`
 	}
 
+	// Load multimodal model set from ModelMeta
+	multimodalSet, _ := model.GetMultimodalModelNames()
+
 	result := make([]ChannelOption, 0)
-	visionKeywords := []string{"vision", "gpt-4o", "gpt-4-turbo", "claude-3", "gemini", "qwen-vl", "glm-4v"}
 
 	for _, ch := range channels {
 		if ch.Status != model.ChannelStatusEnabled {
 			continue
 		}
-		var models []string
+		var allModels []string
 		for _, m := range strings.Split(ch.Models, ",") {
 			m = strings.TrimSpace(m)
 			if m != "" {
-				models = append(models, m)
+				allModels = append(allModels, m)
 			}
 		}
-		hasVision := false
-		for _, m := range models {
-			mLower := strings.ToLower(m)
-			for _, kw := range visionKeywords {
-				if strings.Contains(mLower, kw) {
-					hasVision = true
-					break
-				}
-			}
-			if hasVision {
-				break
+
+		var visionModels []string
+		for _, m := range allModels {
+			if isMultimodalModel(m, multimodalSet) {
+				visionModels = append(visionModels, m)
 			}
 		}
-		if hasVision {
+
+		if len(visionModels) > 0 {
 			result = append(result, ChannelOption{
 				ID:     ch.Id,
 				Name:   ch.Name,
 				Type:   ch.Type,
-				Models: models,
+				Models: visionModels,
 			})
 		}
 	}
@@ -556,6 +553,16 @@ func GetVisionChannels(c *gin.Context) {
 		"message": "",
 		"data":    result,
 	})
+}
+
+// isMultimodalModel checks if a model is marked as multimodal in ModelMeta,
+// falling back to keyword matching for unregistered models.
+func isMultimodalModel(modelName string, multimodalSet map[string]bool) bool {
+	mLower := strings.ToLower(modelName)
+	if multimodalSet != nil && multimodalSet[mLower] {
+		return true
+	}
+	return model.IsMultimodalByKeywords(modelName)
 }
 
 // GetMCPProviderTools returns all tools for a specific provider.

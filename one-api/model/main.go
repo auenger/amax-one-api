@@ -190,6 +190,10 @@ func migrateDB() error {
 	if err = DB.AutoMigrate(&MCPLog{}); err != nil {
 		return err
 	}
+	if err = DB.AutoMigrate(&ModelMeta{}); err != nil {
+		return err
+	}
+	SeedModelMetasIfNeeded()
 	return nil
 }
 

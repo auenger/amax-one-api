@@ -82,6 +82,22 @@ type MinimaxRemainsResponse struct {
 	} `json:"model_remains"`
 }
 
+// zhipuLimitLabel maps Zhipu API limit types to standardized labels.
+// Zhipu returns type="TOKENS_LIMIT" with unit/number to distinguish windows:
+//   - unit=3, number=5 → 5-hour window → "5h"
+//   - unit=6, number=1 → weekly window → "weekly"
+func zhipuLimitLabel(limitType string, unit int, number int) string {
+	if limitType == "TOKENS_LIMIT" {
+		if unit == 3 && number == 5 {
+			return "5h"
+		}
+		if unit == 6 && number == 1 {
+			return "weekly"
+		}
+	}
+	return limitType
+}
+
 // StepFunBalanceResponse is the response from StepFun accounts API.
 type StepFunBalanceResponse struct {
 	Balance float64 `json:"balance"`
@@ -132,8 +148,8 @@ func queryZhipuQuota(ch *model.Channel) *model.ChannelQuota {
 		}
 
 		quota.Windows = append(quota.Windows, model.QuotaWindow{
-			Label:       limit.Type,
-			UsedPercent: limit.Percentage, // API already returns 0-100
+			Label:       zhipuLimitLabel(limit.Type, limit.Unit, limit.Number),
+			UsedPercent: limit.Percentage,
 			RemainingMs: remainingMs,
 			ResetAt:     resetMs,
 		})

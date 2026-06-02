@@ -74,6 +74,13 @@ const panel = {
           breadcrumbs: false
         },
         {
+          id: 'mcp-model-meta',
+          title: '模型标记',
+          type: 'item',
+          url: '/panel/mcp/model-meta',
+          breadcrumbs: false
+        },
+        {
           id: 'mcp-server',
           title: 'Server 配置',
           type: 'item',

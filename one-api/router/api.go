@@ -249,5 +249,14 @@ func SetApiRouter(router *gin.Engine) {
 		{
 			mcpStatsRoute.GET("/", controller.GetMCPStats)
 		}
+		// Model metadata management (admin only)
+		modelMetaRoute := apiRouter.Group("/model-meta")
+		modelMetaRoute.Use(middleware.AdminAuth())
+		{
+			modelMetaRoute.GET("/", controller.GetModelMetas)
+			modelMetaRoute.PUT("/", controller.UpdateModelMeta)
+			modelMetaRoute.PUT("/batch", controller.BatchUpdateModelMetas)
+			modelMetaRoute.POST("/scan", controller.ScanNewModelsHandler)
+		}
 	}
 }

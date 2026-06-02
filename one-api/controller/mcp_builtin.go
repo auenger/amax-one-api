@@ -73,10 +73,10 @@ func visionRelay(ctx context.Context, channelID int, modelName string, systemPro
 	middleware.SetupContextForSelectedChannel(c, channel, modelName)
 	c.Set(ctxkey.RequestModel, modelName)
 
-	// Set a system token context for billing
+	// Set a system token context for billing — use root admin (id=1) so quota is available
 	c.Set(ctxkey.TokenId, 0)
 	c.Set(ctxkey.TokenName, "mcp-builtin")
-	c.Set(ctxkey.Id, 0)
+	c.Set(ctxkey.Id, 1)
 	c.Set(ctxkey.Group, channel.Group)
 
 	// Call the relay helper
