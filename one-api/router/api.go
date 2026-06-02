@@ -249,7 +249,7 @@ func SetApiRouter(router *gin.Engine) {
 		}
 		// MCP Stats (admin only)
 		mcpStatsRoute := apiRouter.Group("/mcp-stats")
-		mcpStatsRoute.Use(middleware.AdminAuth())
+		mcpStatsRoute.Use(middleware.UserAuth())
 		{
 			mcpStatsRoute.GET("/", controller.GetMCPStats)
 			mcpStatsRoute.GET("/logs", controller.GetMCPLogDetails)

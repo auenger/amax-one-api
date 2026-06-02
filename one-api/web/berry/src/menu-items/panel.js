@@ -79,8 +79,7 @@ const panel = {
           title: '使用统计',
           type: 'item',
           url: '/panel/mcp/stats',
-          breadcrumbs: false,
-          isAdmin: true
+          breadcrumbs: false
         },
         {
           id: 'mcp-model-meta',
