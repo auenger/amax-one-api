@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/songquanpeng/one-api/common"
+	"github.com/yzw/aihub/common"
 )
 
 // ────────────────────────────────────────────────────────────

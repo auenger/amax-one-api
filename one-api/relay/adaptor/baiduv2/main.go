@@ -3,8 +3,8 @@ package baiduv2
 import (
 	"fmt"
 
-	"github.com/songquanpeng/one-api/relay/meta"
-	"github.com/songquanpeng/one-api/relay/relaymode"
+	"github.com/yzw/aihub/relay/meta"
+	"github.com/yzw/aihub/relay/relaymode"
 )
 
 func GetRequestURL(meta *meta.Meta) (string, error) {

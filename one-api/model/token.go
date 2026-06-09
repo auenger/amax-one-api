@@ -6,11 +6,11 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/songquanpeng/one-api/common"
-	"github.com/songquanpeng/one-api/common/config"
-	"github.com/songquanpeng/one-api/common/helper"
-	"github.com/songquanpeng/one-api/common/logger"
-	"github.com/songquanpeng/one-api/common/message"
+	"github.com/yzw/aihub/common"
+	"github.com/yzw/aihub/common/config"
+	"github.com/yzw/aihub/common/helper"
+	"github.com/yzw/aihub/common/logger"
+	"github.com/yzw/aihub/common/message"
 )
 
 const (

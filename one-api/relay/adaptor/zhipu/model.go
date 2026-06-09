@@ -1,7 +1,7 @@
 package zhipu
 
 import (
-	"github.com/songquanpeng/one-api/relay/model"
+	"github.com/yzw/aihub/relay/model"
 	"time"
 )
 

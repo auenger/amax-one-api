@@ -7,8 +7,8 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/songquanpeng/one-api/common"
-	"github.com/songquanpeng/one-api/common/utils"
+	"github.com/yzw/aihub/common"
+	"github.com/yzw/aihub/common/utils"
 )
 
 type Ability struct {

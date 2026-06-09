@@ -1,7 +1,7 @@
 package model
 
 import (
-	"github.com/songquanpeng/one-api/common/helper"
+	"github.com/yzw/aihub/common/helper"
 )
 
 const (

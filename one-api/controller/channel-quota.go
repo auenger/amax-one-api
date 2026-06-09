@@ -9,13 +9,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/songquanpeng/one-api/common"
-	"github.com/songquanpeng/one-api/common/client"
-	"github.com/songquanpeng/one-api/common/ctxkey"
-	"github.com/songquanpeng/one-api/common/logger"
-	"github.com/songquanpeng/one-api/model"
-	"github.com/songquanpeng/one-api/monitor"
-	"github.com/songquanpeng/one-api/relay/channeltype"
+	"github.com/yzw/aihub/common"
+	"github.com/yzw/aihub/common/client"
+	"github.com/yzw/aihub/common/ctxkey"
+	"github.com/yzw/aihub/common/logger"
+	"github.com/yzw/aihub/model"
+	"github.com/yzw/aihub/monitor"
+	"github.com/yzw/aihub/relay/channeltype"
 
 	"github.com/gin-gonic/gin"
 )

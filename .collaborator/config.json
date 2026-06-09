@@ -20,11 +20,9 @@
     "/Users/ryan/mycode/AIHub/one-api/web/default/src/pages/TokenRequest",
     "/Users/ryan/mycode/AIHub/one-api/web/berry",
     "/Users/ryan/mycode/AIHub/one-api/web/berry/public",
-    "/Users/ryan/mycode/AIHub/features",
     "/Users/ryan/mycode/AIHub/features/pending-feat-skill-marketplace-v2",
-    "/Users/ryan/mycode/AIHub/one-api",
     "/Users/ryan/mycode/AIHub/.claude/hooks",
-    "/Users/ryan/mycode/AIHub/.claude"
+    "/Users/ryan/mycode/AIHub/one-api/web"
   ],
   "agent_skip_permissions": false
 }

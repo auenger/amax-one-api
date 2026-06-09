@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	mcpPkg "github.com/songquanpeng/one-api/mcp"
-	"github.com/songquanpeng/one-api/middleware"
+	mcpPkg "github.com/yzw/aihub/mcp"
+	"github.com/yzw/aihub/middleware"
 )
 
 func SetMCPRouter(router *gin.Engine) {

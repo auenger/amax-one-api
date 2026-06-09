@@ -9,17 +9,17 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/songquanpeng/one-api/common/client"
-	"github.com/songquanpeng/one-api/common/config"
-	"github.com/songquanpeng/one-api/common/logger"
-	"github.com/songquanpeng/one-api/model"
-	"github.com/songquanpeng/one-api/monitor"
-	"github.com/songquanpeng/one-api/relay/channeltype"
+	"github.com/yzw/aihub/common/client"
+	"github.com/yzw/aihub/common/config"
+	"github.com/yzw/aihub/common/logger"
+	"github.com/yzw/aihub/model"
+	"github.com/yzw/aihub/monitor"
+	"github.com/yzw/aihub/relay/channeltype"
 
 	"github.com/gin-gonic/gin"
 )
 
-// https://github.com/songquanpeng/one-api/issues/79
+// https://github.com/yzw/aihub/issues/79
 
 type OpenAISubscriptionResponse struct {
 	Object             string  `json:"object"`

@@ -4,19 +4,19 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"github.com/songquanpeng/one-api/common/render"
+	"github.com/yzw/aihub/common/render"
 	"io"
 	"net/http"
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/songquanpeng/one-api/common"
-	"github.com/songquanpeng/one-api/common/conv"
-	"github.com/songquanpeng/one-api/common/helper"
-	"github.com/songquanpeng/one-api/common/logger"
-	"github.com/songquanpeng/one-api/relay/adaptor/coze/constant/messagetype"
-	"github.com/songquanpeng/one-api/relay/adaptor/openai"
-	"github.com/songquanpeng/one-api/relay/model"
+	"github.com/yzw/aihub/common"
+	"github.com/yzw/aihub/common/conv"
+	"github.com/yzw/aihub/common/helper"
+	"github.com/yzw/aihub/common/logger"
+	"github.com/yzw/aihub/relay/adaptor/coze/constant/messagetype"
+	"github.com/yzw/aihub/relay/adaptor/openai"
+	"github.com/yzw/aihub/relay/model"
 )
 
 // https://www.coze.com/open

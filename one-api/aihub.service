@@ -1,0 +1,18 @@
+# File path: /etc/systemd/system/aihub.service
+# sudo systemctl daemon-reload
+# sudo systemctl start aihub
+# sudo systemctl enable aihub
+# sudo systemctl status aihub
+[Unit]
+Description=ModelHub Service
+After=network.target
+
+[Service]
+User=ubuntu  # 注意修改用户名
+WorkingDirectory=/path/to/aihub  # 注意修改路径
+ExecStart=/path/to/aihub/aihub --port 3000 --log-dir /path/to/aihub/logs  # 注意修改路径和端口号
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

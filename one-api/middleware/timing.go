@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/songquanpeng/one-api/common/ctxkey"
+	"github.com/yzw/aihub/common/ctxkey"
 )
 
 // TimingMiddleware records the request arrival time (t_request) into the gin context.

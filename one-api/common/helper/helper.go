@@ -13,7 +13,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/songquanpeng/one-api/common/random"
+	"github.com/yzw/aihub/common/random"
 )
 
 func OpenBrowser(url string) {

@@ -10,7 +10,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/songquanpeng/one-api/model"
+	"github.com/yzw/aihub/model"
 )
 
 // sendStreamableHTTP sends a JSON-RPC request via Streamable HTTP transport.

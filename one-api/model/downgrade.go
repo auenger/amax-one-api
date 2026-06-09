@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/songquanpeng/one-api/common"
-	"github.com/songquanpeng/one-api/common/logger"
+	"github.com/yzw/aihub/common"
+	"github.com/yzw/aihub/common/logger"
 )
 
 // ModelDowngradeRule is DEPRECATED — kept only for AutoMigrate compatibility.

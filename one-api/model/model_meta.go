@@ -4,7 +4,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/songquanpeng/one-api/common/helper"
+	"github.com/yzw/aihub/common/helper"
 )
 
 // ModelMeta stores per-model metadata such as multimodal capability.

@@ -5,8 +5,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/songquanpeng/one-api/common/ctxkey"
-	"github.com/songquanpeng/one-api/common/logger"
+	"github.com/yzw/aihub/common/ctxkey"
+	"github.com/yzw/aihub/common/logger"
 )
 
 // HandleStreamableHTTP handles MCP requests via Streamable HTTP transport.

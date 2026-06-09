@@ -6,9 +6,9 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/songquanpeng/one-api/common"
-	"github.com/songquanpeng/one-api/common/helper"
-	"github.com/songquanpeng/one-api/common/logger"
+	"github.com/yzw/aihub/common"
+	"github.com/yzw/aihub/common/helper"
+	"github.com/yzw/aihub/common/logger"
 )
 
 // RequestTiming records per-request timing data for latency analysis.

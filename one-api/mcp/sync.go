@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/songquanpeng/one-api/common/logger"
-	"github.com/songquanpeng/one-api/model"
+	"github.com/yzw/aihub/common/logger"
+	"github.com/yzw/aihub/model"
 )
 
 const (

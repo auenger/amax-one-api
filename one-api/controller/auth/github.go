@@ -12,11 +12,11 @@ import (
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 
-	"github.com/songquanpeng/one-api/common/config"
-	"github.com/songquanpeng/one-api/common/logger"
-	"github.com/songquanpeng/one-api/common/random"
-	"github.com/songquanpeng/one-api/controller"
-	"github.com/songquanpeng/one-api/model"
+	"github.com/yzw/aihub/common/config"
+	"github.com/yzw/aihub/common/logger"
+	"github.com/yzw/aihub/common/random"
+	"github.com/yzw/aihub/controller"
+	"github.com/yzw/aihub/model"
 )
 
 type GitHubOAuthResponse struct {

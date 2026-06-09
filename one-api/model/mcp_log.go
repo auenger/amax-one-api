@@ -1,6 +1,6 @@
 package model
 
-import "github.com/songquanpeng/one-api/common/helper"
+import "github.com/yzw/aihub/common/helper"
 
 // MCPLog represents a log entry for an MCP tool invocation.
 type MCPLog struct {

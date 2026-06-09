@@ -4,9 +4,9 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/songquanpeng/one-api/common/ctxkey"
-	dbmodel "github.com/songquanpeng/one-api/model"
-	"github.com/songquanpeng/one-api/monitor"
+	"github.com/yzw/aihub/common/ctxkey"
+	dbmodel "github.com/yzw/aihub/model"
+	"github.com/yzw/aihub/monitor"
 )
 
 // GetChannelConcurrency handles GET /api/channel/concurrency

@@ -10,12 +10,12 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/pkg/errors"
-	"github.com/songquanpeng/one-api/common/logger"
-	"github.com/songquanpeng/one-api/relay/adaptor"
-	"github.com/songquanpeng/one-api/relay/adaptor/openai"
-	"github.com/songquanpeng/one-api/relay/meta"
-	"github.com/songquanpeng/one-api/relay/model"
-	"github.com/songquanpeng/one-api/relay/relaymode"
+	"github.com/yzw/aihub/common/logger"
+	"github.com/yzw/aihub/relay/adaptor"
+	"github.com/yzw/aihub/relay/adaptor/openai"
+	"github.com/yzw/aihub/relay/meta"
+	"github.com/yzw/aihub/relay/model"
+	"github.com/yzw/aihub/relay/relaymode"
 )
 
 type Adaptor struct {

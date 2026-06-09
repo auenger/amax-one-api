@@ -11,17 +11,17 @@ import (
 	"github.com/gin-gonic/gin"
 	_ "github.com/joho/godotenv/autoload"
 
-	"github.com/songquanpeng/one-api/common"
-	"github.com/songquanpeng/one-api/common/client"
-	"github.com/songquanpeng/one-api/common/config"
-	"github.com/songquanpeng/one-api/common/i18n"
-	"github.com/songquanpeng/one-api/common/logger"
-	"github.com/songquanpeng/one-api/controller"
-	"github.com/songquanpeng/one-api/middleware"
-	"github.com/songquanpeng/one-api/model"
-	"github.com/songquanpeng/one-api/monitor"
-	"github.com/songquanpeng/one-api/relay/adaptor/openai"
-	"github.com/songquanpeng/one-api/router"
+	"github.com/yzw/aihub/common"
+	"github.com/yzw/aihub/common/client"
+	"github.com/yzw/aihub/common/config"
+	"github.com/yzw/aihub/common/i18n"
+	"github.com/yzw/aihub/common/logger"
+	"github.com/yzw/aihub/controller"
+	"github.com/yzw/aihub/middleware"
+	"github.com/yzw/aihub/model"
+	"github.com/yzw/aihub/monitor"
+	"github.com/yzw/aihub/relay/adaptor/openai"
+	"github.com/yzw/aihub/router"
 )
 
 //go:embed web/build/*
@@ -30,7 +30,7 @@ var buildFS embed.FS
 func main() {
 	common.Init()
 	logger.SetupLogger()
-	logger.SysLogf("One API %s started", common.Version)
+	logger.SysLogf("ModelHub %s started", common.Version)
 
 	if os.Getenv("GIN_MODE") != gin.DebugMode {
 		gin.SetMode(gin.ReleaseMode)

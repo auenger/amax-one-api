@@ -8,22 +8,22 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/songquanpeng/one-api/common/helper"
-	"github.com/songquanpeng/one-api/relay/constant/role"
+	"github.com/yzw/aihub/common/helper"
+	"github.com/yzw/aihub/relay/constant/role"
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/songquanpeng/one-api/common"
-	"github.com/songquanpeng/one-api/common/config"
-	"github.com/songquanpeng/one-api/common/logger"
-	"github.com/songquanpeng/one-api/model"
-	"github.com/songquanpeng/one-api/relay/adaptor/openai"
-	billingratio "github.com/songquanpeng/one-api/relay/billing/ratio"
-	"github.com/songquanpeng/one-api/relay/channeltype"
-	"github.com/songquanpeng/one-api/relay/controller/validator"
-	"github.com/songquanpeng/one-api/relay/meta"
-	relaymodel "github.com/songquanpeng/one-api/relay/model"
-	"github.com/songquanpeng/one-api/relay/relaymode"
+	"github.com/yzw/aihub/common"
+	"github.com/yzw/aihub/common/config"
+	"github.com/yzw/aihub/common/logger"
+	"github.com/yzw/aihub/model"
+	"github.com/yzw/aihub/relay/adaptor/openai"
+	billingratio "github.com/yzw/aihub/relay/billing/ratio"
+	"github.com/yzw/aihub/relay/channeltype"
+	"github.com/yzw/aihub/relay/controller/validator"
+	"github.com/yzw/aihub/relay/meta"
+	relaymodel "github.com/yzw/aihub/relay/model"
+	"github.com/yzw/aihub/relay/relaymode"
 )
 
 func getAndValidateTextRequest(c *gin.Context, relayMode int) (*relaymodel.GeneralOpenAIRequest, error) {

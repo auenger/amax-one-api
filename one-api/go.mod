@@ -1,4 +1,4 @@
-module github.com/songquanpeng/one-api
+module github.com/yzw/aihub
 
 go 1.20
 

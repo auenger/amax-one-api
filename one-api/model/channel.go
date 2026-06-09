@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/songquanpeng/one-api/common/config"
-	"github.com/songquanpeng/one-api/common/helper"
-	"github.com/songquanpeng/one-api/common/logger"
+	"github.com/yzw/aihub/common/config"
+	"github.com/yzw/aihub/common/helper"
+	"github.com/yzw/aihub/common/logger"
 	"gorm.io/gorm"
 )
 

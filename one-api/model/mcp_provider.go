@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/songquanpeng/one-api/common/helper"
+	"github.com/yzw/aihub/common/helper"
 )
 
 // MCPProvider represents an upstream MCP service provider or a built-in tool provider.

@@ -3,8 +3,8 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/songquanpeng/one-api/common/logger"
-	"github.com/songquanpeng/one-api/relay/model"
+	"github.com/yzw/aihub/common/logger"
+	"github.com/yzw/aihub/relay/model"
 	"io"
 	"net/http"
 	"strconv"

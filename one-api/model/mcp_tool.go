@@ -1,6 +1,6 @@
 package model
 
-import "github.com/songquanpeng/one-api/common/helper"
+import "github.com/yzw/aihub/common/helper"
 
 // MCPTool represents a tool exposed via the MCP protocol.
 type MCPTool struct {

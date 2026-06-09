@@ -41,5 +41,5 @@ if [ -z "$MCP_PIDS" ]; then
 fi
 
 # Start main service (foreground)
-echo "[one-api] Starting on :3000"
-exec /opt/aihub/one-api
+echo "[aihub] Starting on :3000"
+exec /opt/aihub/aihub

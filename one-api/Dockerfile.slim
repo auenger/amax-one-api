@@ -9,9 +9,9 @@ RUN pip install --no-cache-dir --break-system-packages uv && \
 # Pre-cache mcp-proxy and zai-mcp-server
 RUN npm install -g mcp-proxy @z_ai/mcp-server
 
-COPY bin/one-api-linux /opt/aihub/one-api
+COPY bin/aihub-linux /opt/aihub/aihub
 COPY entrypoint.sh /opt/aihub/entrypoint.sh
-RUN chmod +x /opt/aihub/one-api /opt/aihub/entrypoint.sh
+RUN chmod +x /opt/aihub/aihub /opt/aihub/entrypoint.sh
 
 EXPOSE 3000 8765 8766
 WORKDIR /data

@@ -11,7 +11,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/songquanpeng/one-api/common/logger"
+	"github.com/yzw/aihub/common/logger"
 )
 
 // JSON-RPC 2.0 types

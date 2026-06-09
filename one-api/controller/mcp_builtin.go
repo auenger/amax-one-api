@@ -8,11 +8,11 @@ import (
 	"net/http/httptest"
 
 	"github.com/gin-gonic/gin"
-	"github.com/songquanpeng/one-api/common/ctxkey"
-	mcpPkg "github.com/songquanpeng/one-api/mcp"
-	"github.com/songquanpeng/one-api/middleware"
-	"github.com/songquanpeng/one-api/model"
-	relayController "github.com/songquanpeng/one-api/relay/controller"
+	"github.com/yzw/aihub/common/ctxkey"
+	mcpPkg "github.com/yzw/aihub/mcp"
+	"github.com/yzw/aihub/middleware"
+	"github.com/yzw/aihub/model"
+	relayController "github.com/yzw/aihub/relay/controller"
 )
 
 func init() {

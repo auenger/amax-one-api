@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "aihub": {
+      "type": "sse",
+      "url": "http://119.119.126.112:3000/mcp/v1/sse",
+      "headers": {
+        "Authorization": "Bearer sk-GNVdVvQ1nnkxXo5QC05e439b27Dd4cCa94664b3d3e44308d"
+      }
+    }
+  }
+}

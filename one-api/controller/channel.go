@@ -6,10 +6,10 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/songquanpeng/one-api/common/config"
-	"github.com/songquanpeng/one-api/common/helper"
-	"github.com/songquanpeng/one-api/model"
-	"github.com/songquanpeng/one-api/monitor"
+	"github.com/yzw/aihub/common/config"
+	"github.com/yzw/aihub/common/helper"
+	"github.com/yzw/aihub/model"
+	"github.com/yzw/aihub/monitor"
 )
 
 func GetAllChannels(c *gin.Context) {

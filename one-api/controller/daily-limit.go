@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/songquanpeng/one-api/common"
-	"github.com/songquanpeng/one-api/common/config"
-	"github.com/songquanpeng/one-api/model"
+	"github.com/yzw/aihub/common"
+	"github.com/yzw/aihub/common/config"
+	"github.com/yzw/aihub/model"
 )
 
 type DailyLimitExemptRequest struct {

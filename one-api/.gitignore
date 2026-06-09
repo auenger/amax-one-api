@@ -10,6 +10,6 @@ data
 /web/node_modules
 cmd.md
 .env
-/one-api
+/aihub
 temp
 .DS_Store

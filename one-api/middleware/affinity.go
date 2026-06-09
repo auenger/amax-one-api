@@ -8,12 +8,12 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/songquanpeng/one-api/common"
-	"github.com/songquanpeng/one-api/common/config"
-	"github.com/songquanpeng/one-api/common/ctxkey"
-	"github.com/songquanpeng/one-api/common/logger"
-	"github.com/songquanpeng/one-api/model"
-	"github.com/songquanpeng/one-api/monitor"
+	"github.com/yzw/aihub/common"
+	"github.com/yzw/aihub/common/config"
+	"github.com/yzw/aihub/common/ctxkey"
+	"github.com/yzw/aihub/common/logger"
+	"github.com/yzw/aihub/model"
+	"github.com/yzw/aihub/monitor"
 )
 
 const (

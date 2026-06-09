@@ -6,15 +6,15 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/songquanpeng/one-api/common/ctxkey"
-	"github.com/songquanpeng/one-api/model"
-	relay "github.com/songquanpeng/one-api/relay"
-	"github.com/songquanpeng/one-api/relay/adaptor/openai"
-	"github.com/songquanpeng/one-api/relay/apitype"
-	"github.com/songquanpeng/one-api/relay/channeltype"
-	"github.com/songquanpeng/one-api/relay/meta"
-	relaymodel "github.com/songquanpeng/one-api/relay/model"
-	"github.com/songquanpeng/one-api/monitor"
+	"github.com/yzw/aihub/common/ctxkey"
+	"github.com/yzw/aihub/model"
+	relay "github.com/yzw/aihub/relay"
+	"github.com/yzw/aihub/relay/adaptor/openai"
+	"github.com/yzw/aihub/relay/apitype"
+	"github.com/yzw/aihub/relay/channeltype"
+	"github.com/yzw/aihub/relay/meta"
+	relaymodel "github.com/yzw/aihub/relay/model"
+	"github.com/yzw/aihub/monitor"
 )
 
 // https://platform.openai.com/docs/api-reference/models/list

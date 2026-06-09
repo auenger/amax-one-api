@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/songquanpeng/one-api/common/ctxkey"
-	"github.com/songquanpeng/one-api/common/logger"
+	"github.com/yzw/aihub/common/ctxkey"
+	"github.com/yzw/aihub/common/logger"
 )
 
 // HandleSSEConnection handles GET /mcp/v1/sse — establishes a long-lived SSE connection.

@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/songquanpeng/one-api/common/logger"
-	"github.com/songquanpeng/one-api/model"
+	"github.com/yzw/aihub/common/logger"
+	"github.com/yzw/aihub/model"
 )
 
 func ReturnPreConsumedQuota(ctx context.Context, preConsumedQuota int64, tokenId int) {

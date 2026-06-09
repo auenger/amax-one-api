@@ -5,7 +5,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	dbmodel "github.com/songquanpeng/one-api/model"
+	dbmodel "github.com/yzw/aihub/model"
 )
 
 // GetAllTimings returns a paginated list of timing logs.

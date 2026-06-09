@@ -6,10 +6,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/songquanpeng/one-api/common/ctxkey"
-	"github.com/songquanpeng/one-api/model"
-	"github.com/songquanpeng/one-api/relay/channeltype"
-	"github.com/songquanpeng/one-api/relay/relaymode"
+	"github.com/yzw/aihub/common/ctxkey"
+	"github.com/yzw/aihub/model"
+	"github.com/yzw/aihub/relay/channeltype"
+	"github.com/yzw/aihub/relay/relaymode"
 )
 
 const TimingTRelay = "timing_t_relay"

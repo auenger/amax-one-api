@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-AIHub — 企业级 AI 管理平台，基于 [one-api](https://github.com/songquanpeng/one-api) (Go + Gin) 深度二开。提供 38 供应商代理转发、Token 鉴权（4 级角色）、智能渠道路由、并发追踪、配额监控、模型广场、用量报表等功能。
+ModelHub — 企业级 AI 管理平台，独立开发的 Go + Gin 后端 + React (MUI 5) 前端。提供 38 供应商代理转发、Token 鉴权（4 级角色）、智能渠道路由、并发追踪、配额监控、模型广场、用量报表等功能。
 
 前端使用 Berry 主题 (React + MUI 5)，通过 `go:embed` 嵌入 Go 二进制。
 
@@ -20,11 +20,7 @@ AIHub — 企业级 AI 管理平台，基于 [one-api](https://github.com/songqu
 - **`one-api/monitor/`** — 并发追踪、负载均衡、配额刷新、健康检查
 - **`one-api/service/`** — 业务服务 (Claude 格式转换)
 - **`one-api/common/`** — 通用工具 (config, logger, helper, crypto)
-- **`one-api/web/berry/`** — Berry 前端 (MUI 5, 活跃开发)
-- **`one-api/web/default/`** — 默认前端 (Semantic UI, 不活跃)
-- **`one-api/web/air/`** — Air 前端 (不活跃)
-
-Legacy 目录（已废弃，不修改）：`apps/`, `packages/`
+- **`one-api/web/berry/`** — Berry 前端 (MUI 5，唯一前端)
 
 ## Commands
 
@@ -33,14 +29,14 @@ Legacy 目录（已废弃，不修改）：`apps/`, `packages/`
 cd one-api && ./rebuild.sh
 
 # 启动服务
-./one-api/bin/one-api
+./one-api/bin/aihub
 
 # 前端开发（热更新）
 cd one-api/web/berry && npm start
 
 # 基础设施（需要 Docker）
-docker compose up -d          # PostgreSQL 16 + Redis 7 + one-api
-docker compose up -d postgres redis  # 只启动数据库
+docker compose up -d          # MySQL + Redis + aihub
+docker compose up -d redis db  # 只启动数据库
 
 # Go 测试
 cd one-api && go test ./...
@@ -94,11 +90,11 @@ GORM 模型 (`one-api/model/`)：
 - `Log` — 请求日志，Token 消耗
 - `ChannelQuota` — 配额信息，Redis 缓存
 
-## one-api 本地构建
+## 本地构建
 
 ```bash
 cd one-api && ./rebuild.sh   # 前端构建 + 产物拷贝 + Go 编译，三步合一
-./bin/one-api                 # 启动服务
+./bin/aihub                  # 启动服务
 ```
 
 关键点：
@@ -118,7 +114,7 @@ cp -r web/build/berry/build/* web/build/berry/
 rm -rf web/build/berry/build
 
 # 2. 交叉编译 Linux 二进制
-GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o bin/one-api-linux .
+GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o bin/aihub-linux .
 
 # 3. 构建 Docker 镜像
 docker build -f Dockerfile.slim -t aihub:latest .

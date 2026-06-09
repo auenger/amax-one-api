@@ -7,15 +7,15 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/songquanpeng/one-api/common/ctxkey"
-	"github.com/songquanpeng/one-api/common/render"
+	"github.com/yzw/aihub/common/ctxkey"
+	"github.com/yzw/aihub/common/render"
 
 	"github.com/gin-gonic/gin"
-	"github.com/songquanpeng/one-api/common"
-	"github.com/songquanpeng/one-api/common/helper"
-	"github.com/songquanpeng/one-api/common/logger"
-	"github.com/songquanpeng/one-api/relay/adaptor/openai"
-	"github.com/songquanpeng/one-api/relay/model"
+	"github.com/yzw/aihub/common"
+	"github.com/yzw/aihub/common/helper"
+	"github.com/yzw/aihub/common/logger"
+	"github.com/yzw/aihub/relay/adaptor/openai"
+	"github.com/yzw/aihub/relay/model"
 )
 
 func ConvertCompletionsRequest(textRequest model.GeneralOpenAIRequest) *Request {

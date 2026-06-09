@@ -9,20 +9,20 @@ import (
 	"net/http"
 	"text/template"
 
-	"github.com/songquanpeng/one-api/common/ctxkey"
-	"github.com/songquanpeng/one-api/common/random"
+	"github.com/yzw/aihub/common/ctxkey"
+	"github.com/yzw/aihub/common/random"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/bedrockruntime"
 	"github.com/aws/aws-sdk-go-v2/service/bedrockruntime/types"
 	"github.com/gin-gonic/gin"
 	"github.com/pkg/errors"
-	"github.com/songquanpeng/one-api/common"
-	"github.com/songquanpeng/one-api/common/helper"
-	"github.com/songquanpeng/one-api/common/logger"
-	"github.com/songquanpeng/one-api/relay/adaptor/aws/utils"
-	"github.com/songquanpeng/one-api/relay/adaptor/openai"
-	relaymodel "github.com/songquanpeng/one-api/relay/model"
+	"github.com/yzw/aihub/common"
+	"github.com/yzw/aihub/common/helper"
+	"github.com/yzw/aihub/common/logger"
+	"github.com/yzw/aihub/relay/adaptor/aws/utils"
+	"github.com/yzw/aihub/relay/adaptor/openai"
+	relaymodel "github.com/yzw/aihub/relay/model"
 )
 
 // Only support llama-3-8b and llama-3-70b instruction models

@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/songquanpeng/one-api/monitor"
+	"github.com/yzw/aihub/monitor"
 )
 
 // ChannelMetricsResponse is the API response for channel metrics.

@@ -1,4 +1,4 @@
-# AIHub 架构决策：基于 one-api 二开
+# ModelHub 架构决策：Go + Gin 独立开发
 
 > 决策日期：2026-05-13
 

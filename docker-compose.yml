@@ -38,11 +38,11 @@ services:
     networks:
       - aihub-net
 
-  one-api:
+  aihub:
     build:
       context: ./one-api
       dockerfile: Dockerfile
-    container_name: aihub-one-api
+    container_name: aihub
     restart: unless-stopped
     ports:
       - '3000:3000'

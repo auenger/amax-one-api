@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AIHub Feature 结项报告 — 2026-05-18 ~ 2026-06-02</title>
+<style>
+:root {
+  --radius:8px;
+  --green:#059669; --green2:#047857; --green-bg:rgba(5,150,105,.08);
+  --yellow:#d97706; --yellow-bg:rgba(217,119,6,.08);
+  --red:#dc2626; --red-bg:rgba(220,38,38,.08);
+  --blue:#2563eb; --blue-bg:rgba(37,99,235,.08);
+  --cyan:#0891b2; --orange:#ea580c; --pink:#db2777;
+  --accent:#6d28d9; --accent2:#7c3aed; --accent3:#8b5cf6;
+  --teal:#0d9488; --lime:#65a30d; --amber:#b45309;
+  --transition-speed:.25s;
+}
+[data-theme="light"] {
+  --bg:#f5f6fa; --bg2:#ffffff; --bg3:#f0f1f5; --bg4:#e5e7ee;
+  --border:#d8dbe6; --text:#1e2030; --text2:#4a4e6a; --text3:#8b8faa;
+  --header-bg:linear-gradient(135deg,#ffffff 0%,#f0eeff 100%);
+  --row-hover:rgba(109,40,217,.03);
+  --shadow-card:0 1px 3px rgba(0,0,0,.06); --shadow-bar:0 1px 2px rgba(0,0,0,.12);
+}
+[data-theme="dark"] {
+  --bg:#0c0e14; --bg2:#13151e; --bg3:#1a1d2b; --bg4:#222640;
+  --border:#2a2e48; --text:#e4e6f4; --text2:#9da1c4; --text3:#626890;
+  --green:#34d399; --green2:#059669; --green-bg:rgba(52,211,153,.08);
+  --yellow:#fbbf24; --yellow-bg:rgba(251,191,36,.08);
+  --red:#f87171; --red-bg:rgba(248,113,113,.08);
+  --blue:#60a5fa; --blue-bg:rgba(96,165,250,.08);
+  --accent:#7b6aef; --accent2:#a78bfa; --accent3:#c4b5fd;
+  --header-bg:linear-gradient(135deg,#13151e 0%,#1a1435 100%);
+  --row-hover:rgba(255,255,255,.015); --shadow-card:none; --shadow-bar:none;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;line-height:1.6;overflow-x:hidden;transition:background var(--transition-speed),color var(--transition-speed)}
+.theme-toggle{margin-left:auto;display:flex;align-items:center;gap:8px}
+.theme-btn{width:36px;height:20px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg3);cursor:pointer;position:relative;transition:all .2s;flex-shrink:0}
+.theme-btn::after{content:'';position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:var(--accent2);transition:transform .2s}
+[data-theme="dark"] .theme-btn::after{transform:translateX(16px)}
+.theme-label{font-size:10px;color:var(--text3);font-weight:600;letter-spacing:.3px}
+
+.header{background:var(--header-bg);border-bottom:1px solid var(--border);padding:28px 40px 24px;transition:background var(--transition-speed)}
+.header-top{display:flex;align-items:center;gap:16px;margin-bottom:20px}
+.header-icon{width:40px;height:40px;background:linear-gradient(135deg,var(--accent),var(--green));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:#fff}
+.header h1{font-size:20px;font-weight:700;letter-spacing:-.5px}
+.header h1 span{color:var(--accent2)}
+.header-sub{font-size:12px;color:var(--text3);margin-top:2px}
+.stats{display:flex;gap:1px;background:var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:20px}
+.stat{flex:1;background:var(--bg2);padding:14px 18px;text-align:center;transition:background var(--transition-speed)}
+.stat-v{font-size:26px;font-weight:800;line-height:1.2}
+.stat-l{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-top:2px}
+.stat small{font-size:11px;font-weight:400;opacity:.6}
+
+.prog-section{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;box-shadow:var(--shadow-card);transition:background var(--transition-speed),border-color var(--transition-speed)}
+.prog-title{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px;font-weight:600}
+.prog-bar{height:10px;background:var(--bg4);border-radius:5px;overflow:hidden;display:flex;gap:1px}
+.prog-fill{height:100%;border-radius:5px;transition:width .6s ease}
+.prog-fill.done{background:linear-gradient(90deg,var(--green2),var(--green))}
+.prog-legend{display:flex;gap:20px;margin-top:10px}
+.prog-legend i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:4px;vertical-align:middle}
+.prog-legend span{font-size:10px;color:var(--text3)}
+
+.container{padding:24px 40px 60px;max-width:1400px;margin:0 auto}
+.sec-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin:28px 0 14px;display:flex;align-items:center;gap:8px}
+.sec-title::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* Category cards */
+.cat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:8px}
+.cat-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px;position:relative;overflow:hidden;box-shadow:var(--shadow-card);transition:all var(--transition-speed)}
+.cat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.cat-card.c1::before{background:var(--accent)}
+.cat-card.c2::before{background:var(--blue)}
+.cat-card.c3::before{background:var(--cyan)}
+.cat-card.c4::before{background:var(--orange)}
+.cat-card.c5::before{background:var(--green)}
+.cat-card.c6::before{background:var(--yellow)}
+.cat-card.c7::before{background:var(--pink)}
+.cat-card.c8::before{background:var(--teal)}
+.cat-card.c9::before{background:var(--lime)}
+.cat-card.c10::before{background:var(--red)}
+.cat-badge{display:inline-flex;align-items:center;gap:4px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;padding:2px 8px;border-radius:10px;margin-bottom:6px}
+.c1 .cat-badge{background:rgba(124,58,237,.1);color:var(--accent2)}
+.c2 .cat-badge{background:var(--blue-bg);color:var(--blue)}
+.c3 .cat-badge{background:rgba(8,145,178,.1);color:var(--cyan)}
+.c4 .cat-badge{background:rgba(234,88,12,.1);color:var(--orange)}
+.c5 .cat-badge{background:var(--green-bg);color:var(--green)}
+.c6 .cat-badge{background:var(--yellow-bg);color:var(--yellow)}
+.c7 .cat-badge{background:rgba(219,39,119,.1);color:var(--pink)}
+.c8 .cat-badge{background:rgba(13,148,136,.1);color:var(--teal)}
+.c9 .cat-badge{background:rgba(101,163,13,.1);color:var(--lime)}
+.c10 .cat-badge{background:var(--red-bg);color:var(--red)}
+.cat-name{font-size:13px;font-weight:700;line-height:1.3;margin-bottom:2px}
+.cat-count{font-size:22px;font-weight:800;margin:4px 0}
+.cat-vp{font-size:10px;color:var(--text3)}
+.cat-items{font-size:10px;color:var(--text2);margin-top:6px;line-height:1.6}
+.cat-items span{display:inline-block;background:var(--bg3);padding:1px 6px;border-radius:3px;margin:1px 2px;font-size:9px}
+
+/* Timeline */
+.tl-grid{display:flex;flex-direction:column;gap:8px}
+.tl-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow-card)}
+.tl-hd{padding:10px 18px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border);background:var(--bg3)}
+.tl-date{font-size:10px;font-weight:800;padding:3px 10px;border-radius:12px;letter-spacing:.5px;background:var(--green-bg);color:var(--green)}
+.tl-info{font-size:12px;color:var(--text2)}
+.tl-info b{color:var(--text)}
+.tl-count{font-size:11px;color:var(--accent2);margin-left:auto;font-weight:600}
+.tl-body{padding:12px 18px;display:flex;flex-wrap:wrap;gap:6px}
+.tl-tag{display:inline-flex;align-items:center;gap:4px;font-size:10px;padding:4px 10px;border-radius:6px;background:var(--bg);border:1px solid var(--border);color:var(--text2);transition:all .15s}
+.tl-tag:hover{border-color:var(--accent2);color:var(--text)}
+.tl-tag .sz{font-size:8px;font-weight:700;padding:1px 4px;border-radius:2px}
+.sz-s{background:var(--green-bg);color:var(--green)}
+.sz-m{background:var(--blue-bg);color:var(--blue)}
+.sz-l{background:var(--yellow-bg);color:var(--yellow)}
+
+/* Detail table */
+.detail-table{width:100%;border-collapse:collapse;font-size:11px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.detail-table th{background:var(--bg3);padding:10px 14px;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);font-weight:700;border-bottom:1px solid var(--border)}
+.detail-table td{padding:8px 14px;border-bottom:1px solid var(--border);color:var(--text2);vertical-align:top}
+.detail-table tr:last-child td{border-bottom:none}
+.detail-table tr:hover td{background:var(--row-hover)}
+.detail-table b{color:var(--text);font-weight:600}
+.tag-sm{display:inline-block;font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px}
+.tag-sm.ts{background:var(--green-bg);color:var(--green)}
+.tag-sm.tm{background:var(--blue-bg);color:var(--blue)}
+.tag-sm.tl{background:var(--yellow-bg);color:var(--yellow)}
+.tag-sm.td{background:var(--red-bg);color:var(--red)}
+.tag-sm.tv{background:rgba(124,58,237,.08);color:var(--accent2)}
+.status-done{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;color:var(--green)}
+.status-done::before{content:'✓';font-size:11px;font-weight:800}
+
+/* Pending section */
+.pending-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.pending-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow-card)}
+.pending-card .p-name{font-size:12px;font-weight:600;margin-bottom:4px}
+.pending-card .p-id{font-size:10px;color:var(--text3);font-family:monospace}
+.pending-card .p-meta{font-size:10px;color:var(--text2);margin-top:6px}
+.pending-status{display:inline-flex;align-items:center;gap:4px;font-size:9px;font-weight:600;padding:2px 8px;border-radius:10px;margin-top:6px}
+.pending-status.waiting{background:var(--yellow-bg);color:var(--yellow)}
+.pending-status.ready{background:var(--blue-bg);color:var(--blue)}
+
+/* Gantt chart */
+.gantt{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow-card)}
+.gantt-hd{display:flex;border-bottom:1px solid var(--border);background:var(--bg3)}
+.gantt-label-hd{width:220px;min-width:220px;padding:10px 16px;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;border-right:1px solid var(--border)}
+.gantt-dates{flex:1;display:flex}
+.gantt-date{flex:1;padding:8px 0;text-align:center;font-size:8px;color:var(--text3);border-right:1px solid var(--border);font-weight:600;letter-spacing:.3px}
+.gantt-date:last-child{border-right:none}
+.gantt-date small{display:block;font-size:7px;opacity:.5;font-weight:400;letter-spacing:0}
+.gantt-date.has-items{color:var(--text);font-weight:800}
+.gantt-row{display:flex;border-bottom:1px solid var(--border);transition:background .15s}
+.gantt-row:last-child{border-bottom:none}
+.gantt-row:hover{background:var(--row-hover)}
+.gantt-row.domain .gantt-label{font-weight:700;background:var(--bg3);font-size:11px}
+.gantt-label{width:220px;min-width:220px;padding:6px 16px;font-size:10px;border-right:1px solid var(--border);display:flex;align-items:center;gap:6px}
+.gantt-label .dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.gantt-label .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gantt-label .cnt{font-size:8px;padding:1px 5px;border-radius:3px;font-weight:700;margin-left:auto;flex-shrink:0}
+.gantt-label .vp-sm{font-size:8px;color:var(--text3);font-weight:600;margin-left:auto;flex-shrink:0}
+.gantt-track{flex:1;display:flex;position:relative;padding:4px 0;align-items:center;min-height:26px}
+.gantt-bar{height:18px;border-radius:4px;position:absolute;display:flex;align-items:center;padding:0 6px;font-size:8px;font-weight:600;color:#fff;letter-spacing:.3px;white-space:nowrap;overflow:hidden;box-shadow:var(--shadow-bar);cursor:default}
+.gantt-bar:hover{filter:brightness(1.15);z-index:2}
+.gantt-bar.d1{background:linear-gradient(90deg,#6d28d9,#8b5cf6)}
+.gantt-bar.d2{background:linear-gradient(90deg,#1d4ed8,#3b82f6)}
+.gantt-bar.d3{background:linear-gradient(90deg,#0891b2,#22d3ee)}
+.gantt-bar.d4{background:linear-gradient(90deg,#c2410c,#f97316)}
+.gantt-bar.d5{background:linear-gradient(90deg,#059669,#34d399)}
+.gantt-bar.d6{background:linear-gradient(90deg,#a16207,#eab308)}
+.gantt-bar.d7{background:linear-gradient(90deg,#9d174d,#ec4899)}
+.gantt-bar.d8{background:linear-gradient(90deg,#0d9488,#2dd4bf)}
+.gantt-bar.d9{background:linear-gradient(90deg,#65a30d,#a3e635)}
+.gantt-bar.d10{background:linear-gradient(90deg,#b91c1c,#f87171)}
+.gantt-bar.domain-bar{height:22px;font-size:9px;font-weight:700;letter-spacing:.5px}
+.gantt-sep{display:flex;border-bottom:2px solid var(--border);background:var(--bg3)}
+.gantt-sep .gantt-label{font-weight:700;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;padding:6px 16px}
+
+/* Gantt daily density */
+.gantt-density{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;margin-top:10px;box-shadow:var(--shadow-card)}
+.density-title{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px;font-weight:600}
+.density-row{display:flex;align-items:flex-end;gap:2px;height:60px}
+.density-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px}
+.density-bar-wrap{width:100%;flex:1;display:flex;align-items:flex-end;justify-content:center}
+.density-bar{width:70%;border-radius:3px 3px 0 0;background:linear-gradient(180deg,var(--accent2),var(--accent3));transition:height .4s ease;min-height:2px}
+.density-label{font-size:7px;color:var(--text3);font-weight:600;white-space:nowrap}
+.density-val{font-size:8px;font-weight:800;color:var(--text);position:absolute;top:-12px;left:50%;transform:translateX(-50%)}
+
+/* Tooltip */
+.gantt-tooltip{position:fixed;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-size:10px;box-shadow:0 4px 12px rgba(0,0,0,.15);pointer-events:none;z-index:100;max-width:260px;display:none}
+.gantt-tooltip .tt-name{font-weight:700;margin-bottom:2px}
+.gantt-tooltip .tt-meta{color:var(--text3);font-size:9px}
+
+/* VP bar chart */
+.vp-bar-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;box-shadow:var(--shadow-card)}
+.vp-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.vp-row:last-child{margin-bottom:0}
+.vp-label{width:140px;font-size:10px;font-weight:600;color:var(--text2);text-align:right;flex-shrink:0}
+.vp-track{flex:1;height:18px;background:var(--bg4);border-radius:4px;overflow:hidden}
+.vp-fill{height:100%;border-radius:4px;display:flex;align-items:center;padding:0 6px;font-size:9px;font-weight:700;color:#fff;white-space:nowrap;transition:width .6s ease}
+.vp-fill.c1{background:linear-gradient(90deg,#6d28d9,#8b5cf6)}
+.vp-fill.c2{background:linear-gradient(90deg,#1d4ed8,#3b82f6)}
+.vp-fill.c3{background:linear-gradient(90deg,#0891b2,#22d3ee)}
+.vp-fill.c4{background:linear-gradient(90deg,#c2410c,#f97316)}
+.vp-fill.c5{background:linear-gradient(90deg,#059669,#34d399)}
+.vp-fill.c6{background:linear-gradient(90deg,#a16207,#eab308)}
+.vp-fill.c7{background:linear-gradient(90deg,#9d174d,#ec4899)}
+.vp-fill.c8{background:linear-gradient(90deg,#0d9488,#2dd4bf)}
+.vp-fill.c9{background:linear-gradient(90deg,#65a30d,#a3e635)}
+.vp-fill.c10{background:linear-gradient(90deg,#b91c1c,#f87171)}
+
+.footer{text-align:center;padding:24px 40px;font-size:10px;color:var(--text3);border-top:1px solid var(--border);margin-top:28px}
+
+@media print{body{background:#fff!important;color:#1a1a2e!important}.header{background:#f8f8fc!important}.theme-toggle{display:none}}
+@media(max-width:900px){.container,.header{padding-left:16px;padding-right:16px}.cat-grid{grid-template-columns:1fr 1fr}.pending-grid{grid-template-columns:1fr}.stats{flex-wrap:wrap}.stat{flex:1 1 30%}.vp-label{width:80px;font-size:9px}}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div class="header-icon">A</div>
+    <div class="theme-toggle">
+      <span class="theme-label" id="theme-label">Light</span>
+      <button class="theme-btn" id="theme-btn" onclick="toggleTheme()"></button>
+    </div>
+    <div>
+      <h1>AIHub Feature <span>结项报告</span></h1>
+      <div class="header-sub">企业级 AI 管理平台 · Feature Workflow 交付周期 · 2026-05-18 ~ 2026-06-02</div>
+    </div>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="stat-v" style="color:var(--green)">53</div><div class="stat-l">已完成 Feature</div></div>
+    <div class="stat"><div class="stat-v" style="color:var(--accent2)">16</div><div class="stat-l">自然日</div></div>
+    <div class="stat"><div class="stat-v" style="color:var(--blue)">10</div><div class="stat-l">功能域</div></div>
+    <div class="stat"><div class="stat-v" style="color:var(--orange)">112</div><div class="stat-l">价值点</div></div>
+    <div class="stat"><div class="stat-v" style="color:var(--cyan)">3</div><div class="stat-l">待开始</div></div>
+  </div>
+  <div class="prog-section">
+    <div class="prog-title">总体交付进度 — 已完成 / 全部 Feature</div>
+    <div class="prog-bar">
+      <div class="prog-fill done" style="width:94.6%"></div>
+      <div class="prog-fill" style="width:5.4%;background:var(--bg4)"></div>
+    </div>
+    <div class="prog-legend">
+      <span><i style="background:var(--green)"></i>已完成 53 / 56 (94.6%)</span>
+      <span><i style="background:var(--bg4)"></i>待开始 3</span>
+      <span><i style="background:var(--accent2)"></i>价值点 112 VP · 日均 7 VP</span>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+<!-- ═══ Categories ═══ -->
+<div class="sec-title">功能域交付总览</div>
+<div class="cat-grid">
+  <div class="cat-card c1">
+    <div class="cat-badge">DOMAIN</div>
+    <div class="cat-name">渠道路由与负载均衡</div>
+    <div class="cat-count" style="color:var(--accent2)">4 <small style="font-size:12px;opacity:.5">Feature</small></div>
+    <div class="cat-vp">8 VP · 5/18 完成</div>
+    <div class="cat-items"><span>亲和路由</span><span>故障转移</span><span>智能 LB</span><span>多渠道路由</span></div>
+  </div>
+  <div class="cat-card c2">
+    <div class="cat-badge">DOMAIN</div>
+    <div class="cat-name">并发监控体系</div>
+    <div class="cat-count" style="color:var(--blue)">4 <small style="font-size:12px;opacity:.5">Feature</small></div>
+    <div class="cat-vp">6 VP · 5/19 ~ 5/20 完成</div>
+    <div class="cat-items"><span>并发追踪后端</span><span>模型广场对接</span><span>日志渠道可见</span><span>渠道路由并发</span></div>
+  </div>
+  <div class="cat-card c3">
+    <div class="cat-badge">DOMAIN</div>
+    <div class="cat-name">配额监控与耗尽恢复</div>
+    <div class="cat-count" style="color:var(--cyan)">6 <small style="font-size:12px;opacity:.5">Feature</small></div>
+    <div class="cat-vp">15 VP · 5/19 ~ 5/25 完成</div>
+    <div class="cat-items"><span>配额查询 API</span><span>定时刷新缓存</span><span>Channel 配额面板</span><span>耗尽自动禁用恢复</span><span>MiniMax 限额显示</span><span>MiniMax 配额联动</span></div>
+  </div>
+  <div class="cat-card c4">
+    <div class="cat-badge">DOMAIN</div>
+    <div class="cat-name">降级与 Rate Limit</div>
+    <div class="cat-count" style="color:var(--orange)">4 <small style="font-size:12px;opacity:.5">Feature</small></div>
+    <div class="cat-vp">7 VP · 5/25 ~ 5/28 完成</div>
+    <div class="cat-items"><span>兜底模型全局降级</span><span>百分比驱动降级策略</span><span>429 自动禁用恢复</span><span>限速窗口降级</span></div>
+  </div>
+  <div class="cat-card c5">
+    <div class="cat-badge">DOMAIN</div>
+    <div class="cat-name">用量报表与图表</div>
+    <div class="cat-count" style="color:var(--green)">6 <small style="font-size:12px;opacity:.5">Feature</small></div>
+    <div class="cat-vp">11 VP · 5/18 ~ 5/28 完成</div>
+    <div class="cat-items"><span>Admin 用量报表</span><span>时间粒度切换</span><span>用户级统计</span><span>24h 用量图表</span><span>图表交互优化</span><span>报表页面增强</span></div>
+  </div>
+  <div class="cat-card c6">
+    <div class="cat-badge">DOMAIN</div>
+    <div class="cat-name">模型广场</div>
+    <div class="cat-count" style="color:var(--yellow)">4 <small style="font-size:12px;opacity:.5">Feature</small></div>
+    <div class="cat-vp">10 VP · 5/18 ~ 5/19 完成</div>
+    <div class="cat-items"><span>模型广场基础</span><span>平铺布局</span><span>卡片丰富化</span><span>门户页面增强</span></div>
+  </div>
+  <div class="cat-card c7">
+    <div class="cat-badge">DOMAIN</div>
+    <div class="cat-name">Skill 市场</div>
+    <div class="cat-count" style="color:var(--pink)">7 <small style="font-size:12px;opacity:.5">Feature</small></div>
+    <div class="cat-vp">16 VP · 5/27 ~ 5/28 完成</div>
+    <div class="cat-items"><span>Skill Marketplace</span><span>V2 重构</span><span>项目协作权限</span><span>多格式上传</span><span>版本升级归档</span><span>MD 渲染</span><span>批量上传拖拽</span></div>
+  </div>
+  <div class="cat-card c8">
+    <div class="cat-badge">DOMAIN</div>
+    <div class="cat-name">MCP 代理平台</div>
+    <div class="cat-count" style="color:var(--teal)">6 <small style="font-size:12px;opacity:.5">Feature</small></div>
+    <div class="cat-vp">11 VP · 6/01 ~ 6/02 完成</div>
+    <div class="cat-items"><span>MCP Server 端点</span><span>上游代理中转</span><span>供应商管理界面</span><span>视觉理解 Tool</span><span>页面增强</span><span>Docker MCP 服务</span></div>
+  </div>
+  <div class="cat-card c9">
+    <div class="cat-badge">DOMAIN</div>
+    <div class="cat-name">请求观测与健康</div>
+    <div class="cat-count" style="color:var(--lime)">8 <small style="font-size:12px;opacity:.5">Feature</small></div>
+    <div class="cat-vp">12 VP · 5/19 ~ 6/02 完成</div>
+    <div class="cat-items"><span>计时日志</span><span>监控时序优化</span><span>错误透传</span><span>计时展示优化</span><span>健康状态 UI</span><span>跳过健康探针</span><span>每日请求限额</span><span>MiniMax API 兼容</span></div>
+  </div>
+  <div class="cat-card c10" style="grid-column:1/-1;max-width:33%">
+    <div class="cat-badge">DOMAIN</div>
+    <div class="cat-name">其他基础能力</div>
+    <div class="cat-count" style="color:var(--red)">4 <small style="font-size:12px;opacity:.5">Feature</small></div>
+    <div class="cat-vp">6 VP · 5/18 ~ 5/20 完成</div>
+    <div class="cat-items"><span>Claude 协议对齐</span><span>用户渠道选择</span><span>cc-switch 导入</span><span>会话亲和增强</span></div>
+  </div>
+</div>
+
+<!-- ═══ Value Points Chart ═══ -->
+<div class="sec-title">各域价值点分布</div>
+<div class="vp-bar-wrap">
+  <div class="vp-row"><div class="vp-label">Skill 市场</div><div class="vp-track"><div class="vp-fill c7" style="width:100%">16 VP</div></div></div>
+  <div class="vp-row"><div class="vp-label">配额监控恢复</div><div class="vp-track"><div class="vp-fill c3" style="width:93.7%">15 VP</div></div></div>
+  <div class="vp-row"><div class="vp-label">请求观测健康</div><div class="vp-track"><div class="vp-fill c9" style="width:75%">12 VP</div></div></div>
+  <div class="vp-row"><div class="vp-label">MCP 代理平台</div><div class="vp-track"><div class="vp-fill c8" style="width:68.7%">11 VP</div></div></div>
+  <div class="vp-row"><div class="vp-label">用量报表</div><div class="vp-track"><div class="vp-fill c5" style="width:68.7%">11 VP</div></div></div>
+  <div class="vp-row"><div class="vp-label">模型广场</div><div class="vp-track"><div class="vp-fill c6" style="width:62.5%">10 VP</div></div></div>
+  <div class="vp-row"><div class="vp-label">渠道路由</div><div class="vp-track"><div class="vp-fill c1" style="width:50%">8 VP</div></div></div>
+  <div class="vp-row"><div class="vp-label">降级 Rate Limit</div><div class="vp-track"><div class="vp-fill c4" style="width:43.7%">7 VP</div></div></div>
+  <div class="vp-row"><div class="vp-label">并发监控</div><div class="vp-track"><div class="vp-fill c2" style="width:37.5%">6 VP</div></div></div>
+  <div class="vp-row"><div class="vp-label">其他基础</div><div class="vp-track"><div class="vp-fill c10" style="width:37.5%">6 VP</div></div></div>
+</div>
+
+<!-- ═══ Gantt ═══ -->
+<div class="sec-title">交付甘特图 — 按功能域分组</div>
+<div class="gantt" id="gantt">
+  <div class="gantt-hd">
+    <div class="gantt-label-hd">功能域 / Feature</div>
+    <div class="gantt-dates" id="gantt-dates"></div>
+  </div>
+  <div id="gantt-body"></div>
+</div>
+<div class="gantt-density">
+  <div class="density-title">每日交付密度</div>
+  <div class="density-row" id="density-chart"></div>
+</div>
+<div class="gantt-tooltip" id="gantt-tooltip"></div>
+
+<!-- ═══ Detail Table ═══ -->
+<div class="sec-title">完整 Feature 清单</div>
+<div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
+<table class="detail-table">
+<thead><tr><th style="width:6%">日期</th><th style="width:32%">Feature</th><th style="width:12%">ID</th><th style="width:6%">大小</th><th style="width:6%">VP</th><th style="width:8%">状态</th><th>归属</th></tr></thead>
+<tbody id="detail-body"></tbody>
+</table>
+</div>
+
+<!-- ═══ Pending ═══ -->
+<div class="sec-title">待开始 Feature（3 项）</div>
+<div class="pending-grid">
+  <div class="pending-card">
+    <div class="p-name">智谱 GLM Coding Plan 渠道支持</div>
+    <div class="p-id">feat-glm-coding-plan</div>
+    <div class="p-meta">优先级 70 · Size M · 2 VP · 无前置依赖</div>
+    <div class="pending-status ready"><div style="width:5px;height:5px;border-radius:50%;background:var(--blue)"></div>Ready — 可立即开始</div>
+  </div>
+  <div class="pending-card">
+    <div class="p-name">MCP 代理平台</div>
+    <div class="p-id">feat-mcp-proxy</div>
+    <div class="p-meta">优先级 75 · Size L · 3 VP · 依赖 feat-glm-coding-plan</div>
+    <div class="pending-status waiting"><div style="width:5px;height:5px;border-radius:50%;background:var(--yellow)"></div>Blocked — 等待 GLM Coding Plan</div>
+    <div style="margin-top:6px;font-size:9px;color:var(--text3)">子 Feature: feat-mcp-server ✓ · feat-mcp-upstream-proxy ✓ · feat-mcp-management ✓</div>
+  </div>
+  <div class="pending-card">
+    <div class="p-name">Skill 市场 UI 优化</div>
+    <div class="p-id">feat-skill-market-ux</div>
+    <div class="p-meta">优先级 70 · Size L · 4 VP · 依赖 feat-skill-version-upgrade ✓</div>
+    <div class="pending-status ready"><div style="width:5px;height:5px;border-radius:50%;background:var(--blue)"></div>Ready — 依赖已满足</div>
+    <div style="margin-top:6px;font-size:9px;color:var(--text3)">子 Feature: feat-skill-md-render ✓ · feat-skill-batch-upload ✓ · feat-skill-display-edit ✓</div>
+  </div>
+</div>
+
+</div><!-- /container -->
+
+<div class="footer">
+  AIHub Feature 结项报告 · 2026-05-18 ~ 2026-06-02 · 16 自然日 · 53 Feature 完成 · 112 VP 交付
+</div>
+
+<script>
+var features=[
+  // date, name, id, size, vp, domain
+  ['5/18','Admin 用量报表','feat-usage-report','M',2,'用量报表'],
+  ['5/18','模型广场','feat-model-marketplace','S',1,'模型广场'],
+  ['5/18','多渠道路由 (Split)','feat-channel-routing','L',8,'渠道路由'],
+  ['5/18','会话亲和路由','feat-channel-affinity','S',2,'渠道路由'],
+  ['5/18','渠道故障转移','feat-channel-failover','S',3,'渠道路由'],
+  ['5/18','智能负载均衡','feat-channel-smart-lb','S',3,'渠道路由'],
+  ['5/18','Anthropic 协议对齐','feat-claude-parity','M',2,'其他'],
+  ['5/19','并发追踪后端','feat-concurrency-tracker','S',1,'并发监控'],
+  ['5/19','模型广场并发对接','feat-concurrency-market','S',1,'并发监控'],
+  ['5/19','提供商配额查询 API','feat-provider-quota-api','S',2,'配额监控'],
+  ['5/19','定时刷新与缓存','feat-provider-quota-refresh','S',2,'配额监控'],
+  ['5/19','Channel 配额面板','feat-provider-quota-ui','S',2,'配额监控'],
+  ['5/19','模型广场平铺布局','feat-marketplace-flat-layout','M',3,'模型广场'],
+  ['5/19','上游错误透传','feat-error-passthrough','S',2,'请求观测'],
+  ['5/19','用量图表时间粒度','feat-usage-chart-granularity','M',2,'用量报表'],
+  ['5/19','用户渠道选择','feat-user-channel-select','M',2,'其他'],
+  ['5/19','模型卡片丰富化','feat-marketplace-card-enhance','S',2,'模型广场'],
+  ['5/19','用量报表优化','feat-usage-report-v2','S',2,'用量报表'],
+  ['5/19','门户页面增强 (Split)','feat-portal-pages-enhance','L',4,'模型广场'],
+  ['5/19','提供商配额监控 (Split)','feat-provider-quota-monitor','L',6,'配额监控'],
+  ['5/20','一键导入 cc-switch','feat-ccswitch-import','S',1,'其他'],
+  ['5/20','监控数据时序优化','feat-monitoring-timing','S',1,'请求观测'],
+  ['5/20','渠道并发监控 (Split)','feat-channel-concurrency','L',3,'并发监控'],
+  ['5/20','日志渠道信息可见','feat-log-channel-visibility','S',1,'并发监控'],
+  ['5/25','429 Rate Limit 自动禁用恢复','feat-rate-limit-exhaustion','S',2,'降级恢复'],
+  ['5/25','模型降级策略','feat-model-downgrade-strategy','M',2,'降级恢复'],
+  ['5/25','MiniMax 配额耗尽联动','feat-minimax-quota-exhaustion','S',1,'配额监控'],
+  ['5/25','请求计时日志','feat-request-timing-log','M',2,'请求观测'],
+  ['5/25','MiniMax Limit 显示逻辑','feat-minimax-limit-display','S',2,'配额监控'],
+  ['5/25','用户级用量统计','feat-user-usage-report','S',1,'用量报表'],
+  ['5/25','配额耗尽自动禁用恢复','feat-quota-exhaustion-recovery','M',2,'配额监控'],
+  ['5/26','会话亲和增强 (Split)','feat-affinity-auto-bind','M',2,'其他'],
+  ['5/26','请求调试探针','feat-affinity-debug-probe','S',1,'其他'],
+  ['5/26','Fallback 自动亲和','feat-affinity-fallback','S',1,'其他'],
+  ['5/26','当日24小时用量图表','feat-daily-hourly-chart','S',2,'用量报表'],
+  ['5/27','Skill Marketplace','feat-skill-marketplace','M',4,'Skill'],
+  ['5/27','兜底模型全局降级','feat-fallback-model','M',2,'降级恢复'],
+  ['5/28','Skill V2 重构 (Split)','feat-skill-marketplace-v2','L',4,'Skill'],
+  ['5/28','项目组织协作权限','feat-skill-project-org','M',2,'Skill'],
+  ['5/28','多格式 Skill 智能上传','feat-skill-multi-format','M',2,'Skill'],
+  ['5/28','Skill 版本升级归档','feat-skill-version-upgrade','M',2,'Skill'],
+  ['5/28','Skill Markdown 渲染','feat-skill-md-render','S',1,'Skill'],
+  ['5/28','Skill 批量上传拖拽','feat-skill-batch-upload','S',1,'Skill'],
+  ['5/28','Skill 展示模式编辑','feat-skill-display-edit','S',1,'Skill'],
+  ['5/28','渠道跳过健康探针','feat-channel-skip-health-check','S',1,'请求观测'],
+  ['5/28','计时日志展示优化','feat-timing-display-optimize','M',2,'请求观测'],
+  ['5/28','24h 图表交互优化','feat-hourly-chart-ux','S',2,'用量报表'],
+  ['5/28','健康状态前端展示','feat-health-status-ui','M',2,'请求观测'],
+  ['5/28','降级阈值限速窗口','feat-downgrade-limit-window','S',1,'降级恢复'],
+  ['5/29','每日请求次数限额','feat-daily-request-limit','M',2,'请求观测'],
+  ['6/01','MCP Server 协议端点','feat-mcp-server','S',1,'MCP'],
+  ['6/01','上游 MCP 代理中转','feat-mcp-upstream-proxy','S',1,'MCP'],
+  ['6/01','MCP 供应商管理界面','feat-mcp-management','S',1,'MCP'],
+  ['6/01','内置视觉理解 MCP Tool','feat-mcp-vision-tool','M',2,'MCP'],
+  ['6/02','MCP 页面增强','feat-mcp-pages-enhance','M',3,'MCP'],
+  ['6/02','Docker 内置 MCP 服务','feat-docker-minimax-mcp','M',2,'MCP'],
+  ['6/02','MiniMax API 兼容修复','feat-minimax-limit-api-compat','S',1,'请求观测'],
+];
+
+// Gantt chart data
+var TOTAL_DAYS=16;
+var DAY_START=new Date(2026,4,18); // May 18
+var dateLabels=['5/18','5/19','5/20','5/21','5/22','5/23','5/24','5/25','5/26','5/27','5/28','5/29','5/30','5/31','6/01','6/02'];
+var dateMap={'5/18':0,'5/19':1,'5/20':2,'5/25':7,'5/26':8,'5/27':9,'5/28':10,'5/29':11,'6/01':14,'6/02':15};
+
+var domainOrder=[
+  {name:'渠道路由与负载均衡',cls:'d1',key:'渠道路由'},
+  {name:'并发监控体系',cls:'d2',key:'并发监控'},
+  {name:'配额监控与耗尽恢复',cls:'d3',key:'配额监控'},
+  {name:'降级与 Rate Limit',cls:'d4',key:'降级恢复'},
+  {name:'用量报表与图表',cls:'d5',key:'用量报表'},
+  {name:'模型广场',cls:'d6',key:'模型广场'},
+  {name:'Skill 市场',cls:'d7',key:'Skill'},
+  {name:'MCP 代理平台',cls:'d8',key:'MCP'},
+  {name:'请求观测与健康',cls:'d9',key:'请求观测'},
+  {name:'其他基础能力',cls:'d10',key:'其他'},
+];
+
+var sizeToDays={S:1,M:2,L:3};
+
+function renderGantt(){
+  // Header dates
+  var hasItems={};
+  features.forEach(function(f){ hasItems[f[0]]=true; });
+  var dh='';
+  dateLabels.forEach(function(d){
+    var cls=hasItems[d]?' has-items':'';
+    var parts=d.split('/');
+    dh+='<div class="gantt-date'+cls+'">'+parts[0]+'/'+parts[1]+'</div>';
+  });
+  document.getElementById('gantt-dates').innerHTML=dh;
+
+  // Body rows
+  var bh='';
+  domainOrder.forEach(function(dom){
+    var domFeats=features.filter(function(f){return f[5]===dom.key});
+    if(!domFeats.length) return;
+
+    // Domain summary bar
+    var days=domFeats.map(function(f){return dateMap[f[0]]}).sort(function(a,b){return a-b});
+    var minD=days[0],maxD=days[days.length-1];
+    var vpSum=domFeats.reduce(function(s,f){return s+f[4]},0);
+    var left=(minD/TOTAL_DAYS*100);
+    var width=((maxD-minD+1)/TOTAL_DAYS*100);
+    var cntBg=dom.cls==='d1'?'rgba(124,58,237,.12)':dom.cls==='d2'?'rgba(37,99,235,.12)':dom.cls==='d3'?'rgba(8,145,178,.12)':dom.cls==='d4'?'rgba(234,88,12,.12)':dom.cls==='d5'?'rgba(5,150,105,.12)':dom.cls==='d6'?'rgba(217,119,6,.12)':dom.cls==='d7'?'rgba(219,39,119,.12)':dom.cls==='d8'?'rgba(13,148,136,.12)':dom.cls==='d9'?'rgba(101,163,13,.12)':'rgba(220,38,38,.12)';
+    var cntColor=dom.cls==='d1'?'var(--accent2)':dom.cls==='d2'?'var(--blue)':dom.cls==='d3'?'var(--cyan)':dom.cls==='d4'?'var(--orange)':dom.cls==='d5'?'var(--green)':dom.cls==='d6'?'var(--yellow)':dom.cls==='d7'?'var(--pink)':dom.cls==='d8'?'var(--teal)':dom.cls==='d9'?'var(--lime)':'var(--red)';
+    var dotColors={'d1':'var(--accent2)','d2':'var(--blue)','d3':'var(--cyan)','d4':'var(--orange)','d5':'var(--green)','d6':'var(--yellow)','d7':'var(--pink)','d8':'var(--teal)','d9':'var(--lime)','d10':'var(--red)'};
+
+    bh+='<div class="gantt-row domain">';
+    bh+='<div class="gantt-label"><span class="dot" style="background:'+dotColors[dom.cls]+'"></span>';
+    bh+='<span class="nm">'+dom.name+'</span>';
+    bh+='<span class="vp-sm">'+vpSum+' VP</span></div>';
+    bh+='<div class="gantt-track">';
+    bh+='<div class="gantt-bar domain-bar '+dom.cls+'" style="left:'+left+'%;width:'+width+'%">'+domFeats.length+' Feature</div>';
+    bh+='</div></div>';
+
+    // Individual features
+    domFeats.forEach(function(f){
+      var d=dateMap[f[0]];
+      var span=sizeToDays[f[3]]||1;
+      var rightPct=(d+1)/TOTAL_DAYS*100;
+      var widthPct=span/TOTAL_DAYS*100;
+      var fLeft=Math.max(0,rightPct-widthPct);
+      var fWidth=Math.min(widthPct,100-fLeft);
+      bh+='<div class="gantt-row">';
+      bh+='<div class="gantt-label" style="padding-left:32px"><span class="nm" style="font-size:9px;color:var(--text2)">'+f[1]+'</span>';
+      bh+='<span style="font-size:8px;margin-left:auto;color:var(--text3)">'+f[3]+'</span></div>';
+      bh+='<div class="gantt-track">';
+      bh+='<div class="gantt-bar '+dom.cls+'" style="left:'+fLeft+'%;width:'+fWidth+'%" title="'+f[1]+' · '+f[0]+' · '+f[3]+' · '+f[4]+'VP">'+f[4]+'VP</div>';
+      bh+='</div></div>';
+    });
+  });
+  document.getElementById('gantt-body').innerHTML=bh;
+}
+
+function renderDensity(){
+  var counts={};
+  features.forEach(function(f){
+    var d=dateMap[f[0]];
+    counts[d]=(counts[d]||0)+1;
+  });
+  var maxCount=Math.max.apply(null,Object.values(counts).concat([1]));
+  var h='';
+  dateLabels.forEach(function(label){
+    var idx=dateLabels.indexOf(label);
+    var count=counts[idx]||0;
+    var height=count>0?Math.max(8,(count/maxCount)*100):2;
+    var opacity=count>0?1:.3;
+    h+='<div class="density-col">';
+    h+='<div class="density-bar-wrap"><div class="density-bar" style="height:'+height+'%;opacity:'+opacity+'"></div></div>';
+    h+='<div class="density-label" style="'+(count>0?'color:var(--text);font-weight:800':'')+'">'+label.replace('/','/')+'</div>';
+    h+='</div>';
+  });
+  document.getElementById('density-chart').innerHTML=h;
+}
+
+renderGantt();
+renderDensity();
+
+function renderDetail(){
+  var h='';
+  features.forEach(function(f){
+    var szCls=f[3]==='S'?'ts':f[3]==='M'?'tm':'tl';
+    h+='<tr>';
+    h+='<td style="font-weight:600;font-size:10px;color:var(--text3);white-space:nowrap">'+f[0]+'</td>';
+    h+='<td><b>'+f[1]+'</b></td>';
+    h+='<td style="font-family:monospace;font-size:10px;color:var(--text3)">'+f[2]+'</td>';
+    h+='<td><span class="tag-sm t'+szCls[1]+'">'+f[3]+'</span></td>';
+    h+='<td style="font-weight:700">'+f[4]+'</td>';
+    h+='<td><span class="status-done">Done</span></td>';
+    h+='<td style="font-size:10px">'+f[5]+'</td>';
+    h+='</tr>';
+  });
+  document.getElementById('detail-body').innerHTML=h;
+}
+
+renderGantt();
+renderDensity();
+renderDetail();
+
+// Theme
+(function(){var saved=localStorage.getItem('aihub-theme');if(saved)document.documentElement.setAttribute('data-theme',saved);updateLabel()})();
+function toggleTheme(){var html=document.documentElement;var next=html.getAttribute('data-theme')==='light'?'dark':'light';html.setAttribute('data-theme',next);localStorage.setItem('aihub-theme',next);updateLabel()}
+function updateLabel(){var dark=document.documentElement.getAttribute('data-theme')==='dark';document.getElementById('theme-label').textContent=dark?'Dark':'Light'}
+</script>
+</body>
+</html>

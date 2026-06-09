@@ -3,9 +3,9 @@
 
 # 项目信息
 project:
-  name: enterprise-ai-control-plane
-  display_name: 企业级 AI 控制平台
-  version: 0.1.0
+  name: modelhub
+  display_name: ModelHub
+  version: 1.0.0
   main_branch: main
   repo_path: .
 

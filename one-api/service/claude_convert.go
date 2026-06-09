@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/songquanpeng/one-api/common/random"
-	relaymodel "github.com/songquanpeng/one-api/relay/model"
+	"github.com/yzw/aihub/common/random"
+	relaymodel "github.com/yzw/aihub/relay/model"
 )
 
 // ClaudeMessagesRequest represents the Claude Messages API request format.

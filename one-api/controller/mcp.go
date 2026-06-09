@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/songquanpeng/one-api/common/logger"
-	mcpPkg "github.com/songquanpeng/one-api/mcp"
-	"github.com/songquanpeng/one-api/model"
+	"github.com/yzw/aihub/common/logger"
+	mcpPkg "github.com/yzw/aihub/mcp"
+	"github.com/yzw/aihub/model"
 )
 
 // GetAllMCPProviders returns all MCP providers.

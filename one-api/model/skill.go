@@ -3,8 +3,8 @@ package model
 import (
 	"errors"
 
-	"github.com/songquanpeng/one-api/common"
-	"github.com/songquanpeng/one-api/common/helper"
+	"github.com/yzw/aihub/common"
+	"github.com/yzw/aihub/common/helper"
 	"gorm.io/gorm"
 )
 

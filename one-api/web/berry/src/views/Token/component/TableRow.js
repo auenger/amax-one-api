@@ -95,7 +95,7 @@ export default function TokensTableRow({ item, manageToken, handleOpenModal, set
 
   const handleCcSwitchImport = () => {
     const serverAddress = window.location.origin;
-    const systemName = siteInfo?.system_name || 'One API';
+    const systemName = siteInfo?.system_name || 'ModelHub';
     const providerName = `${systemName} · ${item.name}`;
     const url = `ccswitch://v1/import?resource=provider&app=claude`
       + `&name=${encodeURIComponent(providerName)}`

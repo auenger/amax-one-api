@@ -466,6 +466,7 @@ code{
     <a href="#model-market">模型广场</a>
     <a href="#tokens">令牌</a>
     <a href="#api">API</a>
+    <a href="#mcp">MCP</a>
     <a href="#admin">管理</a>
     <a href="#faq">FAQ</a>
   </nav>
@@ -478,19 +479,20 @@ code{
 <!-- ============================================================ -->
 <section class="hero" id="top">
   <div class="inner">
-    <div class="kicker" data-reveal>AIHub 使用手册 <em>· v1.0</em></div>
+    <div class="kicker" data-reveal>AIHub 使用手册 <em>· v2.0</em></div>
     <h1 data-reveal>
       一套平台<br/>
       <span class="ul">38+</span> 供应商<br/>
-      双协议<span class="accent-text">兼容</span>
+      三协议<span class="accent-text">兼容</span>
     </h1>
     <p class="lead" data-reveal>
-      AIHub 是企业级 AI 模型统一管理平台。只需替换 API 地址，即可通过
-      <b>OpenAI</b> 或 <b>Anthropic</b> 协议接入 38+ 供应商。
+      AIHub 是企业级 AI 模型统一管理平台。通过
+      <b>OpenAI</b>、<b>Anthropic</b> 或 <b>MCP</b> 协议接入 38+ 供应商，
+      内置工具代理与视觉理解，让你的 AI 客户端能力倍增。
     </p>
     <div class="hero-tags" data-reveal>
       <div class="ct"><b>38+</b><span>供应商</span></div>
-      <div class="ct"><b>双协议</b><span>OpenAI &amp; Anthropic</span></div>
+      <div class="ct"><b>三协议</b><span>OpenAI · Anthropic · MCP</span></div>
       <div class="ct"><b>4 级</b><span>角色权限</span></div>
       <div class="ct"><b>实时</b><span>并发 &amp; 配额监控</span></div>
     </div>
@@ -584,31 +586,25 @@ code{
     <div class="arch" data-reveal>
       <div class="arch-row">
         <div class="arch-box" style="background:var(--surface-2);color:var(--text);border:1px solid var(--line)">
-          <strong>&#128187; 客户端</strong><br><small>curl / SDK / 应用</small>
+          <strong>&#128187; 客户端</strong><br><small>curl / SDK / Claude Code</small>
         </div>
       </div>
       <div class="arch-arrow"><div class="aline"></div><div class="ahead"></div></div>
       <div class="arch-row">
         <div class="arch-box" style="background:var(--accent);color:var(--bg)">
-          <strong>Gin Router</strong><br><small>/v1/* · /api/*</small>
-        </div>
-      </div>
-      <div class="arch-arrow"><div class="aline"></div><div class="ahead"></div></div>
-      <div class="arch-row">
-        <div class="arch-box" style="background:var(--surface-2);color:var(--text);border:1px solid var(--line)">
-          <strong>&#128274; Auth</strong><small> Token 校验 · 角色鉴权</small>
+          <strong>&#128274; 身份验证</strong><br><small>Token 校验 · 角色鉴权</small>
         </div>
       </div>
       <div class="arch-arrow"><div class="aline"></div><div class="ahead"></div></div>
       <div class="arch-row">
         <div class="arch-box" style="background:var(--surface-2);color:var(--loss);border:1px solid rgba(217,146,110,.3)">
-          <strong>&#9878; Distributor</strong><small> 加权 · 亲和性 · 故障转移</small>
+          <strong>&#9878; 智能路由</strong><br><small>加权 · 亲和性 · 故障转移</small>
         </div>
       </div>
       <div class="arch-arrow"><div class="aline"></div><div class="ahead"></div></div>
       <div class="arch-row">
         <div class="arch-box" style="background:var(--surface-2);color:var(--accent);border:1px solid rgba(207,244,77,.3)">
-          <strong>&#9889; Relay Adaptor</strong><small> 38 供应商协议适配</small>
+          <strong>&#9889; 协议适配</strong><br><small>OpenAI · Anthropic · MCP</small>
         </div>
       </div>
       <div class="arch-arrow"><div class="aline"></div><div class="ahead"></div></div>
@@ -622,14 +618,6 @@ code{
         <div class="arch-box" style="background:#6a1b9a;color:#fff"><small>阿里</small></div>
         <div class="arch-box" style="background:#333;color:var(--text-2)"><small>...</small></div>
       </div>
-    </div>
-
-    <div class="spec" data-reveal>
-      <div class="srow"><dt>Auth</dt><dd><code>middleware/auth.go</code> — Token 校验，4 级角色权限控制</dd></div>
-      <div class="srow"><dt>Distributor</dt><dd><code>middleware/distributor.go</code> — 加权随机选择渠道，支持亲和性和故障转移</dd></div>
-      <div class="srow"><dt>Relay</dt><dd><code>relay/adaptor/</code> — 38 个供应商协议适配，支持 Streaming</dd></div>
-      <div class="srow"><dt>Concurrency</dt><dd><code>monitor/concurrency.go</code> — Redis 实时计数，REST API 查询</dd></div>
-      <div class="srow key"><dt>Quota</dt><dd><code>model/quota.go</code> — 6 供应商配额适配 + Redis 缓存</dd></div>
     </div>
   </div>
 </section>
@@ -980,6 +968,119 @@ console.log(res.choices[0].message.content);</pre>
 </section>
 
 <!-- ============================================================ -->
+<!-- MCP PROXY PLATFORM                                            -->
+<!-- ============================================================ -->
+<section class="section" id="mcp">
+  <div class="inner">
+    <div class="section-kicker" data-reveal>// MCP 代理平台 <em>· MCP PROXY</em></div>
+    <h2 data-reveal>MCP 工具统一网关，<b>全链路管理</b></h2>
+    <p class="lead">
+      AIHub 完整支持 <b>MCP (Model Context Protocol)</b> 协议。对接上游供应商工具、内置视觉理解能力，
+      所有用户可通过 Claude Code、Cursor 等客户端直接调用平台 MCP 工具。
+    </p>
+
+    <div class="cards" data-reveal>
+      <div class="card">
+        <div class="tab">SERVER</div>
+        <h3>MCP 服务端点</h3>
+        <p>Streamable HTTP + SSE 双传输协议。<b>Token 鉴权</b>，按用户绑定会话，兼容主流 MCP 客户端。</p>
+      </div>
+      <div class="card">
+        <div class="tab">PROXY</div>
+        <h3>上游供应商代理</h3>
+        <p>对接 Minimax、智谱等外部 MCP 供应商。<b>工具自动同步</b>，前缀路由转发，断线自动重连。</p>
+      </div>
+      <div class="card">
+        <div class="tab">BUILTIN</div>
+        <h3>内置视觉理解</h3>
+        <p><b>vision_analyze</b> 工具，复用渠道多模态能力。选择渠道和模型即可使用，无需额外部署。</p>
+      </div>
+    </div>
+
+    <div class="flow" data-reveal>
+      <div class="flow-node surface">Claude Code / Cursor</div>
+      <span class="flow-arrow">&#8594;</span>
+      <div class="flow-node primary">AIHub MCP Gateway</div>
+      <span class="flow-arrow">&#8594;</span>
+      <div class="flow-node outline">工具路由</div>
+      <span class="flow-arrow">&#8594;</span>
+      <div class="flow-node dim">上游 / 内置工具</div>
+    </div>
+
+    <h3 style="margin-top:40px;font-size:1.15rem" data-reveal>配置 Claude Code</h3>
+    <p class="lead" style="margin-top:8px">在 Claude Code 配置文件 <code>.claude/settings.json</code> 中添加 MCP Server：</p>
+
+    <div class="code-block" data-reveal>
+      <div class="code-head"><span class="dot"></span>claude settings — Streamable HTTP</div>
+      <pre>{
+  <span class="k">"mcpServers"</span>: {
+    <span class="s">"aihub"</span>: {
+      <span class="k">"type"</span>: <span class="s">"streamable-http"</span>,
+      <span class="k">"url"</span>: <span class="s">"https://your-aihub-host/mcp/v1/message"</span>,
+      <span class="k">"headers"</span>: {
+        <span class="k">"Authorization"</span>: <span class="s">"Bearer sk-your-token"</span>
+      }
+    }
+  }
+}</pre>
+    </div>
+
+    <div class="code-block" style="margin-top:12px" data-reveal>
+      <div class="code-head"><span class="dot"></span>claude settings — SSE</div>
+      <pre>{
+  <span class="k">"mcpServers"</span>: {
+    <span class="s">"aihub"</span>: {
+      <span class="k">"type"</span>: <span class="s">"sse"</span>,
+      <span class="k">"url"</span>: <span class="s">"https://your-aihub-host/mcp/v1/sse"</span>,
+      <span class="k">"headers"</span>: {
+        <span class="k">"Authorization"</span>: <span class="s">"Bearer sk-your-token"</span>
+      }
+    }
+  }
+}</pre>
+    </div>
+
+    <div class="abilities" style="margin-top:36px" data-reveal>
+      <div class="ab">
+        <div class="abn">TOOLS</div>
+        <div class="abt"><b>工具全局列表</b><span>所有用户可浏览全部 MCP 工具 · 名称搜索 · 参数 Schema 查看</span></div>
+      </div>
+      <div class="ab">
+        <div class="abn">DETAILS</div>
+        <div class="abt"><b>调用明细追踪</b><span>谁调了什么工具 · 调用时间 · 耗时 · 状态 · 管理员可查</span></div>
+      </div>
+      <div class="ab">
+        <div class="abn">PROVIDERS</div>
+        <div class="abt"><b>供应商管理</b><span>可视化 CRUD · 工具列表查看 · 手动同步 · 状态监控</span></div>
+      </div>
+      <div class="ab">
+        <div class="abn">META</div>
+        <div class="abt"><b>Model 标记管理</b><span>多模态标记 · 从渠道自动扫描 · 批量更新</span></div>
+      </div>
+      <div class="ab">
+        <div class="abn">DOCKER</div>
+        <div class="abt"><b>Docker 开箱即用</b><span>内置 Minimax + 智谱 MCP 服务 · 设 API Key 自动启动</span></div>
+      </div>
+      <div class="ab">
+        <div class="abn">CONFIG</div>
+        <div class="abt"><b>Server 配置页</b><span>动态 URL · Claude Code / Cursor 配置指引 · 一键复制</span></div>
+      </div>
+    </div>
+
+    <div class="spec" data-reveal>
+      <div class="srow"><dt>传输</dt><dd><b>Streamable HTTP</b>：POST <code>/mcp/v1/message</code> — 推荐，单连接高效率</dd></div>
+      <div class="srow"><dt>传输</dt><dd><b>SSE</b>：GET <code>/mcp/v1/sse</code> + POST 消息 — 兼容旧客户端</dd></div>
+      <div class="srow key"><dt>鉴权</dt><dd>使用 AIHub 令牌 (<code>sk-xxx</code>) 作为 Bearer Token，按用户绑定会话</dd></div>
+    </div>
+
+    <div class="callout" data-reveal>
+      架构 — AIHub 作为 MCP 网关，将 <span>上游供应商工具</span>（Minimax、智谱等）和 <span>内置工具</span>（视觉理解）统一暴露给客户端。
+      工具名前缀对应供应商，路由自动转发。
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
 <!-- USER & SETTINGS                                               -->
 <!-- ============================================================ -->
 <section class="section" id="admin">
@@ -1158,6 +1259,53 @@ console.log(res.choices[0].message.content);</pre>
       </div>
     </div>
 
+    <!-- MCP API -->
+    <h3 style="margin-top:36px;font-size:1.1rem" data-reveal>MCP API 参考</h3>
+
+    <div class="tbl" style="margin-top:16px" data-reveal>
+      <div class="tbl-head" style="grid-template-columns:80px 1fr 1fr 100px">
+        <span>方法</span><span>端点</span><span>说明</span><span>认证</span>
+      </div>
+      <div class="tbl-row" style="grid-template-columns:80px 1fr 1fr 100px">
+        <span><span class="method m-get">GET</span></span>
+        <span><code>/mcp/v1/sse</code></span><span>SSE 传输连接</span><span><span class="badge badge-all">Token</span></span>
+      </div>
+      <div class="tbl-row" style="grid-template-columns:80px 1fr 1fr 100px">
+        <span><span class="method m-post">POST</span></span>
+        <span><code>/mcp/v1/message</code></span><span>Streamable HTTP</span><span><span class="badge badge-all">Token</span></span>
+      </div>
+    </div>
+
+    <div class="tbl" style="margin-top:12px" data-reveal>
+      <div class="tbl-head" style="grid-template-columns:80px 1fr 1fr 100px">
+        <span>方法</span><span>端点</span><span>说明</span><span>认证</span>
+      </div>
+      <div class="tbl-row" style="grid-template-columns:80px 1fr 1fr 100px">
+        <span><span class="method m-get">GET</span></span>
+        <span><code>/api/mcp-tool/public/list</code></span><span>工具列表（所有用户）</span><span><span class="badge badge-all">User</span></span>
+      </div>
+      <div class="tbl-row" style="grid-template-columns:80px 1fr 1fr 100px">
+        <span><span class="method m-get">GET</span></span>
+        <span><code>/api/mcp-provider/list</code></span><span>供应商列表</span><span><span class="badge badge-admin">ADMIN</span></span>
+      </div>
+      <div class="tbl-row" style="grid-template-columns:80px 1fr 1fr 100px">
+        <span><span class="method m-post">POST</span></span>
+        <span><code>/api/mcp-provider/</code></span><span>创建供应商</span><span><span class="badge badge-admin">ADMIN</span></span>
+      </div>
+      <div class="tbl-row" style="grid-template-columns:80px 1fr 1fr 100px">
+        <span><span class="method m-post">POST</span></span>
+        <span><code>/api/mcp-provider/sync/:id</code></span><span>同步工具列表</span><span><span class="badge badge-admin">ADMIN</span></span>
+      </div>
+      <div class="tbl-row" style="grid-template-columns:80px 1fr 1fr 100px">
+        <span><span class="method m-get">GET</span></span>
+        <span><code>/api/mcp-stats/logs</code></span><span>调用明细</span><span><span class="badge badge-admin">ADMIN</span></span>
+      </div>
+      <div class="tbl-row" style="grid-template-columns:80px 1fr 1fr 100px">
+        <span><span class="method m-get">GET</span></span>
+        <span><code>/api/model-meta/</code></span><span>Model 标记列表</span><span><span class="badge badge-admin">ADMIN</span></span>
+      </div>
+    </div>
+
     <div class="callout" data-reveal>
       通用响应 — <code>{ success: true, message: "描述", data: ... }</code>
       <br>分页 — <code>?p=页码&amp;page_size=每页条数</code>
@@ -1220,6 +1368,28 @@ console.log(res.choices[0].message.content);</pre>
           下载地址：<a href="https://ccswitch.io" style="color:var(--accent)">ccswitch.io</a>
         </div></div>
       </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)"><span class="qn">Q8</span>如何使用 MCP 功能？</div>
+        <div class="faq-a"><div class="faq-a-inner">
+          AIHub 内置 MCP Server，支持 Streamable HTTP 和 SSE 两种传输方式。
+          在 MCP 配置页获取连接地址和令牌，将配置添加到 Claude Code 的 <code>.claude/settings.json</code> 中即可使用。
+          普通用户可在工具列表页浏览所有可用 MCP 工具。
+        </div></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)"><span class="qn">Q9</span>MCP 内置视觉理解是什么？</div>
+        <div class="faq-a"><div class="faq-a-inner">
+          平台内置 <b>vision_analyze</b> 工具，复用已配置渠道的多模态模型能力（如 GPT-4o、Claude 等）。
+          通过 MCP 协议调用时无需额外部署视觉服务。管理员可选择使用哪个渠道和模型来处理视觉请求。
+        </div></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)"><span class="qn">Q10</span>MiniMax 配额显示不正确？</div>
+        <div class="faq-a"><div class="faq-a-inner">
+          确保平台已更新到最新版本。MiniMax 近期更新了配额 API，新增 <code>remaining_percent</code> 和 <code>remains_time</code> 字段，
+          旧版平台可能使用已失效的 <code>total_count</code> 字段计算配额。更新后 5h 窗口和周窗口的配额追踪将恢复准确。
+        </div></div>
+      </div>
     </div>
   </div>
 </section>
@@ -1229,7 +1399,7 @@ console.log(res.choices[0].message.content);</pre>
 <!-- ============================================================ -->
 <footer class="footer">
   <div class="inner">
-    <p>AIHub 使用手册 v1.0 — 基于 <b>one-api</b> 深度二开 · 生成于 2026-05-21</p>
+    <p>AIHub 使用手册 v2.0 — 基于 ModelHub 独立开发 · 更新于 2026-06-02</p>
   </div>
 </footer>
 

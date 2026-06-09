@@ -2,8 +2,8 @@ package client
 
 import (
 	"fmt"
-	"github.com/songquanpeng/one-api/common/config"
-	"github.com/songquanpeng/one-api/common/logger"
+	"github.com/yzw/aihub/common/config"
+	"github.com/yzw/aihub/common/logger"
 	"net/http"
 	"net/url"
 	"time"

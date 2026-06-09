@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/songquanpeng/one-api/model"
+	"github.com/yzw/aihub/model"
 )
 
 func GetUsageReport(c *gin.Context) {

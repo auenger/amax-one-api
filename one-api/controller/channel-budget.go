@@ -5,7 +5,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/songquanpeng/one-api/model"
+	"github.com/yzw/aihub/model"
 )
 
 // GetChannelBudget returns the budget information for a channel.
