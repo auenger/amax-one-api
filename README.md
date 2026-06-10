@@ -6,7 +6,7 @@
 
 ```
 ┌──────────────────────────────────┐
-│  Berry 前端 (React + MUI 5)       │  管理后台 / 模型广场 / 用量报表
+│  前端 (React + MUI 5)            │  管理后台 / 模型广场 / 用量报表
 │  嵌入 Go binary (go:embed)        │
 └────────────┬─────────────────────┘
              │ REST API (/api/*)
@@ -47,17 +47,17 @@ ModelHub 运行在 `http://localhost:3000`，默认 root 密码: `123456`（生�
 docker compose up -d redis db
 
 # 2. 一键构建并运行（推荐）
-cd one-api && ./rebuild.sh && ./bin/aihub
+cd aihub && ./rebuild.sh && ./bin/aihub
 
 # 3. 前端开发（热更新）
-cd one-api/web/berry && npm start
+cd aihub/web/web && npm start
 ```
 
 ## 项目结构
 
 ```
 modelhub/
-├── one-api/                    # 核心引擎 (Go + Gin)
+├── aihub/                      # 核心引擎 (Go + Gin)
 │   ├── controller/             # HTTP 处理器
 │   │   ├── channel.go          #   Channel CRUD + 预算
 │   │   ├── channel-quota.go    #   配额查询 API
@@ -87,9 +87,9 @@ modelhub/
 │   ├── router/                 # 路由注册
 │   ├── common/                 # 通用工具
 │   └── web/                    # 前端
-│       ├── berry/              #   Berry (MUI 5, 唯一前端)
+│       ├── web/                #   前端源码 (MUI 5, 唯一前端)
 │       └── build/              #   构建产物 (Go embed 目标)
-├── docker-compose.yml          # MySQL + Redis + aihub
+├── docker-compose.yml          # PostgreSQL + Redis + aihub
 ├── features/                   # Feature 工作流归档
 ├── feature-workflow/           # Feature 配置
 └── docs/                       # 项目文档
@@ -117,7 +117,7 @@ modelhub/
 | 层       | 技术                                   |
 | -------- | -------------------------------------- |
 | 引擎     | Go + Gin                               |
-| 前端     | React + MUI 5 (Berry 主题)            |
+| 前端     | React + MUI 5                         |
 | 数据库   | PostgreSQL 16 (生产) / SQLite (开发)   |
 | 缓存     | Redis 7                                |
 | 部署     | Docker Compose                         |
@@ -125,12 +125,12 @@ modelhub/
 ## 本地构建
 
 ```bash
-cd one-api && ./rebuild.sh   # 前端构建 + 产物拷贝 + Go 编译，三步合一
-./bin/aihub                  # 启动服务
+cd aihub && ./rebuild.sh   # 前端构建 + 产物拷贝 + Go 编译，三步合一
+./bin/aihub                # 启动服务
 ```
 
 关键点：
-- 前端使用 Berry 主题 (`web/berry/`)，MUI 5 组件库
+- 前端使用 MUI 5 (`web/web/`)，MUI 5 组件库
 - `go:embed` 编译时嵌入前端产物，前端改动后必须重新编译
 - `rebuild.sh` 自动处理构建步骤（`npm run build` → 拷贝产物 → `go build`）
 

@@ -1,0 +1,173 @@
+// Modern Indigo-Teal theme palette for ModelHub
+
+// paper & background
+$paper: #ffffff;
+
+// primary — Modern Indigo
+$primaryLight: #eef2ff;
+$primaryMain: #6366f1;
+$primaryDark: #4f46e5;
+$primary200: #a5b4fc;
+$primary800: #3730a3;
+
+// secondary — Modern Teal
+$secondaryLight: #f0fdfa;
+$secondaryMain: #14b8a6;
+$secondaryDark: #0d9488;
+$secondary200: #99f6e4;
+$secondary800: #115e59;
+
+// success — Refined Green
+$successLight: #dcfce7;
+$success200: #86efac;
+$successMain: #22c55e;
+$successDark: #16a34a;
+
+// error — Modern Red
+$errorLight: #fee2e2;
+$errorMain: #ef4444;
+$errorDark: #dc2626;
+
+// orange — Warm Orange
+$orangeLight: #fff7ed;
+$orangeMain: #f97316;
+$orangeDark: #ea580c;
+
+// warning — Refined Amber
+$warningLight: #fef9c3;
+$warningMain: #fbbf24;
+$warningDark: #f59e0b;
+
+// grey — Refined Slate tones
+$grey50: #f8fafc;
+$grey100: #f1f5f9;
+$grey200: #e2e8f0;
+$grey300: #cbd5e1;
+$grey400: #94a3b8;
+$grey500: #64748b;
+$grey600: #475569;
+$grey700: #334155;
+$grey900: #0f172a;
+
+// table
+$tableBackground: #f8fafc;
+$tableBorderBottom: #f1f5f9;
+
+// ==============================|| DARK THEME VARIANTS ||============================== //
+
+// paper & background — Softer dark
+$darkBackground: #1e293b;
+$darkPaper: #0f172a;
+$darkDivider: rgba(148, 163, 184, 0.18);
+$darkSelectedBack: rgba(99, 102, 241, 0.15);
+
+// dark levels
+$darkLevel1: #334155;
+$darkLevel2: #1e293b;
+
+// primary dark
+$darkPrimaryLight: #eef2ff;
+$darkPrimaryMain: #818cf8;
+$darkPrimaryDark: #6366f1;
+$darkPrimary200: #a5b4fc;
+$darkPrimary800: #4f46e5;
+
+// secondary dark
+$darkSecondaryLight: #ccfbf1;
+$darkSecondaryMain: #2dd4bf;
+$darkSecondaryDark: #14b8a6;
+$darkSecondary200: #99f6e4;
+$darkSecondary800: #0f766e;
+
+// text variants — Improved contrast
+$darkTextTitle: #f1f5f9;
+$darkTextPrimary: #cbd5e1;
+$darkTextSecondary: #94a3b8;
+
+// ==============================|| JAVASCRIPT EXPORT ||============================== //
+
+:export {
+  // paper & background
+  paper: $paper;
+
+  // primary
+  primaryLight: $primaryLight;
+  primary200: $primary200;
+  primaryMain: $primaryMain;
+  primaryDark: $primaryDark;
+  primary800: $primary800;
+
+  // secondary
+  secondaryLight: $secondaryLight;
+  secondary200: $secondary200;
+  secondaryMain: $secondaryMain;
+  secondaryDark: $secondaryDark;
+  secondary800: $secondary800;
+
+  // success
+  successLight: $successLight;
+  success200: $success200;
+  successMain: $successMain;
+  successDark: $successDark;
+
+  // error
+  errorLight: $errorLight;
+  errorMain: $errorMain;
+  errorDark: $errorDark;
+
+  // orange
+  orangeLight: $orangeLight;
+  orangeMain: $orangeMain;
+  orangeDark: $orangeDark;
+
+  // warning
+  warningLight: $warningLight;
+  warningMain: $warningMain;
+  warningDark: $warningDark;
+
+  // grey
+  grey50: $grey50;
+  grey100: $grey100;
+  grey200: $grey200;
+  grey300: $grey300;
+  grey400: $grey400;
+  grey500: $grey500;
+  grey600: $grey600;
+  grey700: $grey700;
+  grey900: $grey900;
+
+  // ==============================|| DARK THEME VARIANTS ||============================== //
+
+  // paper & background
+  darkPaper: $darkPaper;
+  darkBackground: $darkBackground;
+
+  // dark levels
+  darkLevel1: $darkLevel1;
+  darkLevel2: $darkLevel2;
+
+  // text variants
+  darkTextTitle: $darkTextTitle;
+  darkTextPrimary: $darkTextPrimary;
+  darkTextSecondary: $darkTextSecondary;
+
+  // primary dark
+  darkPrimaryLight: $darkPrimaryLight;
+  darkPrimaryMain: $darkPrimaryMain;
+  darkPrimaryDark: $darkPrimaryDark;
+  darkPrimary200: $darkPrimary200;
+  darkPrimary800: $darkPrimary800;
+
+  // secondary dark
+  darkSecondaryLight: $darkSecondaryLight;
+  darkSecondaryMain: $darkSecondaryMain;
+  darkSecondaryDark: $darkSecondaryDark;
+  darkSecondary200: $darkSecondary200;
+  darkSecondary800: $darkSecondary800;
+
+  // shared dark
+  darkDivider: $darkDivider;
+  darkSelectedBack: $darkSelectedBack;
+  tableBackground: $tableBackground;
+  tableBorderBottom: $tableBorderBottom;
+}

@@ -42,8 +42,8 @@ packages/database/prisma/migrations/
 docker-data/
 .env
 
-# one-api build artifacts
-one-api/one-api
-one-api/__debug_bin*
-one-api/data/
-one-api/bin/
+# aihub build artifacts
+aihub/aihub
+aihub/__debug_bin*
+aihub/data/
+aihub/bin/

@@ -40,7 +40,7 @@ services:
 
   aihub:
     build:
-      context: ./one-api
+      context: ./aihub
       dockerfile: Dockerfile
     container_name: aihub
     restart: unless-stopped
@@ -57,7 +57,7 @@ services:
       RETRY_TIMES: 3
       CHANNEL_DISABLE_THRESHOLD: 5
       INITIAL_ROOT_TOKEN: sk-aihub-root-token-change-me
-      THEME: berry
+      THEME: web
       # MCP services (optional, only start when API key is set)
       MINIMAX_API_KEY: ${MINIMAX_API_KEY:-}
       MINIMAX_API_HOST: ${MINIMAX_API_HOST:-https://api.minimaxi.com}

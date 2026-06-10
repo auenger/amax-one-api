@@ -62,7 +62,7 @@ AIHub Phase 1 使用自建 Gateway（Fastify/TypeScript）+ new-api（Go）双�
                │ REST API
                ▼
 ┌─────────────────────────────────────┐
-│     one-api (AIHub Fork, Go + Gin)   │
+│     aihub (Go + Gin)                 │
 │                                      │
 │  Token 鉴权 (Bearer + Session)       │
 │  Channel 路由 (优先级 + 加权随机)     │
@@ -124,7 +124,7 @@ one-api/
 
 ### Phase 4：前端整合（1 周）
 
-1. apps/web 的 api-client 重写（从调 Gateway 改为调 one-api）
+1. apps/web 的 api-client 重写（从调 Gateway 改为调 aihub）
 2. 移除 apps/gateway + packages/database + packages/shared
 3. docker-compose 简化
 

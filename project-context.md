@@ -1,6 +1,6 @@
 ---
 last_updated: '2026-06-09'
-version: 4
+version: 5
 features_completed: 37
 ---
 
@@ -12,7 +12,7 @@ features_completed: 37
 
 ## Current Status (2026-06-09)
 
-**品牌重塑完成**：项目已从 one-api fork 独立为 ModelHub 品牌。Go 模块路径为 `github.com/yzw/aihub`，二进制名 `aihub`，前端品牌 "ModelHub"。37 个 feature 已合并到 main。
+**品牌重塑完成**：项目已从 one-api fork 独立为 ModelHub 品牌。Go 模块路径为 `github.com/yzw/aihub`，二进制名 `aihub`，前端品牌 "ModelHub"。37 个 feature 已合并到 main。目录已重命名为 `aihub/`，前端目录为 `web/web/`。
 
 ## Technology Stack
 
@@ -21,7 +21,7 @@ features_completed: 37
 | Language       | Go                           | 1.20+    | 核心 backend                           |
 | Framework      | Gin                          | —        | HTTP framework                         |
 | ORM            | GORM                         | —        | 支持 PostgreSQL / MySQL / SQLite       |
-| Frontend       | React + MUI (Berry theme)    | MUI 5.x  | Material UI，嵌入 Go binary            |
+| Frontend       | React + MUI 5               | MUI 5.x  | Material UI，嵌入 Go binary            |
 | Charts         | ApexCharts                   | 3.35     | 用量图表                               |
 | State          | React Context + Hooks        | —        | —                                      |
 | Primary DB     | PostgreSQL                   | 16       | 生产环境                               |
@@ -33,7 +33,7 @@ features_completed: 37
 
 ```
 modelhub/
-├── one-api/                     # 核心引擎 (Go + Gin)
+├── aihub/                       # 核心引擎 (Go + Gin)
 │   ├── main.go                  # 入口，GORM 初始化 + Gin 路由
 │   ├── controller/              # HTTP 处理器
 │   ├── model/                   # GORM 数据模型
@@ -44,10 +44,10 @@ modelhub/
 │   ├── monitor/                 # 并发追踪、负载均衡、配额刷新
 │   ├── common/                  # 通用工具
 │   └── web/
-│       └── berry/               # Berry 主题 (MUI 5, 唯一前端)
+│       └── web/                 # 前端源码 (MUI 5, 唯一前端)
 ├── features/                    # Feature 工作流归档
 ├── feature-workflow/            # Feature 配置
-├── docker-compose.yml           # MySQL + Redis + aihub
+├── docker-compose.yml           # PostgreSQL + Redis + aihub
 └── CLAUDE.md                    # Claude Code 指引
 ```
 
@@ -66,8 +66,8 @@ Client → Gin Router → Auth Middleware (Token/Key) → Distributor (Channel S
 
 ### Must Follow
 
-- **Go embed 前端**: 前端改动后必须 `cd one-api && ./rebuild.sh` 重新构建
-- **Berry 主题**: 唯一前端，所有前端开发在 `web/berry/`
+- **Go embed 前端**: 前端改动后必须 `cd aihub && ./rebuild.sh` 重新构建
+- **前端开发**: 所有前端开发在 `web/web/`
 - **MUI 组件**: 使用 Material UI 5 组件库，不引入其他 UI 库
 - **GORM 跨数据库**: SQL 需兼容 PostgreSQL/MySQL/SQLite
 - **Redis 缓存**: 并发数据、配额数据通过 Redis 缓存
@@ -100,6 +100,7 @@ Client → Gin Router → Auth Middleware (Token/Key) → Distributor (Channel S
 
 ## Update Log
 
+- 2026-06-09: v5 — 目录重命名 one-api→aihub, berry→web，全面统一品牌
 - 2026-06-09: v4 — ModelHub 品牌重塑，模块路径改为 github.com/yzw/aihub，删除废弃目录
 - 2026-05-20: v3 — 全面重建，反映 one-api Go 后端架构，37 features 完成
 - 2026-05-12: v2 — Phase 1 完成（6 features merged）
