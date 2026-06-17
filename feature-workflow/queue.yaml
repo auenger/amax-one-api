@@ -1,7 +1,42 @@
 meta:
-  last_updated: '2026-06-02'
+  last_updated: '2026-06-17'
 active: []
 pending:
+- id: feat-glm-time-downgrade
+  name: GLM 渠道定时降级
+  priority: 80
+  size: S
+  depends_on: []
+  added: '2026-06-11'
+  value_points: 1
+- id: feat-channel-test-playground
+  name: 渠道测试对话窗（Playground）
+  priority: 80
+  size: L
+  split: true
+  depends_on: []
+  added: '2026-06-17'
+  value_points: 3
+  children:
+  - feat-channel-test-stream-api
+  - feat-channel-test-playground-ui
+- id: feat-channel-test-stream-api
+  name: 渠道流式测试端点
+  priority: 80
+  size: S
+  parent: feat-channel-test-playground
+  depends_on: []
+  added: '2026-06-17'
+  value_points: 1
+- id: feat-channel-test-playground-ui
+  name: 渠道测试对话窗（Playground）前端
+  priority: 80
+  size: M
+  parent: feat-channel-test-playground
+  depends_on:
+  - feat-channel-test-stream-api
+  added: '2026-06-17'
+  value_points: 2
 - id: feat-skill-market-ux
   name: Skill 市场 UI 优化
   priority: 70
