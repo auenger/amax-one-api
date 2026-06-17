@@ -396,12 +396,17 @@ func checkQuotaExhaustion(channel *model.Channel, quota *model.ChannelQuota, thr
 		logger.SysLog(fmt.Sprintf("quota-refresher: channel #%d (%s) QUOTA EXHAUSTED — added to accelerated poll list (%s)",
 			channel.Id, channel.Name, reason))
 	} else {
-		// Check if previously exhausted and now recovered
+		// Check if previously exhausted and now recovered.
+		// We check BOTH the in-memory map AND the Redis exhaustion marker
+		// to handle the case where the process restarted (in-memory map is empty)
+		// but the Redis marker is still present.
 		exhaustedMu.RLock()
 		_, wasExhausted := exhaustedChannels[channel.Id]
 		exhaustedMu.RUnlock()
 
-		if wasExhausted {
+		redisMarked := IsQuotaExhausted(channel.Id)
+
+		if wasExhausted || redisMarked {
 			// Verify ALL windows are below recovery threshold before recovering
 			allBelowRecovery := true
 			for _, w := range quota.Windows {
@@ -557,6 +562,19 @@ func GetExhaustedChannels() []int {
 		ids = append(ids, id)
 	}
 	return ids
+}
+
+// RegisterExhaustedChannel adds a channel to the accelerated polling list.
+// Called by the health checker when it detects quota exhaustion so that
+// the exhaustion poller can track and detect recovery for this channel.
+func RegisterExhaustedChannel(channelId int, reason string) {
+	exhaustedMu.Lock()
+	exhaustedChannels[channelId] = exhaustionInfo{
+		AddedAt:   time.Now(),
+		Reason:    reason,
+		LastCheck: time.Now(),
+	}
+	exhaustedMu.Unlock()
 }
 
 // ────────────────────────────────────────────────────────────

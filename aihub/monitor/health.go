@@ -489,13 +489,22 @@ func checkChannelHealth(channel *model.Channel) {
 	// and skip the /v1/models probe (it succeeds even when quota is exhausted).
 	windows := getCachedQuotaWindows(channel.Id)
 	if windows != nil {
+		anyExhausted := false
 		for _, w := range windows {
 			if w.UsedPercent >= 100.0 {
+				anyExhausted = true
 				MarkChannelQuotaExhausted(channel.Id,
 					fmt.Sprintf("health-check: %s=%.1f%%", w.Label, w.UsedPercent),
 					0)
+				// Register in exhausted map so the accelerated poller can detect recovery
+				RegisterExhaustedChannel(channel.Id, fmt.Sprintf("health-check: %s=%.1f%%", w.Label, w.UsedPercent))
 				return
 			}
+		}
+		// If all windows are below threshold but an exhaustion marker still exists,
+		// the quota has recovered — clear the marker so the channel can become healthy.
+		if !anyExhausted && IsQuotaExhausted(channel.Id) {
+			MarkChannelQuotaRecovered(channel.Id)
 		}
 	}
 
