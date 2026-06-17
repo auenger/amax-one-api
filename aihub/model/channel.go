@@ -69,17 +69,17 @@ func GetAllChannels(startIdx int, num int, scope string) ([]*Channel, error) {
 	var err error
 	switch scope {
 	case "all":
-		err = DB.Order("id desc").Find(&channels).Error
+		err = DB.Order("name asc, id asc").Find(&channels).Error
 	case "disabled":
-		err = DB.Order("id desc").Where("status = ? or status = ?", ChannelStatusAutoDisabled, ChannelStatusManuallyDisabled).Find(&channels).Error
+		err = DB.Order("name asc, id asc").Where("status = ? or status = ?", ChannelStatusAutoDisabled, ChannelStatusManuallyDisabled).Find(&channels).Error
 	default:
-		err = DB.Order("id desc").Limit(num).Offset(startIdx).Omit("key").Find(&channels).Error
+		err = DB.Order("name asc, id asc").Limit(num).Offset(startIdx).Omit("key").Find(&channels).Error
 	}
 	return channels, err
 }
 
 func SearchChannels(keyword string) (channels []*Channel, err error) {
-	err = DB.Omit("key").Where("id = ? or name LIKE ?", helper.String2Int(keyword), keyword+"%").Find(&channels).Error
+	err = DB.Omit("key").Where("id = ? or name LIKE ?", helper.String2Int(keyword), keyword+"%").Order("name asc, id asc").Find(&channels).Error
 	return channels, err
 }
 
