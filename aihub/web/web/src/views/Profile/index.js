@@ -7,7 +7,6 @@ import {
   FormControl,
   OutlinedInput,
   Stack,
-  Alert,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -21,7 +20,7 @@ import { IconBrandWechat, IconBrandGithub, IconMail } from '@tabler/icons-react'
 import Label from 'ui-component/Label';
 import { API } from 'utils/api';
 import { onOidcClicked, showError, showSuccess } from 'utils/common';
-import { onGitHubOAuthClicked, onLarkOAuthClicked, copy } from 'utils/common';
+import { onGitHubOAuthClicked, onLarkOAuthClicked } from 'utils/common';
 import * as Yup from 'yup';
 import WechatModal from 'views/Authentication/AuthForms/WechatModal';
 import { useSelector } from 'react-redux';
@@ -84,19 +83,6 @@ export default function Profile() {
       // 请求失败，设置错误信息
       return { success: false, message: '' };
     }
-  };
-
-  const generateAccessToken = async () => {
-    const res = await API.get('/api/user/token');
-    const { success, message, data } = res.data;
-    if (success) {
-      setInputs((inputs) => ({ ...inputs, access_token: data }));
-      copy(data, '访问令牌');
-    } else {
-      showError(message);
-    }
-
-    console.log(turnstileEnabled, turnstileSiteKey, status);
   };
 
   const submit = async () => {
@@ -171,20 +157,22 @@ export default function Profile() {
                     />
                   </FormControl>
                 </Grid>
-                <Grid xs={12}>
-                  <FormControl fullWidth variant="outlined">
-                    <InputLabel htmlFor="password">密码</InputLabel>
-                    <OutlinedInput
-                      id="password"
-                      label="密码"
-                      type="password"
-                      value={inputs.password || ''}
-                      onChange={handleInputChange}
-                      name="password"
-                      placeholder="请输入密码"
-                    />
-                  </FormControl>
-                </Grid>
+                {inputs.role !== 100 && (
+                  <Grid xs={12}>
+                    <FormControl fullWidth variant="outlined">
+                      <InputLabel htmlFor="password">密码</InputLabel>
+                      <OutlinedInput
+                        id="password"
+                        label="密码"
+                        type="password"
+                        value={inputs.password || ''}
+                        onChange={handleInputChange}
+                        name="password"
+                        placeholder="请输入密码"
+                      />
+                    </FormControl>
+                  </Grid>
+                )}
                 <Grid xs={12}>
                   <FormControl fullWidth variant="outlined">
                     <InputLabel htmlFor="display_name">显示名称</InputLabel>
@@ -256,27 +244,6 @@ export default function Profile() {
                     <></>
                   )}
                 </Grid>
-              </Grid>
-            </SubCard>
-            <SubCard title="其他">
-              <Grid container spacing={2}>
-                <Grid xs={12}>
-                  <Alert severity="info">注意，此处生成的令牌用于系统管理，而非用于请求 OpenAI 相关的服务，请知悉。</Alert>
-                </Grid>
-                {inputs.access_token && (
-                  <Grid xs={12}>
-                    <Alert severity="error">
-                      你的访问令牌是: <b>{inputs.access_token}</b> <br />
-                      请妥善保管。如有泄漏，请立即重置。
-                    </Alert>
-                  </Grid>
-                )}
-                <Grid xs={12}>
-                  <Button variant="contained" onClick={generateAccessToken}>
-                    {inputs.access_token ? '重置访问令牌' : '生成访问令牌'}
-                  </Button>
-                </Grid>
-
                 <Grid xs={12}>
                   <Button
                     variant="contained"

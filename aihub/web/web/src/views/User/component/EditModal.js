@@ -185,38 +185,40 @@ const EditModal = ({ open, userId, onCancel, onOk }) => {
                 )}
               </FormControl>
 
-              <FormControl fullWidth error={Boolean(touched.password && errors.password)} sx={{ ...theme.typography.otherInput }}>
-                <InputLabel htmlFor="channel-password-label">密码</InputLabel>
-                <OutlinedInput
-                  id="channel-password-label"
-                  label="密码"
-                  type={showPassword ? 'text' : 'password'}
-                  value={values.password}
-                  name="password"
-                  onBlur={handleBlur}
-                  onChange={handleChange}
-                  inputProps={{ autoComplete: 'password' }}
-                  endAdornment={
-                    <InputAdornment position="end">
-                      <IconButton
-                        aria-label="toggle password visibility"
-                        onClick={handleClickShowPassword}
-                        onMouseDown={handleMouseDownPassword}
-                        edge="end"
-                        size="large"
-                      >
-                        {showPassword ? <Visibility /> : <VisibilityOff />}
-                      </IconButton>
-                    </InputAdornment>
-                  }
-                  aria-describedby="helper-text-channel-password-label"
-                />
-                {touched.password && errors.password && (
-                  <FormHelperText error id="helper-tex-channel-password-label">
-                    {errors.password}
-                  </FormHelperText>
-                )}
-              </FormControl>
+              {values.role !== 100 && (
+                <FormControl fullWidth error={Boolean(touched.password && errors.password)} sx={{ ...theme.typography.otherInput }}>
+                  <InputLabel htmlFor="channel-password-label">密码</InputLabel>
+                  <OutlinedInput
+                    id="channel-password-label"
+                    label="密码"
+                    type={showPassword ? 'text' : 'password'}
+                    value={values.password}
+                    name="password"
+                    onBlur={handleBlur}
+                    onChange={handleChange}
+                    inputProps={{ autoComplete: 'password' }}
+                    endAdornment={
+                      <InputAdornment position="end">
+                        <IconButton
+                          aria-label="toggle password visibility"
+                          onClick={handleClickShowPassword}
+                          onMouseDown={handleMouseDownPassword}
+                          edge="end"
+                          size="large"
+                        >
+                          {showPassword ? <Visibility /> : <VisibilityOff />}
+                        </IconButton>
+                      </InputAdornment>
+                    }
+                    aria-describedby="helper-text-channel-password-label"
+                  />
+                  {touched.password && errors.password && (
+                    <FormHelperText error id="helper-tex-channel-password-label">
+                      {errors.password}
+                    </FormHelperText>
+                  )}
+                </FormControl>
+              )}
 
               {values.is_edit && (
                 <>

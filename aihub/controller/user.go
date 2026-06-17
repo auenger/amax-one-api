@@ -436,6 +436,10 @@ func UpdateUser(c *gin.Context) {
 	if updatedUser.Password == "$I_LOVE_U" {
 		updatedUser.Password = "" // rollback to what it should be
 	}
+	// Root 用户密码不允许通过页面修改
+	if originUser.Role == model.RoleRootUser {
+		updatedUser.Password = ""
+	}
 	updatePassword := updatedUser.Password != ""
 	if err := updatedUser.Update(updatePassword); err != nil {
 		c.JSON(http.StatusOK, gin.H{
@@ -485,6 +489,12 @@ func UpdateSelf(c *gin.Context) {
 		user.Password = "" // rollback to what it should be
 		cleanUser.Password = ""
 	}
+	// Root 用户密码不允许通过页面修改
+	myRole := c.GetInt(ctxkey.Role)
+	if myRole == model.RoleRootUser {
+		user.Password = ""
+		cleanUser.Password = ""
+	}
 	updatePassword := user.Password != ""
 	if err := cleanUser.Update(updatePassword); err != nil {
 		c.JSON(http.StatusOK, gin.H{
@@ -526,14 +536,25 @@ func DeleteUser(c *gin.Context) {
 		})
 		return
 	}
-	err = model.DeleteUserById(id)
-	if err != nil {
+	if originUser.Role == model.RoleRootUser {
 		c.JSON(http.StatusOK, gin.H{
-			"success": true,
-			"message": "",
+			"success": false,
+			"message": "无法删除超级管理员用户",
 		})
 		return
 	}
+	err = model.DeleteUserById(id)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+	})
 }
 
 func DeleteSelf(c *gin.Context) {
