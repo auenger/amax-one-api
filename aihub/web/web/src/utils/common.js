@@ -119,6 +119,13 @@ export function isAdmin() {
     return user.role >= 10;
 }
 
+export function isDemoAccount() {
+    let user = localStorage.getItem('user');
+    if (!user) return false;
+    user = JSON.parse(user);
+    return user.username === 'amaxone';
+}
+
 export function timestamp2string(timestamp) {
     let date = new Date(timestamp * 1000);
     let year = date.getFullYear().toString();

@@ -74,6 +74,24 @@ const LoginForm = ({ ...others }) => {
 
   return (
     <>
+      <Box
+        sx={{
+          mb: 2,
+          p: 1.5,
+          borderRadius: `${customization.borderRadius}px`,
+          border: '1px dashed',
+          borderColor: theme.palette.primary.main,
+          backgroundColor: theme.palette.mode === 'dark' ? 'rgba(33, 150, 243, 0.08)' : 'rgba(33, 150, 243, 0.04)',
+          textAlign: 'center'
+        }}
+      >
+        <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mb: 0.5 }}>
+          演示账号
+        </Typography>
+        <Typography variant="body2" color="textPrimary" sx={{ fontWeight: 500, fontFamily: 'monospace', letterSpacing: 0.5 }}>
+          amaxone / amaxone123
+        </Typography>
+      </Box>
       {tripartiteLogin && (
         <Grid container direction="column" justifyContent="center" spacing={2}>
           {siteInfo.github_oauth && (

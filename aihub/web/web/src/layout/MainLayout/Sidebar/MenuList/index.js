@@ -4,15 +4,16 @@ import { Typography } from '@mui/material';
 // project imports
 import NavGroup from './NavGroup';
 import menuItem from 'menu-items';
-import { isAdmin } from 'utils/common';
+import { isAdmin, isDemoAccount } from 'utils/common';
 
 // ==============================|| SIDEBAR MENU LIST ||============================== //
 const MenuList = () => {
   const userIsAdmin = isAdmin();
+  const demoAccount = isDemoAccount();
 
   const filterMenu = (items) => {
     return items
-      .filter((item) => !item.isAdmin || userIsAdmin)
+      .filter((item) => (!item.isAdmin || userIsAdmin) && !(item.hideForDemo && demoAccount))
       .map((item) => {
         if (item.children && item.children.length > 0) {
           return { ...item, children: filterMenu(item.children) };

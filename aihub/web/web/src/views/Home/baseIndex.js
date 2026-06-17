@@ -7,30 +7,36 @@ const styles = {
     height: 'calc(100vh - 124px)',
     display: 'flex',
     alignItems: 'center',
-    background: 'linear-gradient(160deg, #0a0e27 0%, #111b47 40%, #0d1b3e 70%, #0a0e27 100%)',
+    background: '#0a0b0d',
     overflow: 'hidden',
     p: 0,
     m: 0
   },
-  heroBefore: {
+  bgGrid: {
     position: 'absolute',
-    width: 600,
-    height: 600,
-    borderRadius: '50%',
-    background: 'radial-gradient(circle, rgba(79,125,249,0.15) 0%, transparent 70%)',
-    top: -200,
-    left: -100,
-    pointerEvents: 'none'
+    inset: 0,
+    pointerEvents: 'none',
+    backgroundImage: 'linear-gradient(rgba(255,255,255,0.055) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.055) 1px, transparent 1px)',
+    backgroundSize: '66px 66px',
+    WebkitMaskImage: 'radial-gradient(ellipse 100% 85% at 50% 42%, #000 25%, transparent 100%)',
+    maskImage: 'radial-gradient(ellipse 100% 85% at 50% 42%, #000 25%, transparent 100%)',
+    zIndex: 0
   },
-  heroAfter: {
+  bgGlow: {
     position: 'absolute',
-    width: 500,
-    height: 500,
-    borderRadius: '50%',
-    background: 'radial-gradient(circle, rgba(124,58,237,0.1) 0%, transparent 70%)',
-    bottom: -150,
-    right: -100,
-    pointerEvents: 'none'
+    inset: 0,
+    pointerEvents: 'none',
+    background: 'radial-gradient(ellipse 50% 40% at 78% 18%, rgba(207,244,77,0.13), transparent 70%)',
+    zIndex: 0
+  },
+  bgGrain: {
+    position: 'absolute',
+    inset: 0,
+    pointerEvents: 'none',
+    opacity: 0.03,
+    mixBlendMode: 'overlay',
+    backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
+    zIndex: 0
   },
   heroContent: {
     maxWidth: 1200,
@@ -134,8 +140,9 @@ const BaseIndex = () => (
       }
     }} />
     <Box sx={styles.hero}>
-      <Box sx={styles.heroBefore} />
-      <Box sx={styles.heroAfter} />
+      <Box sx={styles.bgGrid} />
+      <Box sx={styles.bgGlow} />
+      <Box sx={styles.bgGrain} />
 
       {/* SVG Network */}
       <Box sx={styles.svgContainer} aria-hidden="true">

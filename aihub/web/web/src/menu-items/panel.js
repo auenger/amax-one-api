@@ -116,14 +116,6 @@ const panel = {
       breadcrumbs: false
     },
     {
-      id: 'download',
-      title: '下载 CC Switch',
-      type: 'item',
-      url: '/download',
-      icon: icons.IconDownload,
-      breadcrumbs: false
-    },
-    {
       id: 'log',
       title: '日志',
       type: 'item',
@@ -173,16 +165,26 @@ const panel = {
       url: '/panel/profile',
       icon: icons.IconUserScan,
       breadcrumbs: false,
-      isAdmin: false
+      isAdmin: false,
+      hideForDemo: true
     },
     {
       id: 'setting',
-      title: '设置',
+      title: '系统设置',
       type: 'item',
       url: '/panel/setting',
       icon: icons.IconAdjustments,
       breadcrumbs: false,
-      isAdmin: true
+      isAdmin: true,
+      hideForDemo: true
+    },
+    {
+      id: 'download',
+      title: '下载 CC Switch',
+      type: 'item',
+      url: '/download',
+      icon: icons.IconDownload,
+      breadcrumbs: false
     }
   ]
 };

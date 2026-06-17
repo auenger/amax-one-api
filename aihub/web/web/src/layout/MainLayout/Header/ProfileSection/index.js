@@ -22,6 +22,7 @@ import MainCard from 'ui-component/cards/MainCard';
 import Transitions from 'ui-component/extended/Transitions';
 import User1 from 'assets/images/users/user-round.svg';
 import useLogin from 'hooks/useLogin';
+import { isDemoAccount } from 'utils/common';
 
 // assets
 import { IconLogout, IconSettings, IconUserScan } from '@tabler/icons-react';
@@ -33,6 +34,7 @@ const ProfileSection = () => {
   const navigate = useNavigate();
   const customization = useSelector((state) => state.customization);
   const { logout } = useLogin();
+  const demoAccount = isDemoAccount();
 
   const [open, setOpen] = useState(false);
   /**
@@ -150,12 +152,14 @@ const ProfileSection = () => {
                       }
                     }}
                   >
+                    {!demoAccount && (
                     <ListItemButton sx={{ borderRadius: `${customization.borderRadius}px` }} onClick={() => navigate('/panel/profile')}>
                       <ListItemIcon>
                         <IconUserScan stroke={1.5} size="1.3rem" />
                       </ListItemIcon>
-                      <ListItemText primary={<Typography variant="body2">设置</Typography>} />
+                      <ListItemText primary={<Typography variant="body2">个人设置</Typography>} />
                     </ListItemButton>
+                    )}
 
                     <ListItemButton sx={{ borderRadius: `${customization.borderRadius}px` }} onClick={handleLogout}>
                       <ListItemIcon>

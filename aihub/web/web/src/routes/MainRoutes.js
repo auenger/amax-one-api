@@ -1,8 +1,10 @@
 import { lazy } from 'react';
+import { Navigate } from 'react-router-dom';
 
 // project imports
 import MainLayout from 'layout/MainLayout';
 import Loadable from 'ui-component/Loadable';
+import { isDemoAccount } from 'utils/common';
 
 const Channel = Loadable(lazy(() => import('views/Channel')));
 const Log = Loadable(lazy(() => import('views/Log')));
@@ -54,7 +56,7 @@ const MainRoutes = {
     },
     {
       path: 'setting',
-      element: <Setting />
+      element: isDemoAccount() ? <Navigate to="/panel/dashboard" replace /> : <Setting />
     },
     {
       path: 'token',
@@ -102,7 +104,7 @@ const MainRoutes = {
     },
     {
       path: 'profile',
-      element: <Profile />
+      element: isDemoAccount() ? <Navigate to="/panel/dashboard" replace /> : <Profile />
     },
     {
       path: 'downgrade',
