@@ -138,7 +138,6 @@ const SystemSetting = () => {
     if (
       name === 'Notice' ||
       name.startsWith('SMTP') ||
-      name === 'ServerAddress' ||
       name === 'GitHubClientId' ||
       name === 'GitHubClientSecret' ||
       name === 'WeChatServerAddress' ||
@@ -163,11 +162,6 @@ const SystemSetting = () => {
     } else {
       await updateOption(name, value);
     }
-  };
-
-  const submitServerAddress = async () => {
-    let ServerAddress = removeTrailingSlash(inputs.ServerAddress);
-    await updateOption('ServerAddress', ServerAddress);
   };
 
   const submitSMTP = async () => {
@@ -280,29 +274,6 @@ const SystemSetting = () => {
   return (
     <>
       <Stack spacing={2}>
-        <SubCard title="通用设置">
-          <Grid container spacing={{ xs: 3, sm: 2, md: 4 }}>
-            <Grid xs={12}>
-              <FormControl fullWidth>
-                <InputLabel htmlFor="ServerAddress">服务器地址</InputLabel>
-                <OutlinedInput
-                  id="ServerAddress"
-                  name="ServerAddress"
-                  value={inputs.ServerAddress || ''}
-                  onChange={handleInputChange}
-                  label="服务器地址"
-                  placeholder="例如：https://yourdomain.com"
-                  disabled={loading}
-                />
-              </FormControl>
-            </Grid>
-            <Grid xs={12}>
-              <Button variant="contained" onClick={submitServerAddress}>
-                更新服务器地址
-              </Button>
-            </Grid>
-          </Grid>
-        </SubCard>
         <SubCard title="配置登录注册">
           <Grid container spacing={{ xs: 3, sm: 2, md: 4 }}>
             <Grid xs={12} md={3}>
