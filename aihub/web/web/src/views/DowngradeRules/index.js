@@ -22,14 +22,30 @@ import {
   Divider,
   Autocomplete,
   TextField,
-  CircularProgress
+  Select,
+  MenuItem,
+  InputLabel,
+  FormControl,
+  IconButton
 } from '@mui/material';
-import { IconRefresh, IconArrowDown, IconDeviceFloppy } from '@tabler/icons-react';
+import { IconRefresh, IconArrowDown, IconDeviceFloppy, IconPlus, IconTrash } from '@tabler/icons-react';
 import { CHANNEL_OPTIONS } from 'constants/ChannelConstants';
 
 const getProviderName = (type) => {
   return CHANNEL_OPTIONS[type]?.text || `Unknown (${type})`;
 };
+
+// Parse rules JSON from option value
+const parseRules = (jsonStr) => {
+  try {
+    const parsed = JSON.parse(jsonStr || '[]');
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
+
+const emptyRule = () => ({ channel_ids: [], start_hour: 13, end_hour: 18, target_model: '' });
 
 export default function DowngradeRules() {
   const [channels, setChannels] = useState([]);
@@ -41,6 +57,11 @@ export default function DowngradeRules() {
     FallbackModel: ''
   });
   const [fallbackLoading, setFallbackLoading] = useState(false);
+
+  // Time downgrade: global toggle + rules array
+  const [timeDowngradeEnabled, setTimeDowngradeEnabled] = useState(false);
+  const [timeDowngradeRules, setTimeDowngradeRules] = useState([]);
+  const [timeDowngradeLoading, setTimeDowngradeLoading] = useState(false);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -88,11 +109,15 @@ export default function DowngradeRules() {
       if (success) {
         const opts = {};
         data.forEach((item) => {
-          if (['FallbackEnabled', 'FallbackChannelId', 'FallbackModel'].includes(item.key)) {
+          if (['FallbackEnabled', 'FallbackChannelId', 'FallbackModel', 'TimeDowngradeEnabled', 'TimeDowngradeRules'].includes(item.key)) {
             opts[item.key] = item.value;
           }
         });
-        setFallback((prev) => ({ ...prev, ...opts }));
+        // Fallback
+        if (opts.FallbackEnabled !== undefined) setFallback((prev) => ({ ...prev, ...opts }));
+        // Time downgrade
+        if (opts.TimeDowngradeEnabled !== undefined) setTimeDowngradeEnabled(opts.TimeDowngradeEnabled === 'true');
+        if (opts.TimeDowngradeRules !== undefined) setTimeDowngradeRules(parseRules(opts.TimeDowngradeRules));
       } else {
         showError(message);
       }
@@ -109,6 +134,8 @@ export default function DowngradeRules() {
 
   const activeCount = channels.filter((c) => c.is_active).length;
   const fallbackEnabled = fallback.FallbackEnabled === 'true';
+
+  // ──── Fallback handlers (unchanged) ────
 
   const handleFallbackToggle = async () => {
     const newValue = fallbackEnabled ? 'false' : 'true';
@@ -164,6 +191,84 @@ export default function DowngradeRules() {
     }
     setFallbackLoading(false);
   };
+
+  // ──── Time Downgrade handlers ────
+
+  const handleTimeDowngradeToggle = async () => {
+    const newValue = timeDowngradeEnabled ? 'false' : 'true';
+    setTimeDowngradeLoading(true);
+    try {
+      const res = await API.put('/api/option/', { key: 'TimeDowngradeEnabled', value: newValue });
+      const { success, message } = res.data;
+      if (success) {
+        setTimeDowngradeEnabled(newValue === 'true');
+        showSuccess(newValue === 'true' ? '定时降级已启用' : '定时降级已禁用');
+      } else {
+        showError(message);
+      }
+    } catch (e) {
+      showError(e.message);
+    }
+    setTimeDowngradeLoading(false);
+  };
+
+  const updateRule = (index, field, value) => {
+    setTimeDowngradeRules((prev) => {
+      const next = [...prev];
+      next[index] = { ...next[index], [field]: value };
+      return next;
+    });
+  };
+
+  const addRule = () => {
+    setTimeDowngradeRules((prev) => [...prev, emptyRule()]);
+  };
+
+  const removeRule = (index) => {
+    setTimeDowngradeRules((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleTimeDowngradeSave = async () => {
+    // Validate
+    for (let i = 0; i < timeDowngradeRules.length; i++) {
+      const rule = timeDowngradeRules[i];
+      if (!rule.channel_ids || rule.channel_ids.length === 0) {
+        showError(`规则 ${i + 1}：请选择至少一个渠道`);
+        return;
+      }
+      if (rule.start_hour < 0 || rule.start_hour > 23 || rule.end_hour < 1 || rule.end_hour > 24 || rule.start_hour >= rule.end_hour) {
+        showError(`规则 ${i + 1}：时间窗口无效`);
+        return;
+      }
+      if (!rule.target_model) {
+        showError(`规则 ${i + 1}：请填写降级目标模型`);
+        return;
+      }
+    }
+    setTimeDowngradeLoading(true);
+    try {
+      // Save rules JSON
+      const rulesJSON = JSON.stringify(timeDowngradeRules);
+      await API.put('/api/option/', { key: 'TimeDowngradeRules', value: rulesJSON });
+      showSuccess('定时降级配置已保存');
+    } catch (e) {
+      showError(e.message);
+    }
+    setTimeDowngradeLoading(false);
+  };
+
+  // Resolve channel objects for multi-select
+  const channelMap = useMemo(() => {
+    const map = {};
+    allChannels.forEach((ch) => { map[ch.id] = ch; });
+    return map;
+  }, [allChannels]);
+
+  const hourOptions = useMemo(() => {
+    return Array.from({ length: 24 }, (_, i) => i);
+  }, []);
+
+  const formatHour = (h) => String(h).padStart(2, '0') + ':00';
 
   return (
     <>
@@ -283,6 +388,171 @@ export default function DowngradeRules() {
             {fallbackEnabled && selectedChannel && fallback.FallbackModel && (
               <Alert severity="info" sx={{ mt: 1 }}>
                 兜底配置：{getProviderName(selectedChannel.type)} #{selectedChannel.id} {selectedChannel.name} → {fallback.FallbackModel}
+              </Alert>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Time Downgrade Config Card */}
+        <Card sx={{ mb: 2 }}>
+          <CardContent>
+            <Stack direction="row" alignItems="center" justifyContent="space-between" mb={1}>
+              <Typography variant="h6">定时降级</Typography>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={timeDowngradeEnabled}
+                    onChange={handleTimeDowngradeToggle}
+                    disabled={timeDowngradeLoading}
+                    color="primary"
+                  />
+                }
+                label={timeDowngradeEnabled ? '已启用' : '未启用'}
+              />
+            </Stack>
+            <Typography variant="body2" color="textSecondary" mb={2}>
+              在指定时间段（北京时间）内，将所选渠道的所有模型请求自动替换为降级目标模型。
+            </Typography>
+            <Divider sx={{ mb: 2 }} />
+
+            {timeDowngradeRules.length === 0 ? (
+              <Typography color="textSecondary" py={2} textAlign="center">
+                暂无降级规则，点击下方按钮添加
+              </Typography>
+            ) : (
+              <Stack spacing={2} mb={2}>
+                {timeDowngradeRules.map((rule, idx) => (
+                  <Stack key={idx} direction="row" spacing={1.5} alignItems="center" flexWrap="wrap">
+                    <Autocomplete
+                      multiple
+                      size="small"
+                      sx={{ minWidth: 320, flexGrow: 1 }}
+                      options={allChannels}
+                      getOptionLabel={(option) => `#${option.id} ${option.name} (${getProviderName(option.type)})`}
+                      isOptionEqualToValue={(option, value) => option.id === value.id}
+                      value={rule.channel_ids.map((id) => channelMap[id]).filter(Boolean)}
+                      onChange={(e, newValue) => {
+                        updateRule(idx, 'channel_ids', newValue.map((ch) => ch.id));
+                      }}
+                      disabled={!timeDowngradeEnabled || timeDowngradeLoading}
+                      renderInput={(params) => (
+                        <TextField {...params} label={`规则 ${idx + 1} — 选择渠道`} placeholder="搜索渠道..." />
+                      )}
+                      renderOption={(props, option) => {
+                        const { key, ...rest } = props;
+                        return (
+                          <li key={option.id} {...rest}>
+                            <Stack direction="row" spacing={1} alignItems="center" width="100%">
+                              <Chip
+                                label={getProviderName(option.type)}
+                                color={CHANNEL_OPTIONS[option.type]?.color || 'default'}
+                                size="small"
+                                variant="outlined"
+                                sx={{ flexShrink: 0 }}
+                              />
+                              <Typography variant="body2" sx={{ flexGrow: 1 }}>
+                                #{option.id} {option.name}
+                              </Typography>
+                            </Stack>
+                          </li>
+                        );
+                      }}
+                      renderTags={(value, getTagProps) =>
+                        value.map((option, index) => {
+                          const { key, ...rest } = getTagProps({ index });
+                          return (
+                            <Chip
+                              key={option.id}
+                              label={`#${option.id} ${option.name}`}
+                              size="small"
+                              variant="outlined"
+                              {...rest}
+                            />
+                          );
+                        })
+                      }
+                    />
+                    <FormControl size="small" sx={{ minWidth: 90 }}>
+                      <InputLabel>开始</InputLabel>
+                      <Select
+                        value={rule.start_hour}
+                        onChange={(e) => updateRule(idx, 'start_hour', e.target.value)}
+                        disabled={!timeDowngradeEnabled || timeDowngradeLoading}
+                        label="开始"
+                      >
+                        {hourOptions.map((h) => (
+                          <MenuItem key={h} value={h}>{formatHour(h)}</MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                    <Typography variant="body1" sx={{ lineHeight: '40px' }}>—</Typography>
+                    <FormControl size="small" sx={{ minWidth: 90 }}>
+                      <InputLabel>结束</InputLabel>
+                      <Select
+                        value={rule.end_hour}
+                        onChange={(e) => updateRule(idx, 'end_hour', e.target.value)}
+                        disabled={!timeDowngradeEnabled || timeDowngradeLoading}
+                        label="结束"
+                      >
+                        {hourOptions.map((h) => (
+                          <MenuItem key={h} value={h}>{formatHour(h)}</MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                    <TextField
+                      size="small"
+                      sx={{ width: 180 }}
+                      label="目标模型"
+                      value={rule.target_model}
+                      onChange={(e) => updateRule(idx, 'target_model', e.target.value)}
+                      disabled={!timeDowngradeEnabled || timeDowngradeLoading}
+                      placeholder="glm-4.7"
+                    />
+                    <IconButton
+                      color="error"
+                      onClick={() => removeRule(idx)}
+                      disabled={!timeDowngradeEnabled || timeDowngradeLoading}
+                      size="small"
+                      title="删除规则"
+                    >
+                      <IconTrash size={18} />
+                    </IconButton>
+                  </Stack>
+                ))}
+              </Stack>
+            )}
+
+            <Stack direction="row" spacing={2} alignItems="center">
+              <Button
+                variant="outlined"
+                startIcon={<IconPlus />}
+                onClick={addRule}
+                disabled={!timeDowngradeEnabled || timeDowngradeLoading}
+                size="small"
+              >
+                添加规则
+              </Button>
+              <Button
+                variant="contained"
+                startIcon={<IconDeviceFloppy />}
+                onClick={handleTimeDowngradeSave}
+                disabled={!timeDowngradeEnabled || timeDowngradeLoading || timeDowngradeRules.length === 0}
+                size="small"
+              >
+                保存
+              </Button>
+            </Stack>
+
+            {timeDowngradeEnabled && timeDowngradeRules.length > 0 && (
+              <Alert severity="info" sx={{ mt: 2 }}>
+                {timeDowngradeRules.map((rule, idx) => (
+                  <Typography key={idx} variant="body2">
+                    规则 {idx + 1}：每天 {formatHour(rule.start_hour)} — {formatHour(rule.end_hour)}，渠道 [{rule.channel_ids.map((id) => {
+                      const ch = channelMap[id];
+                      return ch ? `#${id} ${ch.name}` : `#${id}`;
+                    }).join(', ')}] → {rule.target_model || '未设置'}
+                  </Typography>
+                ))}
               </Alert>
             )}
           </CardContent>

@@ -168,3 +168,17 @@ var FallbackChannelId int64 = 0
 var FallbackModel = ""
 
 var DailyRequestLimit = 0 // 0 = disabled
+
+// Time-based model downgrade
+var TimeDowngradeEnabled = false
+var TimeDowngradeRulesJSON = "[]"
+
+// TimeDowngradeRule represents a single time-based downgrade rule.
+type TimeDowngradeRule struct {
+	ChannelIds  []int  `json:"channel_ids"`
+	StartHour   int    `json:"start_hour"`
+	EndHour     int    `json:"end_hour"`
+	TargetModel string `json:"target_model"`
+}
+
+var TimeDowngradeRules []TimeDowngradeRule

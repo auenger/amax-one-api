@@ -1,6 +1,8 @@
 package model
 
 import (
+	"encoding/json"
+
 	"github.com/yzw/aihub/common/config"
 	"github.com/yzw/aihub/common/logger"
 	billingratio "github.com/yzw/aihub/relay/billing/ratio"
@@ -79,6 +81,8 @@ func InitOptionMap() {
 	config.OptionMap["FallbackChannelId"] = strconv.FormatInt(config.FallbackChannelId, 10)
 	config.OptionMap["FallbackModel"] = config.FallbackModel
 	config.OptionMap["DailyRequestLimit"] = strconv.Itoa(config.DailyRequestLimit)
+	config.OptionMap["TimeDowngradeEnabled"] = strconv.FormatBool(config.TimeDowngradeEnabled)
+	config.OptionMap["TimeDowngradeRules"] = config.TimeDowngradeRulesJSON
 	config.OptionMapRWMutex.Unlock()
 	loadOptionsFromDatabase()
 }
@@ -159,6 +163,8 @@ func updateOptionMap(key string, value string) (err error) {
 			config.DisplayTokenStatEnabled = boolValue
 		case "FallbackEnabled":
 			config.FallbackEnabled = boolValue
+		case "TimeDowngradeEnabled":
+			config.TimeDowngradeEnabled = boolValue
 		}
 	}
 	switch key {
@@ -251,6 +257,12 @@ func updateOptionMap(key string, value string) (err error) {
 		config.FallbackModel = value
 	case "DailyRequestLimit":
 		config.DailyRequestLimit, _ = strconv.Atoi(value)
+	case "TimeDowngradeRules":
+		config.TimeDowngradeRulesJSON = value
+		var rules []config.TimeDowngradeRule
+		if err := json.Unmarshal([]byte(value), &rules); err == nil {
+			config.TimeDowngradeRules = rules
+		}
 	}
 	return err
 }

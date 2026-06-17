@@ -75,6 +75,10 @@ func Distribute() func(c *gin.Context) {
 			logger.Infof(ctx, "fallback: routing to fallback model %s on channel #%d (original: %s)", fallbackModelStr, channel.Id, originalModel)
 			requestModel = fallbackModelStr
 			c.Set(ctxkey.RequestModel, requestModel)
+		} else if targetModel := monitor.CheckTimeDowngrade(channel.Id); targetModel != "" {
+			logger.Debugf(ctx, "time-downgrade: channel #%d, replacing model %s -> %s", channel.Id, requestModel, targetModel)
+			requestModel = targetModel
+			c.Set(ctxkey.RequestModel, requestModel)
 		} else if channel.DowngradeThresholdPct > 0 {
 			if downgradedModel := monitor.CheckDowngradeForChannel(channel.Id); downgradedModel != "" {
 				logger.Debugf(ctx, "downgrade: channel #%d, replacing model %s -> %s", channel.Id, requestModel, downgradedModel)
